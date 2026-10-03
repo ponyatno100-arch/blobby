@@ -10,11 +10,11 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
         }
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #0b0f19;
+            color: #f1f5f9;
             display: flex;
             flex-direction: column;
             height: 100vh;
@@ -26,13 +26,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #0f172a;
+            background: #0b0f19;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
-            padding: 20px;
+            padding: 24px;
             transition: opacity 0.3s ease;
         }
         .hidden {
@@ -50,21 +50,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 20px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
         .stat-badge {
-            background: rgba(15, 23, 42, 0.6);
-            padding: 6px 12px;
+            background: rgba(30, 41, 59, 0.7);
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
         .stage {
             flex: 1;
@@ -74,7 +75,7 @@
             align-items: center;
             position: relative;
             overflow: hidden;
-            background: linear-gradient(135deg, #e0f2fe, #bae6fd, #e0e7ff);
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
         }
         .character-card {
             width: 220px;
@@ -83,7 +84,7 @@
             justify-content: center;
             align-items: center;
             cursor: grab;
-            touch-action: none; /* ЧТОБЫ ПАЛЬЦЕМ МОЖНО БЫЛО ТЯГАТЬ БЕЗ ПРОКРУТКИ СТРАНИЦЫ */
+            touch-action: none;
             user-select: none;
             transition: transform 0.08s ease-out;
             z-index: 5;
@@ -93,44 +94,51 @@
             height: 100%;
             object-fit: contain;
             pointer-events: none;
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15));
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3));
         }
         .stats-panel {
-            background: rgba(30, 41, 59, 0.85);
-            backdrop-filter: blur(12px);
-            padding: 16px;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.4);
         }
         .stat-bar-container {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+        }
+        .stat-bar-container:last-child {
+            margin-bottom: 0;
         }
         .stat-info {
             display: flex;
             justify-content: space-between;
             font-size: 12px;
-            margin-bottom: 4px;
-            font-weight: 500;
+            margin-bottom: 5px;
+            font-weight: 600;
             color: #94a3b8;
+            letter-spacing: 0.3px;
         }
         .progress-bar {
             width: 100%;
             height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
             overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
         }
         .progress-fill {
             height: 100%;
             width: 100%;
-            border-radius: 4px;
-            transition: width 0.3s ease;
+            border-radius: 6px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .nav-bar {
             display: flex;
-            background: #1e293b;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: #0f172a;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 4px;
         }
         .nav-item {
             flex: 1;
@@ -139,20 +147,21 @@
             background: none;
             border: none;
             color: #64748b;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            border-radius: 12px;
         }
         .nav-item.active {
             color: #38bdf8;
-            background: rgba(56, 189, 248, 0.05);
+            background: rgba(56, 189, 248, 0.08);
         }
         .content-body {
             flex: 1;
-            background: #0f172a;
+            background: #0b0f19;
             overflow-y: auto;
-            padding: 16px;
+            padding: 18px;
         }
         .tab-content {
             display: none;
@@ -161,19 +170,21 @@
             display: block;
         }
         .btn {
-            background: #38bdf8;
-            color: #0f172a;
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            color: #0b0f19;
             border: none;
-            padding: 12px 20px;
-            border-radius: 14px;
+            padding: 13px 20px;
+            border-radius: 16px;
             font-weight: 700;
             font-size: 14px;
             cursor: pointer;
             width: 100%;
-            transition: transform 0.1s;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.25);
+            transition: all 0.2s ease;
         }
         .btn:active {
             transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(56, 189, 248, 0.2);
         }
         .shop-grid {
             display: grid;
@@ -181,64 +192,80 @@
             gap: 12px;
         }
         .shop-card {
-            background: #1e293b;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 14px;
-            border-radius: 16px;
-            text-align: center;
-        }
-        .shop-btn {
-            background: #f43f5e;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 12px;
-            margin-top: 10px;
-            cursor: pointer;
-            width: 100%;
-        }
-        .shop-btn.locked {
-            background: #475569;
-            opacity: 0.6;
-        }
-        .pet-choice-card {
-            background: #1e293b;
+            background: rgba(30, 41, 59, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.05);
             padding: 16px;
             border-radius: 20px;
             text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .shop-btn {
+            background: linear-gradient(135deg, #f43f5e, #e11d48);
+            color: white;
+            border: none;
+            padding: 9px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-top: 12px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25);
+            transition: all 0.2s ease;
+        }
+        .shop-btn.locked {
+            background: #334155;
+            color: #64748b;
+            box-shadow: none;
+            opacity: 0.7;
+        }
+        .pet-choice-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 18px;
+            border-radius: 22px;
+            text-align: center;
             margin-bottom: 14px;
             cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .pet-choice-card:active {
+            transform: scale(0.98);
+            border-color: rgba(56, 189, 248, 0.4);
         }
         .pet-choice-card img {
             width: 100px;
             height: 100px;
             object-fit: contain;
             margin-bottom: 8px;
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.2));
         }
         .floating-emoji {
             position: absolute;
             font-size: 24px;
-            animation: floatUp 1s ease-out forwards;
+            animation: floatUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
             pointer-events: none;
             z-index: 10;
         }
         @keyframes floatUp {
             0% { transform: translateY(0) scale(0.8); opacity: 1; }
-            100% { transform: translateY(-70px) scale(1.2); opacity: 0; }
+            100% { transform: translateY(-70px) scale(1.3); opacity: 0; }
         }
         .inv-item-card {
-            background: #1e293b;
-            padding: 10px 14px;
-            border-radius: 12px;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 12px 16px;
+            border-radius: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             cursor: pointer;
+            transition: background 0.2s;
+        }
+        .inv-item-card:active {
+            background: rgba(30, 41, 59, 0.8);
         }
     </style>
 </head>
@@ -246,21 +273,21 @@
 
     <!-- ЭКРАН ВЫБОРА ПИТОМЦА -->
     <div id="selectScreen" class="screen hidden">
-        <h2 style="margin-bottom: 20px; font-size: 20px;">Выбери питомца 🐾</h2>
+        <h2 style="margin-bottom: 20px; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Выбери питомца 🐾</h2>
         <div style="width: 100%; max-width: 320px;">
             <div class="pet-choice-card" onclick="choosePet('cloud')">
                 <img src="IMG_6540.png" alt="Облачко">
-                <h3>Облачко</h3>
+                <h3 style="font-size: 16px; font-weight: 600;">Облачко</h3>
                 <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Меняет мимику от настроения</p>
             </div>
             <div class="pet-choice-card" onclick="choosePet('squish')">
                 <img src="IMG_6541.png" alt="Сквиш">
-                <h3>Шарик-сквиш</h3>
+                <h3 style="font-size: 16px; font-weight: 600;">Шарик-сквиш</h3>
                 <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Мягкий упругий антистресс</p>
             </div>
             <div class="pet-choice-card" onclick="choosePet('ghostcat')">
                 <img src="IMG_6542.PNG" alt="Призрак">
-                <h3>Котенок-призрак</h3>
+                <h3 style="font-size: 16px; font-weight: 600;">Котенок-призрак</h3>
                 <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Мурчит и оживает</p>
             </div>
         </div>
@@ -268,15 +295,15 @@
 
     <!-- ЭКРАН ПОБЕГА -->
     <div id="runawayScreen" class="screen hidden">
-        <h2 style="margin-bottom: 10px; color: #f43f5e;">Питомец сбежал! 😭</h2>
-        <p style="text-align: center; color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Ты слишком долго не заходила, и твой питомец отправился путешествовать.</p>
+        <h2 style="margin-bottom: 10px; color: #f43f5e; font-size: 22px;">Питомец сбежал! 😭</h2>
+        <p style="text-align: center; color: #94a3b8; font-size: 13px; margin-bottom: 24px; line-height: 1.5;">Ты слишком долго не заходила, и твой питомец отправился путешествовать.</p>
         <button class="btn" onclick="resetAfterRunaway()">Завести нового</button>
     </div>
 
     <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
     <div class="app-container">
         <header>
-            <div id="gameTitle" style="font-weight: 700; font-size: 15px;">Питомец 🐾</div>
+            <div id="gameTitle" style="font-weight: 700; font-size: 15px; letter-spacing: -0.3px;">Питомец 🐾</div>
             <div style="display: flex; gap: 8px;">
                 <div class="stat-badge">🪙 <span id="coins">500</span></div>
                 <div class="stat-badge" onclick="openSelectScreen()" style="cursor: pointer;">⚙️</div>
@@ -292,39 +319,39 @@
 
         <!-- ПАНЕЛЬ СТАТИСТИКИ -->
         <div class="stats-panel">
-            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 14px;">
                 <span id="petName">Питомец</span>
-                <span>Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
+                <span style="color: #38bdf8;">Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
             </div>
 
             <!-- Сытость -->
             <div class="stat-bar-container">
                 <div class="stat-info"><span>Сытость 🍪</span><span id="hungerText">100</span>%</div>
-                <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: #38bdf8;"></div></div>
+                <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: linear-gradient(90deg, #38bdf8, #0ea5e9);"></div></div>
             </div>
 
             <!-- Настроение -->
             <div class="stat-bar-container">
                 <div class="stat-info"><span>Настроение ✨</span><span id="moodText">100</span>%</div>
-                <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: #a855f7;"></div></div>
+                <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: linear-gradient(90deg, #c084fc, #a855f7);"></div></div>
             </div>
 
             <!-- Досуг -->
             <div class="stat-bar-container">
                 <div class="stat-info"><span>Досуг 🎮</span><span id="funText">100</span>%</div>
-                <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: #ec4899;"></div></div>
+                <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: linear-gradient(90deg, #f43f5e, #e11d48);"></div></div>
             </div>
         </div>
 
         <!-- ВКЛАДКИ -->
         <div class="content-body">
             <div id="tab-home" class="tab-content active">
-                <h3 style="font-size: 14px; margin-bottom: 10px;">Сумка с едой 🎒</h3>
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #cbd5e1;">Сумка с едой 🎒</h3>
                 <div id="inventoryRow"></div>
             </div>
 
             <div id="tab-shop" class="tab-content">
-                <h3 style="font-size: 14px; margin-bottom: 10px;">Магазин еды 🛒</h3>
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #cbd5e1;">Магазин еды 🛒</h3>
                 <div class="shop-grid">
                     <div class="shop-card">
                         <p style="font-size: 13px; font-weight: 600;">🍪 Печенька</p>
@@ -350,17 +377,17 @@
             </div>
 
             <div id="tab-play" class="tab-content">
-                <h3 style="font-size: 14px; margin-bottom: 10px;">Активный досуг 🎾</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;" id="cooldownTimer">Готово к игре!</p>
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #cbd5e1;">Активный досуг 🎾</h3>
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 14px;" id="cooldownTimer">Готово к игре!</p>
                 <button class="btn" id="playBtn" onclick="doFunActivity()">Поиграть с питомцем</button>
             </div>
 
             <div id="tab-friends" class="tab-content">
-                <h3 style="font-size: 14px; margin-bottom: 10px;">Пригласи друзей 👥</h3>
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #cbd5e1;">Пригласи друзей 👥</h3>
                 <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Приглашено: <span id="friendCount">0</span></p>
-                <input type="text" id="refLink" value="https://t.me/blobby_pet_bot?start=ref123" readonly style="width: 100%; padding: 10px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; margin-bottom: 10px; font-size: 12px;">
-                <button class="btn" onclick="copyRef()" style="margin-bottom: 8px;">Скопировать ссылку</button>
-                <button class="btn" onclick="simulateFriendJoin()" style="background: #10b981; color: white;">Тест: Симуляция друга</button>
+                <input type="text" id="refLink" value="https://t.me/blobby_pet_bot?start=ref123" readonly style="width: 100%; padding: 12px; background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.06); color: white; border-radius: 12px; margin-bottom: 12px; font-size: 12px; outline: none;">
+                <button class="btn" onclick="copyRef()" style="margin-bottom: 10px;">Скопировать ссылку</button>
+                <button class="btn" onclick="simulateFriendJoin()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);">Тест: Симуляция друга</button>
             </div>
         </div>
 
@@ -401,9 +428,9 @@
         let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
 
         const petsData = {
-            cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png', bg: 'linear-gradient(135deg, #e0f2fe, #bae6fd, #e0e7ff)' },
-            squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png', bg: 'linear-gradient(135deg, #fce7f3, #fbcfe8, #fed7aa)' },
-            ghostcat: { name: 'Котенок-призрак', desc: 'Мурчит и оживает', img: 'IMG_6542.PNG', bg: 'linear-gradient(135deg, #f3e8ff, #e9d5ff, #ccfbf1)' }
+            cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png', bg: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)' },
+            squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png', bg: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)' },
+            ghostcat: { name: 'Котенок-призрак', desc: 'Мурчит и оживает', img: 'IMG_6542.PNG', bg: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)' }
         };
 
         const foodNames = {
@@ -418,8 +445,8 @@
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
             surprised: "IMG_6568.png",
-            flyUp: "IMG_6571.png",     // Летящий кот (Кормление / Свайп вверх)
-            spin: "IMG_6567.png"       // Вращающийся кот (Досуг / Свайп вбок)
+            flyUp: "IMG_6571.png",
+            spin: "IMG_6567.png"
         };
 
         function setCatPose(poseKey, lockDuration = 0) {
@@ -612,13 +639,13 @@
                     let fData = foodNames[key];
                     let cardEl = document.createElement('div');
                     cardEl.className = 'inv-item-card';
-                    cardEl.innerHTML = `<span>${fData.name}</span> <span style="color:#db2777; font-weight:700;">x${inventory[key]}</span>`;
+                    cardEl.innerHTML = `<span>${fData.name}</span> <span style="color:#38bdf8; font-weight:700;">x${inventory[key]}</span>`;
                     cardEl.onclick = () => useFoodFromInventory(key);
                     invRow.appendChild(cardEl);
                 }
             }
             if (!hasAnyFood) {
-                invRow.innerHTML = `<span style="font-size:11px; color:#6b7280;">Сумка пуста. Купи еду в магазине! 🛒</span>`;
+                invRow.innerHTML = `<span style="font-size:12px; color:#64748b;">Сумка пуста. Купи еду в магазине! 🛒</span>`;
             }
 
             let timeLeft = (lastFunTime + 3600000) - Date.now();
@@ -638,7 +665,7 @@
             }
         }
 
-        // ПЕРЕТАСКИВАНИЕ КОТА И СВЯЗЬ С АНИМАЦИЯМИ
+        // ПЕРЕТАСКИВАНИЕ КОТА (ТЕПЕРЬ ТОЛЬКО ТЯНЕТСЯ ЗА ПАЛЬЦЕМ, БЕЗ АВТО-ДЕЙСТВИЙ)
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -655,7 +682,7 @@
             
             card.style.transition = 'none';
 
-            mood = Math.min(100, mood + 2);
+            mood = Math.min(100, mood + 1);
             saveData();
             updateUI();
 
@@ -685,26 +712,11 @@
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
 
-            // Кот четко следует за пальцем
             if (currentPet === 'squish') {
                 let stretch = Math.min(0.8, Math.abs(currentDeltaX) / 35);
                 card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) scale(${1 + stretch}, ${Math.max(0.6, 1 - stretch/1.5)})`;
             } else {
                 card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) rotate(${currentDeltaX / 10}deg)`;
-            }
-
-            // Переключение картинок при движении вбок или вверх
-            if (currentPet === 'ghostcat') {
-                let imgEl = document.getElementById('petImg');
-                if (Math.abs(currentDeltaX) > Math.abs(currentDeltaY) && Math.abs(currentDeltaX) > 15) {
-                    if (imgEl && imgEl.src !== ghostCatImages['spin']) {
-                        imgEl.src = ghostCatImages['spin']; // Вращающийся кот
-                    }
-                } else if (currentDeltaY < -15) {
-                    if (imgEl && imgEl.src !== ghostCatImages['flyUp']) {
-                        imgEl.src = ghostCatImages['flyUp']; // Летящий кот
-                    }
-                }
             }
         });
 
@@ -712,11 +724,7 @@
             if (isDragging) {
                 isDragging = false;
 
-                if (currentDeltaY < -50) {
-                    feedByGesture();
-                } else if (Math.abs(currentDeltaX) > 60) {
-                    playByGesture();
-                } else if (currentPet === 'ghostcat') {
+                if (currentPet === 'ghostcat') {
                     setCatPose('afk');
                 }
 
@@ -724,7 +732,7 @@
                 card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
                 card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
 
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             }
         });
 
@@ -740,57 +748,6 @@
             updateUI();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             alert(`🛒 Куплено: ${foodNames[foodKey].name}! Еда добавлена в сумку.`);
-        }
-
-        function feedByGesture() {
-            if (hunger >= 90) {
-                alert('Питомец сыт! 🚫');
-                setCatPose('afk');
-                return;
-            }
-            let availableFoodKey = Object.keys(inventory).find(k => inventory[k] > 0);
-            if (!availableFoodKey) {
-                alert('В сумке нет еды! Купи ее в магазине. 🛒');
-                setCatPose('afk');
-                return;
-            }
-
-            inventory[availableFoodKey]--;
-            let fData = foodNames[availableFoodKey];
-            hunger = Math.min(100, hunger + fData.boost);
-            mood = Math.min(100, mood + 15);
-            addExp(fData.exp);
-
-            if (currentPet === 'ghostcat') {
-                setCatPose('flyUp', 1500);
-                playCatSound();
-            }
-
-            saveData();
-            updateUI();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        function playByGesture() {
-            let now = Date.now();
-            if (now - lastFunTime < 3600000) {
-                alert('Питомец еще устал от игр! ⏳');
-                setCatPose('afk');
-                return;
-            }
-            lastFunTime = now;
-            fun = Math.min(100, fun + 30);
-            mood = Math.min(100, mood + 20);
-            addExp(150);
-            saveData();
-            updateUI();
-
-            if (currentPet === 'ghostcat') {
-                setCatPose('spin', 2000);
-                playCatSound();
-            }
-
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function useFoodFromInventory(foodKey) {
@@ -809,10 +766,28 @@
             }
             saveData();
             updateUI();
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function doFunActivity() {
-            playByGesture();
+            let now = Date.now();
+            if (now - lastFunTime < 3600000) {
+                alert('Питомец еще устал от игр! ⏳');
+                return;
+            }
+            lastFunTime = now;
+            fun = Math.min(100, fun + 30);
+            mood = Math.min(100, mood + 20);
+            addExp(150);
+            saveData();
+            updateUI();
+
+            if (currentPet === 'ghostcat') {
+                setCatPose('spin', 2000);
+                playCatSound();
+            }
+
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function copyRef() {
