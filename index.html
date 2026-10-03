@@ -446,10 +446,10 @@
             waveHello: "IMG_6570.png",
             surprised: "IMG_6568.png",
             flyUp: "IMG_6571.png",
-            spin: "IMG_6567.png"
+            spin: "IMG_6567.png" // <--- Твоя картинка с вращением подключена на жесты и досуг!
         };
 
-        // НАДЕЖНАЯ ИНИЦИАЛИЗАЦИЯ И ГЕНЕРАЦИЯ МУРЧАНИЯ
+        // УЛЬТРА-МЯГКИЙ И УЮТНЫЙ ЗВУК МУРЧАНИЯ
         function initAudio() {
             if (!audioCtx) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -462,57 +462,29 @@
             }
         }
 
-        function playCatSound() {
+        function playSoftPurr() {
             if (currentPet !== 'ghostcat') return;
             try {
                 initAudio();
                 if (!audioCtx) return;
                 let now = audioCtx.currentTime;
 
-                // Басовая составляющая мурчания (низкий пульсирующий тон)
                 let osc = audioCtx.createOscillator();
-                let oscGain = audioCtx.createGain();
+                let gain = audioCtx.createGain();
                 
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(32, now);
-                osc.frequency.linearRampToValueAtTime(42, now + 0.3);
-                osc.frequency.linearRampToValueAtTime(30, now + 0.8);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(28, now);
+                osc.frequency.linearRampToValueAtTime(35, now + 0.3);
+                osc.frequency.linearRampToValueAtTime(28, now + 0.7);
 
-                oscGain.gain.setValueAtTime(0.01, now);
-                oscGain.gain.linearRampToValueAtTime(0.18, now + 0.2);
-                oscGain.gain.linearRampToValueAtTime(0.01, now + 0.9);
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.035, now + 0.2);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.7);
 
-                osc.connect(oscGain);
-                oscGain.connect(audioCtx.destination);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
                 osc.start(now);
-                osc.stop(now + 0.9);
-
-                // Шум для создания текстуры урчания
-                let bufferSize = audioCtx.sampleRate * 0.9;
-                let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-                let data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-
-                let noise = audioCtx.createBufferSource();
-                noise.buffer = buffer;
-
-                let filter = audioCtx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(140, now);
-
-                let noiseGain = audioCtx.createGain();
-                noiseGain.gain.setValueAtTime(0.001, now);
-                noiseGain.gain.linearRampToValueAtTime(0.05, now + 0.25);
-                noiseGain.gain.linearRampToValueAtTime(0.001, now + 0.85);
-
-                noise.connect(filter);
-                filter.connect(noiseGain);
-                noiseGain.connect(audioCtx.destination);
-
-                noise.start(now);
-                noise.stop(now + 0.85);
+                osc.stop(now + 0.7);
             } catch(e) {}
         }
 
@@ -648,8 +620,7 @@
             btnEl.classList.add('active');
 
             if (tabName === 'home' && currentPet === 'ghostcat') {
-                setCatPose('waveHello', 1500);
-                playCatSound();
+                setCatPose('waveHello', 1200);
             }
         }
 
@@ -726,7 +697,7 @@
             }
         }
 
-        // ОБРАБОТЧИК КАСАТИЙ И ЖЕСТОВ
+        // ОБРАБОТЧИК КАСАТИЙ И ЖЕСТОВ С ВРАЩЕНИЕМ И ПОЛЕТОМ
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -748,13 +719,13 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                playCatSound();
+                playSoftPurr();
                 
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
-                if (rapidClickCount >= 2) {
-                    setCatPose('surprised', 3000);
+                if (rapidClickCount >= 3) {
+                    setCatPose('surprised', 2500);
                     rapidClickCount = 0;
                 } else {
                     setCatPose('flyUp');
@@ -776,6 +747,17 @@
             if (!isDragging) return;
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
+
+            // Динамическая смена поз при перетаскивании (используем твою картинку spin!)
+            if (currentPet === 'ghostcat') {
+                if (Math.abs(currentDeltaX) > 30) {
+                    setCatPose('spin'); // Крутится при движении вбок
+                } else if (currentDeltaY < -20) {
+                    setCatPose('flyUp'); // Летит при подъеме вверх
+                } else {
+                    setCatPose('afk');
+                }
+            }
 
             if (currentPet === 'squish') {
                 let stretchX = Math.min(0.8, Math.abs(currentDeltaX) / 35);
@@ -829,8 +811,7 @@
             addExp(fData.exp);
 
             if (currentPet === 'ghostcat') {
-                setCatPose('flyUp', 1500);
-                playCatSound();
+                setCatPose('flyUp', 1200);
             }
             saveData();
             updateUI();
@@ -851,8 +832,7 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                setCatPose('spin', 2000);
-                playCatSound();
+                setCatPose('spin', 2000); // Вращение во время игр
             }
 
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
