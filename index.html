@@ -13,7 +13,7 @@
         }
         body {
             margin: 0;
-            padding: 10px;
+            padding: 8px 10px;
             background: linear-gradient(135deg, #fbcfe8, #e0e7ff, #ccfbf1);
             background-size: 400% 400%;
             animation: gradientBG 12s ease infinite;
@@ -105,7 +105,7 @@
 
         .stage {
             width: 270px;
-            height: 200px;
+            height: 185px;
             background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(12px);
             border-radius: 25px;
@@ -119,6 +119,7 @@
             overflow: hidden;
             touch-action: none;
             cursor: pointer;
+            margin: 4px auto;
         }
 
         .character-card {
@@ -132,19 +133,19 @@
 
         @keyframes idleFloat {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
+            50% { transform: translateY(-5px); }
         }
         .anim-idle { animation: idleFloat 2.5s ease-in-out infinite; }
 
         .pet-img {
-            width: 135px;
-            height: 135px;
+            width: 120px;
+            height: 120px;
             object-fit: contain;
             filter: drop-shadow(0 4px 10px rgba(236, 72, 153, 0.3));
             pointer-events: none;
             transition: transform 0.2s ease;
         }
-        .pet-name { font-size: 13px; font-weight: 700; color: #374151; margin-top: 2px; }
+        .pet-name { font-size: 12px; font-weight: 700; color: #374151; margin-top: 2px; }
         
         .floating-emoji {
             position: absolute;
@@ -162,21 +163,22 @@
         .bars-container {
             width: 90%;
             background: rgba(255, 255, 255, 0.6);
-            padding: 6px 10px;
+            padding: 5px 10px;
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
+            margin: 4px auto;
         }
         .bar-row { display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 600; }
-        .bar-bg { width: 65%; height: 7px; background: rgba(0, 0, 0, 0.08); border-radius: 3px; overflow: hidden; }
+        .bar-bg { width: 65%; height: 6px; background: rgba(0, 0, 0, 0.08); border-radius: 3px; overflow: hidden; }
         .bar-fill { height: 100%; background: #10b981; border-radius: 3px; transition: width 0.3s; }
         .bar-fill.hunger { background: #f59e0b; }
         .bar-fill.fun { background: #8b5cf6; }
 
         .content-box {
             width: 100%;
-            height: 130px;
+            height: 125px;
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(10px);
             padding: 8px;
@@ -184,6 +186,7 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.03);
             display: flex;
             flex-direction: column;
+            margin-bottom: 4px;
         }
         .tab-content { display: none; flex-direction: column; gap: 4px; height: 100%; overflow-y: auto; }
         .tab-content.active { display: flex; }
@@ -193,7 +196,7 @@
         .shop-btn {
             background: #fff;
             border: 1px solid rgba(0,0,0,0.05);
-            padding: 5px;
+            padding: 4px;
             border-radius: 10px;
             font-size: 9px;
             font-weight: 600;
@@ -208,7 +211,7 @@
         .shop-btn.locked { opacity: 0.4; filter: grayscale(1); }
 
         .minigame-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px; text-align: center; }
-        .mg-btn { background: #8b5cf6; color: #fff; border: none; padding: 8px 16px; border-radius: 12px; font-weight: 700; font-size: 11px; cursor: pointer; }
+        .mg-btn { background: #8b5cf6; color: #fff; border: none; padding: 7px 14px; border-radius: 12px; font-weight: 700; font-size: 11px; cursor: pointer; }
 
         .ref-box { display: flex; flex-direction: column; gap: 4px; font-size: 10px; }
         .ref-link-row { display: flex; gap: 4px; }
@@ -219,9 +222,9 @@
             display: flex;
             justify-content: space-around;
             width: 100%;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(10px);
-            padding: 5px;
+            padding: 6px;
             border-radius: 14px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
@@ -237,7 +240,7 @@
     <div id="runawayScreen" class="hidden">
         <div class="letter-card">
             <h3>Письмо от питомца 📜</h3>
-            <p>Видимо ты забыл обо мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
+            <p>Видимо ты забыл обо мне. Нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
             <button class="action-btn" onclick="resetAfterRunaway()" style="width:100%; padding:8px; margin-top:10px;">Завести нового</button>
         </div>
     </div>
@@ -260,7 +263,7 @@
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
-                <img src="IMG_6570.png" alt="Котенок-призрак">
+                <img src="IMG_6568.png" alt="Котенок-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
                     <p>Мурчит и оживает</p>
@@ -284,7 +287,7 @@
 
     <div class="stage" id="stage">
         <div class="character-card anim-idle" id="characterCard">
-            <img id="petImg" class="pet-img" src="IMG_6570.png" alt="Pet">
+            <img id="petImg" class="pet-img" src="IMG_6568.png" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
         </div>
     </div>
@@ -370,16 +373,17 @@
             ghostcat: { 
                 name: 'Котенок-призрак', 
                 desc: 'Мурчит и оживает', 
-                img: 'IMG_6570.png'
+                img: 'IMG_6568.png'
             }
         };
 
+        // Разнесли картинки, чтобы afk был спокойным, а waveHello — с поднятой лапкой
         const ghostCatImages = {
-            afk: "IMG_6570.png",       
-            waveHello: "IMG_6570.png", 
-            surprised: "IMG_6568.png",
-            flyUp: "IMG_6571.png",     
-            spin: "IMG_6569.png"      
+            afk: "IMG_6568.png",       // Спокойное состояние (без поднятой лапы)
+            waveHello: "IMG_6570.png", // Состояние приветствия с лапкой
+            surprised: "IMG_6568.png", // Удивление при перетаскивании
+            flyUp: "IMG_6571.png",     // Полет при кормлении
+            spin: "IMG_6569.png"       // Вращение при досуге
         };
 
         function setCatPose(poseKey, lockDuration = 0) {
