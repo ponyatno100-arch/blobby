@@ -106,7 +106,7 @@
         }
         .coins { color: #d97706; }
 
-        /* Игровая арена (увеличена) */
+        /* Игровая арена */
         .stage {
             width: 270px;
             height: 200px;
@@ -138,12 +138,11 @@
         }
         .anim-idle { animation: idleFloat 3s ease-in-out infinite; }
 
-        /* Питомец стал значительно крупнее */
         .pet-img {
             width: 135px;
             height: 135px;
             object-fit: contain;
-            transition: filter 0.3s;
+            filter: drop-shadow(0 4px 10px rgba(236, 72, 153, 0.3));
         }
         .pet-name { font-size: 13px; font-weight: 700; color: #374151; margin-top: 2px; }
         
@@ -422,21 +421,23 @@
                 audioCtx.resume();
             }
 
+            // Создаем приятное мягкое мурчание (синусоида с пульсацией)
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(45, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(35, audioCtx.currentTime + 0.3);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(110, audioCtx.currentTime); // Нотка повыше, чтобы не было гула
+            osc.frequency.linearRampToValueAtTime(130, audioCtx.currentTime + 0.2);
+            osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.4);
 
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.35);
+            osc.stop(audioCtx.currentTime + 0.45);
         }
 
         function updateStatsOverTime() {
@@ -544,14 +545,9 @@
             document.getElementById('food-lvl5').className = lvl >= 5 ? 'shop-btn' : 'shop-btn locked';
             document.getElementById('food-lvl7').className = lvl >= 7 ? 'shop-btn' : 'shop-btn locked';
 
+            // Убрали затемнение и серые фильтры — питомцы всегда яркие и красивые!
             let imgEl = document.getElementById('petImg');
-            if (mInt > 70) {
-                imgEl.style.filter = 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6)) brightness(1.1)';
-            } else if (mInt > 30) {
-                imgEl.style.filter = 'drop-shadow(0 4px 6px rgba(0,0,0,0.1)) brightness(1)';
-            } else {
-                imgEl.style.filter = 'grayscale(0.5) brightness(0.85)';
-            }
+            imgEl.style.filter = 'drop-shadow(0 4px 10px rgba(236, 72, 153, 0.3))';
 
             let timeLeft = (lastFunTime + 3600000) - Date.now();
             let timerEl = document.getElementById('cooldownTimer');
@@ -588,7 +584,7 @@
             if (currentPet === 'ghostcat') {
                 emoji.innerText = '😺 💖';
                 playPurrSound();
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             } else if (currentPet === 'squish') {
                 emoji.innerText = '💧';
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
@@ -607,10 +603,11 @@
             let deltaY = e.clientY - startY;
 
             if (currentPet === 'squish') {
-                let stretch = Math.min(0.4, Math.abs(deltaX) / 80);
+                // Сделали сквиш гораздо более упругим и заметным при потягивании
+                let stretch = Math.min(0.6, Math.abs(deltaX) / 50);
                 let scaleX = 1 + stretch;
-                let scaleY = 1 - (stretch / 2);
-                card.style.transform = `scale(${scaleX}, ${scaleY}) translate(${deltaX / 3}px, ${deltaY / 3}px)`;
+                let scaleY = 1 - (stretch / 1.5);
+                card.style.transform = `scale(${scaleX}, ${scaleY}) translate(${deltaX / 2.5}px, ${deltaY / 2.5}px)`;
             } else {
                 card.style.transform = `translate(${deltaX / 3}px, ${deltaY / 3}px) rotate(${deltaX / 15}deg)`;
             }
@@ -619,11 +616,11 @@
         window.addEventListener('pointerup', () => {
             if (isDragging) {
                 isDragging = false;
-                card.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.475)'; // Более упругий отскок
                 card.style.transform = 'translate(0px, 0px) scale(1)';
                 setTimeout(() => {
                     card.style.transition = 'transform 0.05s ease-out';
-                }, 300);
+                }, 400);
 
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             }
