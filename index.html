@@ -446,6 +446,32 @@
             spin: "IMG_6567.png"
         };
 
+        function playCatSound() {
+            if (currentPet !== 'ghostcat') return;
+            try {
+                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(130, audioCtx.currentTime + 0.4);
+                osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.8);
+
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.9);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.9);
+            } catch(e) {}
+        }
+
         function setCatPose(poseKey, lockDuration = 0) {
             if (currentPet !== 'ghostcat') return;
             let imgEl = document.getElementById('petImg');
@@ -510,29 +536,6 @@
             localStorage.setItem(`blobby_${currentPet}_last_time`, lastActiveTime);
             localStorage.setItem(`blobby_${currentPet}_last_fun`, lastFunTime);
             localStorage.setItem(`blobby_${currentPet}_inv`, JSON.stringify(inventory));
-        }
-
-        function playCatSound() {
-            if (currentPet !== 'ghostcat') return;
-            try {
-                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(75, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.3);
-                osc.frequency.linearRampToValueAtTime(75, audioCtx.currentTime + 0.6);
-
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.7);
-            } catch(e) {}
         }
 
         function updateStatsOverTime() {
@@ -688,8 +691,6 @@
             isDragging = true;
             startX = e.clientX;
             startY = e.clientY;
-            currentDeltaX = 0;
-            currentDeltaY = 0;
             
             card.style.transition = 'none';
 
@@ -702,7 +703,6 @@
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
                 if (rapidClickCount >= 3) {
-                    // Увеличено время показа удивления до 3.5 секунд (3500 мс)
                     setCatPose('surprised', 3500);
                     playCatSound();
                     rapidClickCount = 0;
@@ -733,18 +733,17 @@
         });
 
         window.addEventListener('pointerup', () => {
-            if (isDragging) {
-                isDragging = false;
+            if (!isDragging) return;
+            isDragging = false;
 
-                if (currentPet === 'ghostcat') {
-                    setCatPose('afk');
-                }
-
-                card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
-                card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
-
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            if (currentPet === 'ghostcat') {
+                setCatPose('afk');
             }
+
+            card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
+            card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
+
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         });
 
         function buyFood(foodKey, cost, boost, expGain) {
