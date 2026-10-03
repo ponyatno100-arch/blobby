@@ -118,7 +118,7 @@
             overflow: hidden;
             touch-action: none;
             cursor: pointer;
-            border: none; /* Убран дешмаский квадратик */
+            border: none;
             transition: background 0.5s ease;
         }
 
@@ -127,15 +127,15 @@
             flex-direction: column;
             align-items: center;
             position: absolute;
-            transition: transform 0.05s ease-out;
+            transition: transform 0.08s ease-out;
             pointer-events: none;
         }
 
         @keyframes idleFloat {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-4px); }
+            50% { transform: translateY(-5px); }
         }
-        .anim-idle { animation: idleFloat 2.5s ease-in-out infinite; }
+        .anim-idle { animation: idleFloat 2.2s ease-in-out infinite; }
 
         .pet-img {
             width: 95px;
@@ -143,6 +143,7 @@
             object-fit: contain;
             filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
             pointer-events: none;
+            transition: opacity 0.15s ease;
         }
         .pet-name { font-size: 11px; font-weight: 700; color: #374151; margin-top: 2px; text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
         
@@ -398,19 +399,24 @@
             ramen: { name: '🍔 Рамен', boost: 100, exp: 500 }
         };
 
+        // Четко разнесли разные файлы под разные анимации котика:
         const ghostCatImages = {
-            afk: "IMG_6570.png",       
-            waveHello: "IMG_6570.png", 
-            surprised: "IMG_6568.png", 
-            flyUp: "IMG_6571.png",     
-            spin: "IMG_6569.png"       
+            afk: "IMG_6570.png",       // Обычное состояние покоя
+            waveHello: "IMG_6569.png", // Приветствие при переходе на вкладку
+            surprised: "IMG_6568.png", // Реакция на тап / удивление
+            flyUp: "IMG_6571.png",     // Полет / кормление / радость
+            spin: "IMG_6570.png"       // Досуг / игра
         };
 
         function setCatPose(poseKey, lockDuration = 0) {
             if (currentPet !== 'ghostcat') return;
             let imgEl = document.getElementById('petImg');
             if (imgEl && ghostCatImages[poseKey]) {
-                imgEl.src = ghostCatImages[poseKey];
+                imgEl.style.opacity = '0.5';
+                setTimeout(() => {
+                    imgEl.src = ghostCatImages[poseKey];
+                    imgEl.style.opacity = '1';
+                }, 70);
             }
 
             if (catPoseTimeout) {
@@ -422,7 +428,13 @@
                 catPoseTimeout = setTimeout(() => {
                     if (currentPet === 'ghostcat') {
                         let activeImg = document.getElementById('petImg');
-                        if (activeImg) activeImg.src = ghostCatImages['afk'];
+                        if (activeImg) {
+                            activeImg.style.opacity = '0.5';
+                            setTimeout(() => {
+                                activeImg.src = ghostCatImages['afk'];
+                                activeImg.style.opacity = '1';
+                            }, 70);
+                        }
                     }
                 }, lockDuration);
             }
@@ -544,7 +556,7 @@
             btnEl.classList.add('active');
 
             if (tabName === 'home' && currentPet === 'ghostcat') {
-                setCatPose('waveHello', 1000);
+                setCatPose('waveHello', 1200);
                 playCatSound();
             }
         }
@@ -640,7 +652,7 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                setCatPose('surprised');
+                setCatPose('surprised', 1000);
                 playCatSound();
             }
 
@@ -674,7 +686,7 @@
                 card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.5)';
                 card.style.transform = 'translate(0px, 0px) scale(1)';
                 setTimeout(() => {
-                    card.style.transition = 'transform 0.05s ease-out';
+                    card.style.transition = 'transform 0.08s ease-out';
                 }, 400);
 
                 if (currentPet === 'ghostcat') {
