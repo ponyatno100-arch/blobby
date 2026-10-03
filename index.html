@@ -237,7 +237,7 @@
     <div id="runawayScreen" class="hidden">
         <div class="letter-card">
             <h3>Письмо от питомца 📜</h3>
-            <p>Видимо ты забыл обо мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
+            <p>Видимо ты забыл о мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
             <button class="action-btn" onclick="resetAfterRunaway()" style="width:100%; padding:8px; margin-top:10px;">Завести нового</button>
         </div>
     </div>
@@ -260,7 +260,7 @@
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
-                <img src="IMG_6567.png" alt="Котенок-призрак">
+                <img src="IMG_6570.png" alt="Котенок-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
                     <p>Мурчит и оживает</p>
@@ -284,7 +284,7 @@
 
     <div class="stage" id="stage">
         <div class="character-card anim-idle" id="characterCard">
-            <img id="petImg" class="pet-img" src="IMG_6567.png" alt="Pet">
+            <img id="petImg" class="pet-img" src="IMG_6570.png" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
         </div>
     </div>
@@ -313,7 +313,6 @@
                 <button class="shop-btn" onclick="feedPet(80, 120, 200)"><span>🍰 Тортик</span><span style="color:#d97706;">120 🪙</span></button>
                 <button class="shop-btn" id="food-lvl3" onclick="feedPet(100, 180, 300)"><span>🍣 Роллы (Ур.3)</span><span style="color:#d97706;">180 🪙</span></button>
                 <button class="shop-btn" id="food-lvl5" onclick="feedPet(100, 250, 500)"><span>🍔 Рамен (Ур.5)</span><span style="color:#d97706;">250 🪙</span></button>
-                <button class="shop-btn" onclick="triggerShopWave()"><span>👋 Лапка</span><span style="color:#8b5cf6;">Привет</span></button>
             </div>
         </div>
 
@@ -364,21 +363,20 @@
         let lastActiveTime = Date.now();
         let lastFunTime = 0;
 
-        // Привязали новые красивые имена файлов с анимациями
         const petsData = {
             cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png' },
             squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png' },
             ghostcat: { 
                 name: 'Котенок-призрак', 
                 desc: 'Мурчит и оживает', 
-                img: 'IMG_6567.png',
+                img: 'IMG_6570.png',
                 images: {
-                    afk: "IMG_6567.png",
-                    waveHello: "IMG_6568.png",
-                    flyUp: "IMG_6569.png",
-                    spin: "IMG_6570.png",
-                    surprised: "IMG_6571.png",
-                    rollRight: "IMG_6567.png"
+                    afk: "IMG_6570.png",        // Обычное состояние
+                    waveHello: "IMG_6570.png",  // Приветствие лапкой (при возвращении в магазин/главную)
+                    flyUp: "IMG_6571.png",      // Полет при кормлении
+                    spin: "IMG_6569.png",       // Вращение при досуге[span_0](start_span)[span_0](end_span)
+                    surprised: "IMG_6568.png",  // Удивление, когда держишь/тащишь[span_1](start_span)[span_1](end_span)
+                    rollRight: "IMG_6567.png"   // Перекат[span_2](start_span)[span_2](end_span)
                 }
             }
         };
@@ -421,6 +419,16 @@
             if (currentPet === 'ghostcat' && purrAudio) {
                 purrAudio.currentTime = 0;
                 purrAudio.play().catch(e => console.log("Аудио ожидает клика"));
+            }
+        }
+
+        function setCatPose(poseName) {
+            if (currentPet === 'ghostcat') {
+                let p = petsData.ghostcat;
+                let imgEl = document.getElementById('petImg');
+                if (p.images && p.images[poseName]) {
+                    imgEl.src = p.images[poseName];
+                }
             }
         }
 
@@ -476,11 +484,18 @@
             updateUI();
         }
 
+        // Переключение вкладок (когда возвращаешься в магазин/главную — машет лапкой)
         function switchTab(tabName, btnEl) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
             btnEl.classList.add('active');
+
+            if (tabName === 'food' && currentPet === 'ghostcat') {
+                setCatPose('waveHello'); // Приветствие лапкой при возвращении в магазин
+                playCatSound();
+                setTimeout(() => setCatPose('afk'), 1500);
+            }
         }
 
         function addExp(amount) {
@@ -539,38 +554,12 @@
             }
         }
 
-        let afkTimer = null;
-        function setCatEmotion(emotionKey) {
-            if (currentPet !== 'ghostcat') return;
-            let p = petsData['ghostcat'];
-            let petImg = document.getElementById('petImg');
-            if (p.images && p.images[emotionKey]) {
-                petImg.src = p.images[emotionKey];
-            }
-            playCatSound();
-
-            clearTimeout(afkTimer);
-            afkTimer = setTimeout(() => {
-                petImg.src = p.images.afk;
-            }, 2500);
-        }
-
-        function triggerShopWave() {
-            if (currentPet === 'ghostcat') {
-                setCatEmotion('waveHello');
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            } else {
-                alert('Привет-привет! 👋');
-            }
-        }
-
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
         let startX, startY;
-        let clickCount = 0;
-        let clickTimer = null;
 
+        // Когда тащишь / зажимаешь котенка (удивленное лицо)
         stage.addEventListener('pointerdown', (e) => {
             isDragging = true;
             startX = e.clientX;
@@ -581,15 +570,8 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                clickCount++;
-                clearTimeout(clickTimer);
-                if (clickCount === 3) {
-                    setCatEmotion('surprised');
-                    clickCount = 0;
-                } else {
-                    playCatSound();
-                }
-                clickTimer = setTimeout(() => { clickCount = 0; }, 500);
+                setCatPose('surprised');[span_3](start_span)[span_3](end_span)
+                playCatSound();
             }
 
             let emoji = document.createElement('div');
@@ -617,36 +599,24 @@
             }
         });
 
-        window.addEventListener('pointerup', (e) => {
+        window.addEventListener('pointerup', () => {
             if (isDragging) {
                 isDragging = false;
-                
-                if (currentPet === 'ghostcat') {
-                    let diffX = e.clientX - startX;
-                    let diffY = e.clientY - startY;
-                    if (Math.abs(diffY) > Math.abs(diffX) && diffY < -40) {
-                        setCatEmotion('flyUp');
-                    } else if (Math.abs(diffX) > Math.abs(diffY) && diffX > 40) {
-                        setCatEmotion('rollRight');
-                    }
-                }
-
                 card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.5)';
                 card.style.transform = 'translate(0px, 0px) scale(1)';
                 setTimeout(() => {
                     card.style.transition = 'transform 0.05s ease-out';
                 }, 400);
 
+                if (currentPet === 'ghostcat') {
+                    setCatPose('afk');
+                }
+
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             }
         });
 
-        document.getElementById('petImg').addEventListener('dblclick', () => {
-            if (currentPet === 'ghostcat') {
-                setCatEmotion('spin');
-            }
-        });
-
+        // Кормление (полет)
         function feedPet(hungerBoost, cost, expGain) {
             if (hunger >= 90) {
                 alert('Питомец сыт и не хочет есть! 🚫');
@@ -661,12 +631,17 @@
             hunger = Math.min(100, hunger + hungerBoost);
             mood = Math.min(100, mood + 15);
             addExp(expGain);
+
             if (currentPet === 'ghostcat') {
+                setCatPose('flyUp');
                 playCatSound();
+                setTimeout(() => setCatPose('afk'), 1500);
             }
+
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
+        // Досуг / Игра (вращение волчком)[span_4](start_span)[span_4](end_span)
         function doFunActivity() {
             let now = Date.now();
             if (now - lastFunTime < 3600000) return;
@@ -676,6 +651,12 @@
             addExp(150);
             saveData();
             updateUI();
+
+            if (currentPet === 'ghostcat') {
+                setCatPose('spin');[span_5](start_span)[span_5](end_span)
+                setTimeout(() => setCatPose('afk'), 2000);
+            }
+
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             alert('🎉 Отлично поиграли! Досуг восстановлен.');
         }
