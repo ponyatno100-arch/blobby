@@ -400,9 +400,6 @@
         </nav>
     </div>
 
-    <!-- Аудио мурчания -->
-    <audio id="purr-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
@@ -515,12 +512,27 @@
             localStorage.setItem(`blobby_${currentPet}_inv`, JSON.stringify(inventory));
         }
 
-        let purrAudio = document.getElementById('purr-sound');
         function playCatSound() {
-            if (currentPet === 'ghostcat' && purrAudio) {
-                purrAudio.currentTime = 0;
-                purrAudio.play().catch(e => console.log("Аудио ожидает клика"));
-            }
+            if (currentPet !== 'ghostcat') return;
+            try {
+                let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(75, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.3);
+                osc.frequency.linearRampToValueAtTime(75, audioCtx.currentTime + 0.6);
+
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.7);
+            } catch(e) {}
         }
 
         function updateStatsOverTime() {
@@ -665,7 +677,6 @@
             }
         }
 
-        // ПЕРЕТАСКИВАНИЕ КОТА (ТЕПЕРЬ ТОЛЬКО ТЯНЕТСЯ ЗА ПАЛЬЦЕМ, БЕЗ АВТО-ДЕЙСТВИЙ)
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -691,7 +702,8 @@
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
                 if (rapidClickCount >= 3) {
-                    setCatPose('surprised', 1500);
+                    // Увеличено время показа удивления до 3.5 секунд (3500 мс)
+                    setCatPose('surprised', 3500);
                     playCatSound();
                     rapidClickCount = 0;
                 }
@@ -728,7 +740,6 @@
                     setCatPose('afk');
                 }
 
-                // Плавный возврат кота на базу
                 card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
                 card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
 
