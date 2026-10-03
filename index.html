@@ -449,11 +449,15 @@
             spin: "IMG_6567.png"
         };
 
+        // НАДЕЖНАЯ ИНИЦИАЛИЗАЦИЯ И ГЕНЕРАЦИЯ МУРЧАНИЯ
         function initAudio() {
             if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
             }
-            if (audioCtx.state === 'suspended') {
+            if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
             }
         }
@@ -462,26 +466,29 @@
             if (currentPet !== 'ghostcat') return;
             try {
                 initAudio();
+                if (!audioCtx) return;
                 let now = audioCtx.currentTime;
 
+                // Басовая составляющая мурчания (низкий пульсирующий тон)
                 let osc = audioCtx.createOscillator();
                 let oscGain = audioCtx.createGain();
                 
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(26, now);
-                osc.frequency.linearRampToValueAtTime(34, now + 0.4);
-                osc.frequency.linearRampToValueAtTime(26, now + 0.8);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(32, now);
+                osc.frequency.linearRampToValueAtTime(42, now + 0.3);
+                osc.frequency.linearRampToValueAtTime(30, now + 0.8);
 
                 oscGain.gain.setValueAtTime(0.01, now);
-                oscGain.gain.linearRampToValueAtTime(0.12, now + 0.2);
-                oscGain.gain.linearRampToValueAtTime(0.01, now + 0.85);
+                oscGain.gain.linearRampToValueAtTime(0.18, now + 0.2);
+                oscGain.gain.linearRampToValueAtTime(0.01, now + 0.9);
 
                 osc.connect(oscGain);
                 oscGain.connect(audioCtx.destination);
                 osc.start(now);
-                osc.stop(now + 0.85);
+                osc.stop(now + 0.9);
 
-                let bufferSize = audioCtx.sampleRate * 0.8;
+                // Шум для создания текстуры урчания
+                let bufferSize = audioCtx.sampleRate * 0.9;
                 let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 let data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
@@ -493,32 +500,33 @@
 
                 let filter = audioCtx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(180, now);
+                filter.frequency.setValueAtTime(140, now);
 
                 let noiseGain = audioCtx.createGain();
                 noiseGain.gain.setValueAtTime(0.001, now);
-                noiseGain.gain.linearRampToValueAtTime(0.04, now + 0.3);
-                noiseGain.gain.linearRampToValueAtTime(0.001, now + 0.8);
+                noiseGain.gain.linearRampToValueAtTime(0.05, now + 0.25);
+                noiseGain.gain.linearRampToValueAtTime(0.001, now + 0.85);
 
                 noise.connect(filter);
                 filter.connect(noiseGain);
                 noiseGain.connect(audioCtx.destination);
 
                 noise.start(now);
-                noise.stop(now + 0.8);
+                noise.stop(now + 0.85);
             } catch(e) {}
         }
 
         function setCatPose(poseKey, lockDuration = 0) {
             if (currentPet !== 'ghostcat') return;
-            let imgEl = document.getElementById('petImg');
-            if (imgEl && ghostCatImages[poseKey]) {
-                imgEl.src = ghostCatImages[poseKey];
-            }
-
+            
             if (catPoseTimeout) {
                 clearTimeout(catPoseTimeout);
                 catPoseTimeout = null;
+            }
+
+            let imgEl = document.getElementById('petImg');
+            if (imgEl && ghostCatImages[poseKey]) {
+                imgEl.src = ghostCatImages[poseKey];
             }
 
             if (lockDuration > 0) {
@@ -601,6 +609,7 @@
         }
 
         function choosePet(type) {
+            initAudio();
             currentPet = type;
             localStorage.setItem('blobby_pet', type);
             inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
@@ -639,7 +648,7 @@
             btnEl.classList.add('active');
 
             if (tabName === 'home' && currentPet === 'ghostcat') {
-                setCatPose('waveHello', 1200);
+                setCatPose('waveHello', 1500);
                 playCatSound();
             }
         }
@@ -717,7 +726,7 @@
             }
         }
 
-        // ОБРАБОТЧИК КАСАТИЙ И АНИМАЦИЙ ПЕРЕМЕЩЕНИЯ
+        // ОБРАБОТЧИК КАСАТИЙ И ЖЕСТОВ
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -739,16 +748,18 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                setCatPose('flyUp');
                 playCatSound();
                 
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
                 if (rapidClickCount >= 2) {
-                    setCatPose('surprised', 3500);
+                    setCatPose('surprised', 3000);
                     rapidClickCount = 0;
+                } else {
+                    setCatPose('flyUp');
                 }
+
                 rapidClickTimer = setTimeout(() => { rapidClickCount = 0; }, 600);
             }
 
@@ -779,7 +790,7 @@
             if (!isDragging) return;
             isDragging = false;
 
-            if (currentPet === 'ghostcat' && !catPoseTimeout) {
+            if (currentPet === 'ghostcat') {
                 setCatPose('afk');
             }
 
