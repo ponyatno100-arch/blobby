@@ -383,6 +383,10 @@
         let lastFunTime = 0;
         let catPoseTimeout = null;
 
+        // Переменные для отслеживания быстрых кликов (испуг на 3 нажатия)
+        let rapidClickCount = 0;
+        let rapidClickTimer = null;
+
         let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
 
         const petsData = {
@@ -399,11 +403,10 @@
             ramen: { name: '🍔 Рамен', boost: 100, exp: 500 }
         };
 
-        // Все картинки на своих местах, включая АФК (IMG_6542.PNG):
         const ghostCatImages = {
             afk: "IMG_6542.PNG",       // АФК / спокойное состояние (по умолчанию)
             waveHello: "IMG_6570.png", // Машет лапкой (приветствие / смена вкладки)
-            surprised: "IMG_6568.png", // Удивленный / с открытым ртом (на тап)
+            surprised: "IMG_6568.png", // Удивленный / испуг (при 3 быстрых тапах)
             flyUp: "IMG_6571.png",     // Горизонтальный полет (кормление)
             spin: "IMG_6567.png"       // Вихрь / активное вращение (досуг)
         };
@@ -416,7 +419,7 @@
                 setTimeout(() => {
                     imgEl.src = ghostCatImages[poseKey];
                     imgEl.style.opacity = '1';
-                }, 70);
+                }, 50);
             }
 
             if (catPoseTimeout) {
@@ -433,7 +436,7 @@
                             setTimeout(() => {
                                 activeImg.src = ghostCatImages['afk'];
                                 activeImg.style.opacity = '1';
-                            }, 70);
+                            }, 50);
                         }
                     }
                 }, lockDuration);
@@ -651,9 +654,20 @@
             saveData();
             updateUI();
 
+            // Логика 3 быстрых нажатий для испуга у котенка
             if (currentPet === 'ghostcat') {
-                setCatPose('surprised', 1000);
-                playCatSound();
+                rapidClickCount++;
+                if (rapidClickTimer) clearTimeout(rapidClickTimer);
+
+                if (rapidClickCount >= 3) {
+                    setCatPose('surprised', 1500);
+                    playCatSound();
+                    rapidClickCount = 0;
+                }
+
+                rapidClickTimer = setTimeout(() => {
+                    rapidClickCount = 0;
+                }, 500); // Окно в 0.5 секунды для сбора трех кликов
             }
 
             let emoji = document.createElement('div');
@@ -688,10 +702,6 @@
                 setTimeout(() => {
                     card.style.transition = 'transform 0.08s ease-out';
                 }, 400);
-
-                if (currentPet === 'ghostcat') {
-                    setCatPose('afk');
-                }
 
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             }
