@@ -85,6 +85,7 @@
             align-items: center;
             cursor: grab;
             touch-action: none;
+            -webkit-touch-callout: none;
             user-select: none;
             transition: transform 0.08s ease-out;
             z-index: 5;
@@ -453,22 +454,51 @@
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
+
+                let now = audioCtx.currentTime;
+
                 let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
+                let oscGain = audioCtx.createGain();
                 
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(80, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(130, audioCtx.currentTime + 0.4);
-                osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.8);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(26, now);
+                osc.frequency.linearRampToValueAtTime(34, now + 0.4);
+                osc.frequency.linearRampToValueAtTime(26, now + 0.8);
 
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.9);
+                oscGain.gain.setValueAtTime(0.01, now);
+                oscGain.gain.linearRampToValueAtTime(0.12, now + 0.2);
+                oscGain.gain.linearRampToValueAtTime(0.01, now + 0.85);
 
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                osc.connect(oscGain);
+                oscGain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.85);
 
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.9);
+                let bufferSize = audioCtx.sampleRate * 0.8;
+                let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                let noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+
+                let filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(180, now);
+
+                let noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.001, now);
+                noiseGain.gain.linearRampToValueAtTime(0.04, now + 0.3);
+                noiseGain.gain.linearRampToValueAtTime(0.001, now + 0.8);
+
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+
+                noise.start(now);
+                noise.stop(now + 0.8);
             } catch(e) {}
         }
 
@@ -680,6 +710,7 @@
             }
         }
 
+        // ИСПРАВЛЕННАЯ ЛОГИКА ДВИЖЕНИЯ И ИСПУГА (3.5 секунды)
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -693,6 +724,7 @@
             startY = e.clientY;
             
             card.style.transition = 'none';
+            card.setPointerCapture(e.pointerId);
 
             mood = Math.min(100, mood + 1);
             saveData();
@@ -702,12 +734,13 @@
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
-                if (rapidClickCount >= 3) {
+                // Срабатывает на быстрые касания/тапы или перетаскивание с испугом на 3.5 секунды (3500 мс)
+                if (rapidClickCount >= 2) {
                     setCatPose('surprised', 3500);
                     playCatSound();
                     rapidClickCount = 0;
                 }
-                rapidClickTimer = setTimeout(() => { rapidClickCount = 0; }, 500);
+                rapidClickTimer = setTimeout(() => { rapidClickCount = 0; }, 600);
             }
 
             let emoji = document.createElement('div');
@@ -721,27 +754,34 @@
 
         window.addEventListener('pointermove', (e) => {
             if (!isDragging) return;
+            // Учитываем смещение по ВСЕМ направлениям (вправо, влево, вверх, вниз)
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
 
             if (currentPet === 'squish') {
-                let stretch = Math.min(0.8, Math.abs(currentDeltaX) / 35);
-                card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) scale(${1 + stretch}, ${Math.max(0.6, 1 - stretch/1.5)})`;
+                let stretchX = Math.min(0.8, Math.abs(currentDeltaX) / 35);
+                let stretchY = Math.min(0.8, Math.abs(currentDeltaY) / 35);
+                card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) scale(${1 + stretchX}, ${Math.max(0.6, 1 - stretchY/1.5)})`;
             } else {
                 card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) rotate(${currentDeltaX / 10}deg)`;
             }
         });
 
-        window.addEventListener('pointerup', () => {
+        window.addEventListener('pointerup', (e) => {
             if (!isDragging) return;
             isDragging = false;
 
-            if (currentPet === 'ghostcat') {
+            // Если это призрак, возвращаем в обычное состояние только если не активен таймер испуга
+            if (currentPet === 'ghostcat' && !catPoseTimeout) {
                 setCatPose('afk');
             }
 
             card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
             card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
+
+            try {
+                card.releasePointerCapture(e.pointerId);
+            } catch(err) {}
 
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         });
