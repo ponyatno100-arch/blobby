@@ -13,7 +13,7 @@
         }
         body {
             margin: 0;
-            padding: 8px 10px;
+            padding: 6px 10px;
             background: linear-gradient(135deg, #fbcfe8, #e0e7ff, #ccfbf1);
             background-size: 400% 400%;
             animation: gradientBG 12s ease infinite;
@@ -86,16 +86,16 @@
         .pet-option-info p { margin: 0; font-size: 10px; color: #6b7280; }
 
         .header { text-align: center; width: 100%; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 4px; }
-        .header h1 { margin: 0; font-size: 18px; color: #374151; }
-        .switch-pet-btn { background: rgba(255,255,255,0.7); border: none; padding: 4px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; cursor: pointer; color: #db2777; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 3px; }
+        .header h1 { margin: 0; font-size: 17px; color: #374151; }
+        .switch-pet-btn { background: rgba(255,255,255,0.7); border: none; padding: 3px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; cursor: pointer; color: #db2777; }
 
         .stats-panel {
             display: flex;
             justify-content: space-around;
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(8px);
-            padding: 5px 10px;
+            padding: 4px 10px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 600;
@@ -104,11 +104,11 @@
         .coins { color: #d97706; }
 
         .stage {
-            width: 270px;
-            height: 185px;
+            width: 260px;
+            height: 160px;
             background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(12px);
-            border-radius: 25px;
+            border-radius: 20px;
             border: 2px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
@@ -119,7 +119,7 @@
             overflow: hidden;
             touch-action: none;
             cursor: pointer;
-            margin: 4px auto;
+            margin: 2px auto;
         }
 
         .character-card {
@@ -133,42 +133,42 @@
 
         @keyframes idleFloat {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); }
+            50% { transform: translateY(-4px); }
         }
         .anim-idle { animation: idleFloat 2.5s ease-in-out infinite; }
 
         .pet-img {
-            width: 120px;
-            height: 120px;
+            width: 105px;
+            height: 105px;
             object-fit: contain;
             filter: drop-shadow(0 4px 10px rgba(236, 72, 153, 0.3));
             pointer-events: none;
             transition: transform 0.2s ease;
         }
-        .pet-name { font-size: 12px; font-weight: 700; color: #374151; margin-top: 2px; }
+        .pet-name { font-size: 11px; font-weight: 700; color: #374151; margin-top: 1px; }
         
         .floating-emoji {
             position: absolute;
-            top: 20px;
-            font-size: 22px;
+            top: 15px;
+            font-size: 20px;
             animation: floatUp 1s ease-out forwards;
             pointer-events: none;
             z-index: 50;
         }
         @keyframes floatUp {
             0% { opacity: 1; transform: translateY(0) scale(0.8); }
-            100% { opacity: 0; transform: translateY(-40px) scale(1.4); }
+            100% { opacity: 0; transform: translateY(-35px) scale(1.4); }
         }
 
         .bars-container {
             width: 90%;
             background: rgba(255, 255, 255, 0.6);
-            padding: 5px 10px;
+            padding: 4px 10px;
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 3px;
-            margin: 4px auto;
+            gap: 2px;
+            margin: 2px auto;
         }
         .bar-row { display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 600; }
         .bar-bg { width: 65%; height: 6px; background: rgba(0, 0, 0, 0.08); border-radius: 3px; overflow: hidden; }
@@ -178,26 +178,26 @@
 
         .content-box {
             width: 100%;
-            height: 125px;
+            height: 130px;
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(10px);
-            padding: 8px;
+            padding: 6px 8px;
             border-radius: 16px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.03);
             display: flex;
             flex-direction: column;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
-        .tab-content { display: none; flex-direction: column; gap: 4px; height: 100%; overflow-y: auto; }
+        .tab-content { display: none; flex-direction: column; gap: 3px; height: 100%; overflow-y: auto; }
         .tab-content.active { display: flex; }
         .section-title { font-size: 10px; font-weight: 700; color: #4b5563; text-align: center; }
 
-        .items-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .items-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
         .shop-btn {
             background: #fff;
             border: 1px solid rgba(0,0,0,0.05);
-            padding: 4px;
-            border-radius: 10px;
+            padding: 3px;
+            border-radius: 8px;
             font-size: 9px;
             font-weight: 600;
             cursor: pointer;
@@ -210,13 +210,13 @@
         .shop-btn:active { transform: scale(0.95); }
         .shop-btn.locked { opacity: 0.4; filter: grayscale(1); }
 
-        .minigame-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px; text-align: center; }
-        .mg-btn { background: #8b5cf6; color: #fff; border: none; padding: 7px 14px; border-radius: 12px; font-weight: 700; font-size: 11px; cursor: pointer; }
+        .minigame-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 5px; text-align: center; }
+        .mg-btn { background: #8b5cf6; color: #fff; border: none; padding: 6px 12px; border-radius: 12px; font-weight: 700; font-size: 10px; cursor: pointer; }
 
-        .ref-box { display: flex; flex-direction: column; gap: 4px; font-size: 10px; }
+        .ref-box { display: flex; flex-direction: column; gap: 3px; font-size: 10px; }
         .ref-link-row { display: flex; gap: 4px; }
-        .ref-input { flex: 1; padding: 4px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 9px; background: #fff; }
-        .action-btn { background: #db2777; color: #fff; border: none; padding: 5px 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 9px; }
+        .ref-input { flex: 1; padding: 3px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 9px; background: #fff; }
+        .action-btn { background: #db2777; color: #fff; border: none; padding: 4px 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 9px; }
 
         .nav-bar {
             display: flex;
@@ -224,7 +224,7 @@
             width: 100%;
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(10px);
-            padding: 6px;
+            padding: 5px;
             border-radius: 14px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
@@ -263,7 +263,7 @@
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
-                <img src="IMG_6568.png" alt="Котенок-призрак">
+                <img src="IMG_6570.png" alt="Котенок-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
                     <p>Мурчит и оживает</p>
@@ -287,7 +287,7 @@
 
     <div class="stage" id="stage">
         <div class="character-card anim-idle" id="characterCard">
-            <img id="petImg" class="pet-img" src="IMG_6568.png" alt="Pet">
+            <img id="petImg" class="pet-img" src="IMG_6570.png" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
         </div>
     </div>
@@ -373,17 +373,17 @@
             ghostcat: { 
                 name: 'Котенок-призрак', 
                 desc: 'Мурчит и оживает', 
-                img: 'IMG_6568.png'
+                img: 'IMG_6570.png'
             }
         };
 
-        // Разнесли картинки, чтобы afk был спокойным, а waveHello — с поднятой лапкой
+        // Возвращаем правильный спрайт IMG_6570.png как базовый покой (afk)
         const ghostCatImages = {
-            afk: "IMG_6568.png",       // Спокойное состояние (без поднятой лапы)
-            waveHello: "IMG_6570.png", // Состояние приветствия с лапкой
-            surprised: "IMG_6568.png", // Удивление при перетаскивании
-            flyUp: "IMG_6571.png",     // Полет при кормлении
-            spin: "IMG_6569.png"       // Вращение при досуге
+            afk: "IMG_6570.png",       
+            waveHello: "IMG_6570.png", 
+            surprised: "IMG_6568.png", 
+            flyUp: "IMG_6571.png",     
+            spin: "IMG_6569.png"       
         };
 
         function setCatPose(poseKey, lockDuration = 0) {
