@@ -305,7 +305,6 @@
     </div>
 
     <div class="content-box">
-        <!-- Вкладка Еды (теперь отдельная) -->
         <div id="tab-food" class="tab-content active">
             <div class="section-title">🍕 Кормить питомца</div>
             <div class="items-grid">
@@ -317,7 +316,6 @@
             </div>
         </div>
 
-        <!-- Вкладка Досуга -->
         <div id="tab-fun" class="tab-content">
             <div class="section-title">🧸 Досуг (доступно 1 раз в час)</div>
             <div class="minigame-area">
@@ -326,7 +324,6 @@
             </div>
         </div>
 
-        <!-- Вкладка Друзей -->
         <div id="tab-friends" class="tab-content">
             <div class="section-title">👥 Друзья (+300 🪙 за друга)</div>
             <div class="ref-box">
@@ -340,7 +337,6 @@
         </div>
     </div>
 
-    <!-- Навигация с отдельной кнопкой Еды -->
     <div class="nav-bar">
         <button class="nav-item active" onclick="switchTab('food', this)">🍕 Еда</button>
         <button class="nav-item" onclick="switchTab('fun', this)">🧸 Досуг</button>
@@ -366,7 +362,7 @@
         let toys = 1;
         let lastActiveTime = Date.now();
         let lastFunTime = 0;
-        let currentPoseTimer = null;
+        let catPoseTimeout = null;
 
         const petsData = {
             cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png' },
@@ -381,7 +377,7 @@
         const ghostCatImages = {
             afk: "IMG_6570.png",       
             waveHello: "IMG_6570.png", 
-            surprised: "IMG_6568.png",[span_0](start_span)[span_0](end_span)
+            surprised: "IMG_6568.png",
             flyUp: "IMG_6571.png",     
             spin: "IMG_6569.png"      
         };
@@ -392,10 +388,18 @@
             if (imgEl && ghostCatImages[poseKey]) {
                 imgEl.src = ghostCatImages[poseKey];
             }
+
+            if (catPoseTimeout) {
+                clearTimeout(catPoseTimeout);
+                catPoseTimeout = null;
+            }
+
             if (lockDuration > 0) {
-                if (currentPoseTimer) clearTimeout(currentPoseTimer);
-                currentPoseTimer = setTimeout(() => {
-                    setCatPose('afk');
+                catPoseTimeout = setTimeout(() => {
+                    if (currentPet === 'ghostcat') {
+                        let activeImg = document.getElementById('petImg');
+                        if (activeImg) activeImg.src = ghostCatImages['afk'];
+                    }
                 }, lockDuration);
             }
         }
@@ -497,7 +501,6 @@
             updateUI();
         }
 
-        // Переключение вкладок (лапка срабатывает ровно 1 раз при переходе на вкладку еды)
         function switchTab(tabName, btnEl) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -505,7 +508,7 @@
             btnEl.classList.add('active');
 
             if (tabName === 'food' && currentPet === 'ghostcat') {
-                setCatPose('waveHello', 1500);
+                setCatPose('waveHello', 1000);
                 playCatSound();
             }
         }
@@ -571,7 +574,6 @@
         let isDragging = false;
         let startX, startY;
 
-        // Зажатие / перетаскивание — анимация удивления включается сразу
         stage.addEventListener('pointerdown', (e) => {
             isDragging = true;
             startX = e.clientX;
@@ -582,7 +584,7 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                setCatPose('surprised');[span_1](start_span)[span_1](end_span)
+                setCatPose('surprised');
                 playCatSound();
             }
 
@@ -627,7 +629,6 @@
             }
         });
 
-        // Кормление (полет)
         function feedPet(hungerBoost, cost, expGain) {
             if (hunger >= 90) {
                 alert('Питомец сыт и не хочет есть! 🚫');
@@ -651,7 +652,6 @@
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // Досуг / Игра (вращение)
         function doFunActivity() {
             let now = Date.now();
             if (now - lastFunTime < 3600000) return;
