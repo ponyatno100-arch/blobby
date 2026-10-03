@@ -383,7 +383,6 @@
         let lastFunTime = 0;
         let catPoseTimeout = null;
 
-        // Переменные для отслеживания быстрых кликов (испуг на 3 нажатия)
         let rapidClickCount = 0;
         let rapidClickTimer = null;
 
@@ -404,11 +403,11 @@
         };
 
         const ghostCatImages = {
-            afk: "IMG_6542.PNG",       // АФК / спокойное состояние (по умолчанию)
-            waveHello: "IMG_6570.png", // Машет лапкой (приветствие / смена вкладки)
-            surprised: "IMG_6568.png", // Удивленный / испуг (при 3 быстрых тапах)
-            flyUp: "IMG_6571.png",     // Горизонтальный полет (кормление)
-            spin: "IMG_6567.png"       // Вихрь / активное вращение (досуг)
+            afk: "IMG_6542.PNG",       // Спокойное состояние (по умолчанию)
+            waveHello: "IMG_6570.png", // Приветствие / смена вкладки
+            surprised: "IMG_6568.png", // Испуг (на 3 быстрых тапа)
+            flyUp: "IMG_6571.png",     // Полет / кормление[span_0](start_span)[span_0](end_span)
+            spin: "IMG_6567.png"       // Вращение / досуг[span_1](start_span)[span_1](end_span)
         };
 
         function setCatPose(poseKey, lockDuration = 0) {
@@ -654,7 +653,7 @@
             saveData();
             updateUI();
 
-            // Логика 3 быстрых нажатий для испуга у котенка
+            // Проверка на 3 быстрых тапа для испуга
             if (currentPet === 'ghostcat') {
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
@@ -667,7 +666,7 @@
 
                 rapidClickTimer = setTimeout(() => {
                     rapidClickCount = 0;
-                }, 500); // Окно в 0.5 секунды для сбора трех кликов
+                }, 500);
             }
 
             let emoji = document.createElement('div');
