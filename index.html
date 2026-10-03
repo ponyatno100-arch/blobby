@@ -244,21 +244,21 @@
         <div class="select-title">Выбери своего питомца ✨</div>
         <div class="pets-grid">
             <div class="pet-option" onclick="choosePet('cloud')">
-                <img src="cloud.JPG" alt="Облачко">
+                <img src="IMG_6540.png" alt="Облачко">
                 <div class="pet-option-info">
                     <h3>Облачко</h3>
                     <p>Меняет цвет от настроения</p>
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('squish')">
-                <img src="squish.JPG" alt="Сквиш">
+                <img src="IMG_6541.png" alt="Сквиш">
                 <div class="pet-option-info">
                     <h3>Шарик-сквиш</h3>
                     <p>Антистресс: можно тянуть</p>
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
-                <img src="ghostcat.JPG" alt="Кот-призрак">
+                <img src="IMG_6542.png" alt="Кот-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
                     <p>Мягкий дух с ушками</p>
@@ -279,7 +279,7 @@
 
     <div class="stage" id="stage">
         <div class="character-card">
-            <img id="petImg" class="pet-img float-anim" src="cloud.JPG" alt="Pet">
+            <img id="petImg" class="pet-img float-anim" src="IMG_6540.png" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
             <div class="pet-desc" id="petDesc">Меняет цвет от настроения хозяина</div>
         </div>
@@ -327,17 +327,17 @@
             cloud: { 
                 name: 'Облачко', 
                 desc: 'Меняет цвет от настроения хозяина', 
-                img: 'cloud.JPG' 
+                img: 'IMG_6540.png' 
             },
             squish: { 
                 name: 'Шарик-сквиш', 
                 desc: 'Антистресс: можно растягивать по экрану', 
-                img: 'squish.JPG' 
+                img: 'IMG_6541.png' 
             },
             ghostcat: { 
                 name: 'Котенок-призрак', 
                 desc: 'Мягкий пушистый дух с кошачьими ушками', 
-                img: 'ghostcat.JPG' 
+                img: 'IMG_6542.png' 
             }
         };
 
@@ -352,7 +352,6 @@
             document.getElementById('petDesc').innerText = p.desc;
             document.getElementById('gameTitle').innerText = p.name + ' 🐾';
 
-            // Плавное скрытие экрана выбора
             let screen = document.getElementById('selectScreen');
             screen.style.opacity = '0';
             setTimeout(() => {
