@@ -270,7 +270,7 @@
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
-                <img src="IMG_6570.png" alt="Котенок-призрак">
+                <img src="IMG_6542.PNG" alt="Котенок-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
                     <p>Мурчит и оживает</p>
@@ -294,7 +294,7 @@
 
     <div class="stage" id="stage">
         <div class="character-card anim-idle" id="characterCard">
-            <img id="petImg" class="pet-img" src="IMG_6570.png" alt="Pet">
+            <img id="petImg" class="pet-img" src="IMG_6542.PNG" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
         </div>
     </div>
@@ -388,7 +388,7 @@
         const petsData = {
             cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png', bg: 'linear-gradient(135deg, #e0f2fe, #bae6fd, #e0e7ff)' },
             squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png', bg: 'linear-gradient(135deg, #fce7f3, #fbcfe8, #fed7aa)' },
-            ghostcat: { name: 'Котенок-призрак', desc: 'Мурчит и оживает', img: 'IMG_6570.png', bg: 'linear-gradient(135deg, #f3e8ff, #e9d5ff, #ccfbf1)' }
+            ghostcat: { name: 'Котенок-призрак', desc: 'Мурчит и оживает', img: 'IMG_6542.PNG', bg: 'linear-gradient(135deg, #f3e8ff, #e9d5ff, #ccfbf1)' }
         };
 
         const foodNames = {
@@ -399,13 +399,13 @@
             ramen: { name: '🍔 Рамен', boost: 100, exp: 500 }
         };
 
-        // Точное соответствие картинок вашим файлам:
+        // Все картинки на своих местах, включая АФК (IMG_6542.PNG):
         const ghostCatImages = {
-            afk: "IMG_6570.png",       // Машет лапкой (основное состояние)
-            waveHello: "IMG_6569.png", // Крутится на кольце (при смене вкладки)
-            surprised: "IMG_6568.png", // Удивленный/с открытым ртом (на тап)
+            afk: "IMG_6542.PNG",       // АФК / спокойное состояние (по умолчанию)
+            waveHello: "IMG_6570.png", // Машет лапкой (приветствие / смена вкладки)
+            surprised: "IMG_6568.png", // Удивленный / с открытым ртом (на тап)
             flyUp: "IMG_6571.png",     // Горизонтальный полет (кормление)
-            spin: "IMG_6567.png"       // Вихрь/активное вращение (досуг)
+            spin: "IMG_6567.png"       // Вихрь / активное вращение (досуг)
         };
 
         function setCatPose(poseKey, lockDuration = 0) {
