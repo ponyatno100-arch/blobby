@@ -260,7 +260,7 @@
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
-                <img src="IMG_6542.PNG" alt="Котенок-призрак">
+                <img src="cat.png" alt="Котенок-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
                     <p>Мурчит и оживает</p>
@@ -284,7 +284,7 @@
 
     <div class="stage" id="stage">
         <div class="character-card anim-idle" id="characterCard">
-            <img id="petImg" class="pet-img" src="IMG_6540.png" alt="Pet">
+            <img id="petImg" class="pet-img" src="cat.png" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
         </div>
     </div>
@@ -364,20 +364,21 @@
         let lastActiveTime = Date.now();
         let lastFunTime = 0;
 
+        // Имена файлов на GitHub должны быть ровно такими же (без русских букв и пробелов)
         const petsData = {
             cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png' },
             squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png' },
             ghostcat: { 
                 name: 'Котенок-призрак', 
                 desc: 'Мурчит и оживает', 
-                img: 'IMG_6542.PNG',
+                img: 'cat.png',
                 images: {
-                    afk: "IMG_6542.PNG",
-                    spin: "Без названия23_20261004021432.png",
-                    flyUp: "Без названия23_20261004021243.png",
-                    surprised: "Без названия23_20261004021458.png",
-                    rollRight: "Без названия23_20261004021523.png",
-                    waveHello: "Без названия23_20261004021401.png"
+                    afk: "cat.png",
+                    spin: "cat_spin.png",
+                    flyUp: "cat_jump.png",
+                    surprised: "cat_surprised.png",
+                    rollRight: "cat_roll.png",
+                    waveHello: "cat_wave.png"
                 }
             }
         };
