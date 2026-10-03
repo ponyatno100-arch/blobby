@@ -118,6 +118,7 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
             overflow: hidden;
             touch-action: none;
+            cursor: pointer;
         }
 
         .character-card {
@@ -126,7 +127,7 @@
             align-items: center;
             position: absolute;
             transition: transform 0.05s ease-out;
-            cursor: grab;
+            pointer-events: none;
         }
 
         @keyframes idleFloat {
@@ -259,7 +260,7 @@
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
-                <img src="IMG_6542.PNG" alt="Кот-призрак">
+                <img src="IMG_6542.PNG" alt="Котенок-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
                     <p>Мурчит и оживает</p>
@@ -363,7 +364,6 @@
         let lastActiveTime = Date.now();
         let lastFunTime = 0;
 
-        // С точным соответствием заглавных букв расширений (.PNG)
         const petsData = {
             cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png' },
             squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png' },
