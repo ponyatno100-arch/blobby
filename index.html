@@ -114,11 +114,11 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
             overflow: hidden;
             touch-action: none;
             cursor: pointer;
-            border: 2px solid rgba(255, 255, 255, 0.8);
+            border: none; /* Убран дешмаский квадратик */
             transition: background 0.5s ease;
         }
 
@@ -382,7 +382,7 @@
         let lastFunTime = 0;
         let catPoseTimeout = null;
 
-        let inventory = { cookie: 0, matcha: 0, cake: 0, sushi: 0, ramen: 0 };
+        let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
 
         const petsData = {
             cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png', bg: 'linear-gradient(135deg, #e0f2fe, #bae6fd, #e0e7ff)' },
@@ -507,9 +507,7 @@
             currentPet = type;
             localStorage.setItem('blobby_pet', type);
             
-            if (!localStorage.getItem(`blobby_${type}_inv`)) {
-                inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
-            }
+            inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
             loadPetData(type);
             
             document.getElementById('selectScreen').classList.add('hidden');
