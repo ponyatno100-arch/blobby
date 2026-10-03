@@ -710,7 +710,7 @@
             }
         }
 
-        // ИСПРАВЛЕННАЯ ЛОГИКА ДВИЖЕНИЯ И ИСПУГА (3.5 секунды)
+        // ОБРАБОТЧИК КАСАТИЙ И ПЕРЕМЕЩЕНИЙ ДЛЯ ВСЕХ НАПРАВЛЕНИЙ
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -734,7 +734,6 @@
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
-                // Срабатывает на быстрые касания/тапы или перетаскивание с испугом на 3.5 секунды (3500 мс)
                 if (rapidClickCount >= 2) {
                     setCatPose('surprised', 3500);
                     playCatSound();
@@ -754,7 +753,6 @@
 
         window.addEventListener('pointermove', (e) => {
             if (!isDragging) return;
-            // Учитываем смещение по ВСЕМ направлениям (вправо, влево, вверх, вниз)
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
 
@@ -771,7 +769,6 @@
             if (!isDragging) return;
             isDragging = false;
 
-            // Если это призрак, возвращаем в обычное состояние только если не активен таймер испуга
             if (currentPet === 'ghostcat' && !catPoseTimeout) {
                 setCatPose('afk');
             }
