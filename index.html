@@ -13,7 +13,7 @@
         }
         body {
             margin: 0;
-            padding: 12px;
+            padding: 10px;
             background: linear-gradient(135deg, #fbcfe8, #e0e7ff, #ccfbf1);
             background-size: 400% 400%;
             animation: gradientBG 12s ease infinite;
@@ -39,71 +39,85 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(15px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            z-index: 100;
+            z-index: 200;
             transition: opacity 0.4s ease;
         }
-        .select-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: #374151;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .pets-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            max-width: 300px;
-        }
+        .select-title { font-size: 18px; font-weight: 800; color: #374151; margin-bottom: 15px; text-align: center; }
+        .pets-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
         .pet-option {
             background: #fff;
             border: 2px solid rgba(219, 39, 119, 0.2);
-            padding: 12px;
-            border-radius: 20px;
+            padding: 10px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
         }
-        .pet-option img { width: 60px; height: 60px; object-fit: contain; }
-        .pet-option-info h3 { margin: 0 0 4px 0; font-size: 15px; color: #374151; }
-        .pet-option-info p { margin: 0; font-size: 11px; color: #6b7280; }
+        .pet-option img { width: 50px; height: 50px; object-fit: contain; }
+        .pet-option-info h3 { margin: 0 0 2px 0; font-size: 14px; color: #374151; }
+        .pet-option-info p { margin: 0; font-size: 10px; color: #6b7280; }
+
+        /* Экран побега (записка) */
+        #runawayScreen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(20, 20, 25, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            z-index: 300;
+            text-align: center;
+            color: #fff;
+        }
+        .letter-card {
+            background: #fff;
+            color: #374151;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 300px;
+        }
+        .letter-card h3 { margin-top: 0; color: #db2777; }
+        .letter-card p { font-size: 13px; line-height: 1.4; }
 
         /* Шапка */
         .header { text-align: center; width: 100%; }
-        .header h1 { margin: 0; font-size: 20px; color: #374151; }
-        
+        .header-top { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 4px; }
+        .header h1 { margin: 0; font-size: 18px; color: #374151; }
+        .switch-pet-btn { background: rgba(255,255,255,0.7); border: none; padding: 4px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; cursor: pointer; color: #db2777; }
+
         .stats-panel {
             display: flex;
-            gap: 12px;
+            justify-content: space-around;
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(8px);
-            padding: 6px 14px;
-            border-radius: 14px;
-            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            margin-top: 5px;
         }
         .coins { color: #d97706; }
         .exp-text { color: #4f46e5; font-size: 10px; margin-top: 2px; text-align: center; }
 
         /* Игровая арена */
         .stage {
-            width: 240px;
-            height: 200px;
+            width: 220px;
+            height: 170px;
             background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(12px);
-            border-radius: 30px;
+            border-radius: 25px;
             border: 2px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
@@ -111,118 +125,106 @@
             justify-content: center;
             position: relative;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-            cursor: pointer;
+            touch-action: none;
         }
-        .character-card { display: flex; flex-direction: column; align-items: center; touch-action: none; }
+        .character-card { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; justify-content: center; }
         .pet-img {
-            width: 110px;
-            height: 110px;
+            width: 100px;
+            height: 100px;
             object-fit: contain;
-            margin-bottom: 4px;
-            transition: transform 0.08s ease, filter 0.3s;
+            transition: filter 0.3s;
+            transform-origin: center;
         }
-        .pet-name { font-size: 14px; font-weight: 700; color: #374151; }
-        .pet-desc { font-size: 10px; color: #6b7280; text-align: center; margin-top: 1px; }
-
-        .float-anim { animation: float 3s ease-in-out infinite; }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
-        }
+        .pet-name { font-size: 13px; font-weight: 700; color: #374151; margin-top: 2px; }
 
         /* Шкалы потребностей */
         .bars-container {
-            width: 85%;
+            width: 90%;
             background: rgba(255, 255, 255, 0.6);
-            padding: 6px 10px;
+            padding: 5px 10px;
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
         .bar-row { display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 600; }
-        .bar-bg { width: 65%; height: 7px; background: rgba(0, 0, 0, 0.08); border-radius: 3px; overflow: hidden; }
+        .bar-bg { width: 65%; height: 6px; background: rgba(0, 0, 0, 0.08); border-radius: 3px; overflow: hidden; }
         .bar-fill { height: 100%; background: #10b981; border-radius: 3px; transition: width 0.3s; }
         .bar-fill.hunger { background: #f59e0b; }
         .bar-fill.fun { background: #8b5cf6; }
 
-        /* Вкладки (Контент) */
+        /* Вкладки */
         .content-box {
             width: 100%;
-            height: 150px;
+            height: 140px;
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(10px);
-            padding: 10px;
-            border-radius: 18px;
+            padding: 8px;
+            border-radius: 16px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.03);
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
         }
-        .tab-content { display: none; flex-direction: column; gap: 6px; height: 100%; }
+        .tab-content { display: none; flex-direction: column; gap: 4px; height: 100%; overflow-y: auto; }
         .tab-content.active { display: flex; }
-        
-        .section-title { font-size: 11px; font-weight: 700; color: #4b5563; text-align: center; margin-bottom: 2px; }
-        
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            overflow-y: auto;
-        }
+        .section-title { font-size: 10px; font-weight: 700; color: #4b5563; text-align: center; }
+
+        .items-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
         .shop-btn {
             background: #fff;
             border: 1px solid rgba(0,0,0,0.05);
-            padding: 6px;
+            padding: 5px;
             border-radius: 10px;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            gap: 2px;
+            gap: 1px;
         }
         .shop-btn:active { transform: scale(0.95); }
         .shop-btn.locked { opacity: 0.4; filter: grayscale(1); }
 
-        /* Рефералы */
-        .ref-box { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
-        .ref-link-row { display: flex; gap: 6px; }
-        .ref-input { flex: 1; padding: 6px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 10px; background: #fff; }
-        .action-btn { background: #db2777; color: #fff; border: none; padding: 6px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 10px; }
+        /* Мини-игра Досуг */
+        .minigame-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px; text-align: center; }
+        .mg-btn { background: #8b5cf6; color: #fff; border: none; padding: 8px 16px; border-radius: 12px; font-weight: 700; font-size: 11px; cursor: pointer; }
 
-        /* Нижняя навигация */
+        /* Рефералы */
+        .ref-box { display: flex; flex-direction: column; gap: 4px; font-size: 10px; }
+        .ref-link-row { display: flex; gap: 4px; }
+        .ref-input { flex: 1; padding: 4px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 9px; background: #fff; }
+        .action-btn { background: #db2777; color: #fff; border: none; padding: 5px 8px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 9px; }
+
+        /* Навигация */
         .nav-bar {
             display: flex;
             justify-content: space-around;
             width: 100%;
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
-            padding: 6px;
-            border-radius: 16px;
+            padding: 5px;
+            border-radius: 14px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
         .nav-item {
-            background: none;
-            border: none;
-            font-size: 11px;
-            font-weight: 600;
-            color: #6b7280;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
+            background: none; border: none; font-size: 10px; font-weight: 600; color: #6b7280; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
         }
         .nav-item.active { color: #db2777; }
-
         .hidden { opacity: 0; pointer-events: none; display: none !important; }
     </style>
 </head>
 <body>
+
+    <!-- ЭКРАН ПОБЕГА ПИТОМЦА -->
+    <div id="runawayScreen" class="hidden">
+        <div class="letter-card">
+            <h3>Письмо от питомца 📜</h3>
+            <p id="runawayText">Видимо ты забыл обо мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
+            <button class="action-btn" onclick="resetAfterRunaway()" style="width:100%; padding:8px; margin-top:10px;">Завести нового</button>
+        </div>
+    </div>
 
     <!-- ЭКРАН ВЫБОРА ПИТОМЦА -->
     <div id="selectScreen" class="hidden">
@@ -232,21 +234,21 @@
                 <img src="IMG_6540.png" alt="Облачко">
                 <div class="pet-option-info">
                     <h3>Облачко</h3>
-                    <p>Меняет цвет от настроения</p>
+                    <p>Меняет лицо от настроения</p>
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('squish')">
                 <img src="IMG_6541.png" alt="Сквиш">
                 <div class="pet-option-info">
                     <h3>Шарик-сквиш</h3>
-                    <p>Антистресс: можно тянуть</p>
+                    <p>Живой физический антистресс</p>
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
                 <img src="IMG_6542.png" alt="Кот-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
-                    <p>Мягкий дух с ушками</p>
+                    <p>Мягкий дух с мурчанием</p>
                 </div>
             </div>
         </div>
@@ -254,108 +256,81 @@
 
     <!-- ШАПКА -->
     <div class="header">
-        <h1 id="gameTitle">Blobby 🐾</h1>
+        <div class="header-top">
+            <button class="switch-pet-btn" onclick="openSelectScreen()">🐾 Сменить / Новый</button>
+            <h1 id="gameTitle">Blobby 🐾</h1>
+            <span style="font-size:10px; color:#6b7280;">Игр: <span id="toysCount">1</span></span>
+        </div>
         <div class="stats-panel">
             <span>⭐ Ур. <span id="lvl">1</span></span>
             <span class="coins">🪙 <span id="coins">500</span></span>
-            <span>🧸 Игрушек: <span id="toysCount">1</span></span>
+            <span>🏆 Опыт: <span id="exp">0</span>/<span id="maxExp">2200</span></span>
         </div>
-        <div class="exp-text">Опыт: <span id="exp">0</span> / <span id="maxExp">100</span></div>
     </div>
 
     <!-- АРЕНА ПИТОМЦА -->
     <div class="stage" id="stage">
-        <div class="character-card">
-            <img id="petImg" class="pet-img float-anim" src="IMG_6540.png" alt="Pet">
+        <div class="character-card" id="stageCard">
+            <img id="petImg" class="pet-img" src="IMG_6540.png" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
-            <div class="pet-desc" id="petDesc">Нажми или погладь!</div>
         </div>
     </div>
 
     <!-- ШКАЛЫ -->
     <div class="bars-container">
         <div class="bar-row">
-            <span>🍕 Голод</span>
-            <div class="bar-bg"><div class="bar-fill hunger" id="hungerBar" style="width: 70%;"></div></div>
+            <span>🍕 Голод (<span id="hungerText">100</span>%)</span>
+            <div class="bar-bg"><div class="bar-fill hunger" id="hungerBar" style="width: 100%;"></div></div>
         </div>
         <div class="bar-row">
-            <span>💖 Настроение</span>
+            <span>💖 Настроение (<span id="moodText">100</span>%)</span>
             <div class="bar-bg"><div class="bar-fill" id="moodBar" style="width: 100%;"></div></div>
         </div>
         <div class="bar-row">
-            <span>🎮 Досуг</span>
-            <div class="bar-bg"><div class="bar-fill fun" id="funBar" style="width: 80%;"></div></div>
+            <span>🎮 Досуг (<span id="funText">100</span>%)</span>
+            <div class="bar-bg"><div class="bar-fill fun" id="funBar" style="width: 100%;"></div></div>
         </div>
     </div>
 
-    <!-- КОНТЕЙНЕР ВКЛАДОК -->
+    <!-- ВКЛАДКИ -->
     <div class="content-box">
-        <!-- ВКЛАДКА ЕДЫ -->
+        <!-- ЕДА -->
         <div id="tab-food" class="tab-content active">
-            <div class="section-title">🍕 Меню еды</div>
+            <div class="section-title">🍕 Кормить (только когда голоден!)</div>
             <div class="items-grid">
-                <button class="shop-btn" onclick="feedPet(15, 30, 20)">
-                    <span>🍪 Печенька</span>
-                    <span style="color: #d97706;">30 🪙</span>
-                </button>
-                <button class="shop-btn" onclick="feedPet(35, 70, 45)">
-                    <span>🧋 Матча</span>
-                    <span style="color: #d97706;">60 🪙</span>
-                </button>
-                <button class="shop-btn" onclick="feedPet(70, 150, 90)">
-                    <span>🍰 Тортик</span>
-                    <span style="color: #d97706;">120 🪙</span>
-                </button>
-                <!-- Разблокировка на 3, 5, 7 уровнях -->
-                <button class="shop-btn" id="food-lvl3" onclick="feedPet(90, 200, 120)">
-                    <span>🍣 Роллы (Ур. 3)</span>
-                    <span style="color: #d97706;">180 🪙</span>
-                </button>
-                <button class="shop-btn" id="food-lvl5" onclick="feedPet(120, 300, 180)">
-                    <span>🍔 Рамен (Ур. 5)</span>
-                    <span style="color: #d97706;">250 🪙</span>
-                </button>
-                <button class="shop-btn" id="food-lvl7" onclick="feedPet(150, 450, 250)">
-                    <span>👑 Деликатес (Ур. 7)</span>
-                    <span style="color: #d97706;">400 🪙</span>
-                </button>
+                <button class="shop-btn" onclick="feedPet(20, 30, 50)"><span>🍪 Печенька</span><span style="color:#d97706;">30 🪙</span></button>
+                <button class="shop-btn" onclick="feedPet(45, 60, 100)"><span>🧋 Матча</span><span style="color:#d97706;">60 🪙</span></button>
+                <button class="shop-btn" onclick="feedPet(80, 120, 200)"><span>🍰 Тортик</span><span style="color:#d97706;">120 🪙</span></button>
+                <button class="shop-btn" id="food-lvl3" onclick="feedPet(100, 180, 300)"><span>🍣 Роллы (Ур.3)</span><span style="color:#d97706;">180 🪙</span></button>
+                <button class="shop-btn" id="food-lvl5" onclick="feedPet(100, 250, 500)"><span>🍔 Рамен (Ур.5)</span><span style="color:#d97706;">250 🪙</span></button>
+                <button class="shop-btn" id="food-lvl7" onclick="feedPet(100, 400, 800)"><span>👑 Деликатес (Ур.7)</span><span style="color:#d97706;">400 🪙</span></button>
             </div>
         </div>
 
-        <!-- ВКЛАДКА РАЗВЛЕЧЕНИЙ -->
+        <!-- ДОСУГ / МИНИ-ИГРА -->
         <div id="tab-fun" class="tab-content">
-            <div class="section-title">🧸 Игры и досуг</div>
-            <div class="items-grid">
-                <button class="shop-btn" onclick="playWithPet(25, 15)">
-                    <span>🎾 Мячик</span>
-                    <span style="color: #8b5cf6;">+25 досуга</span>
-                </button>
-                <button class="shop-btn" onclick="playWithPet(50, 30)">
-                    <span>🪀 Лазер</span>
-                    <span style="color: #8b5cf6;">+50 досуга</span>
-                </button>
-                <button class="shop-btn" onclick="playWithPet(100, 60)">
-                    <span>🎮 Консоль</span>
-                    <span style="color: #8b5cf6;">+100 досуга</span>
-                </button>
+            <div class="section-title">🧸 Досуг (доступно 1 раз в час)</div>
+            <div class="minigame-area">
+                <div id="cooldownTimer" style="font-size: 11px; font-weight:700; color:#8b5cf6;">Готово к игре!</div>
+                <button class="mg-btn" id="playBtn" onclick="doFunActivity()">🎲 Развлечь питомца (+30 досуга)</button>
             </div>
         </div>
 
-        <!-- ВКЛАДКА ДРУЗЕЙ И РЕФЕРАЛОВ -->
+        <!-- ДРУЗЬЯ -->
         <div id="tab-friends" class="tab-content">
-            <div class="section-title">👥 Друзья (+300 🪙)</div>
+            <div class="section-title">👥 Друзья (+300 🪙 за друга)</div>
             <div class="ref-box">
                 <div class="ref-link-row">
-                    <input type="text" id="refLink" class="ref-input" readonly value="https://t.me/blobby_bot?start=ref_123">
+                    <input type="text" id="refLink" class="ref-input" readonly value="https://t.me/blobby_bot?start=ref_user">
                     <button class="action-btn" onclick="copyRef()">Копировать</button>
                 </div>
-                <button class="action-btn" style="background:#10b981;" onclick="simulateFriendJoin()">Симуляция приглашения друга</button>
-                <div style="font-size: 10px; color: #6b7280;">Приглашено друзей: <span id="friendCount">0</span></div>
+                <button class="action-btn" style="background:#10b981;" onclick="simulateFriendJoin()">Симуляция друга</button>
+                <div style="font-size: 10px; color: #6b7280;">Приглашено: <span id="friendCount">0</span></div>
             </div>
         </div>
     </div>
 
-    <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+    <!-- НАВИГАЦИЯ -->
     <div class="nav-bar">
         <button class="nav-item active" onclick="switchTab('food', this)">🍕 Еда</button>
         <button class="nav-item" onclick="switchTab('fun', this)">🧸 Досуг</button>
@@ -369,39 +344,82 @@
         let coins = parseInt(localStorage.getItem('blobby_coins')) || 500;
         let lvl = parseInt(localStorage.getItem('blobby_lvl')) || 1;
         let exp = parseInt(localStorage.getItem('blobby_exp')) || 0;
-        let maxExp = lvl * 100;
-        let hunger = parseInt(localStorage.getItem('blobby_hunger')) || 70;
-        let mood = parseInt(localStorage.getItem('blobby_mood')) || 100;
-        let fun = parseInt(localStorage.getItem('blobby_fun')) || 80;
+        let maxExp = 2200; // Порог нового уровня ровно 2200
+        let hunger = parseFloat(localStorage.getItem('blobby_hunger')) ?? 100;
+        let mood = parseFloat(localStorage.getItem('blobby_mood')) ?? 100;
+        let fun = parseFloat(localStorage.getItem('blobby_fun')) ?? 100;
         let toys = parseInt(localStorage.getItem('blobby_toys')) || 1;
         let friends = parseInt(localStorage.getItem('blobby_friends')) || 0;
         let currentPet = localStorage.getItem('blobby_pet') || '';
+        let lastActiveTime = parseInt(localStorage.getItem('blobby_last_time')) || Date.now();
+        let lastFunTime = parseInt(localStorage.getItem('blobby_last_fun')) || 0;
 
         const petsData = {
-            cloud: { name: 'Облачко', desc: 'Меняет цвет от настроения', img: 'IMG_6540.png' },
-            squish: { name: 'Шарик-сквиш', desc: 'Антистресс: можно тянуть', img: 'IMG_6541.png' },
-            ghostcat: { name: 'Котенок-призрак', desc: 'Мягкий дух с ушками', img: 'IMG_6542.png' }
+            cloud: { name: 'Облачко', desc: 'Меняет лицо от настроения', img: 'IMG_6540.png' },
+            squish: { name: 'Шарик-сквиш', desc: 'Физический антистресс', img: 'IMG_6541.png' },
+            ghostcat: { name: 'Котенок-призрак', desc: 'Мягкий дух', img: 'IMG_6542.png' }
         };
+
+        // Расчет убывания статов за 15 часов оффлайна/времени
+        // 15 часов = 5400000 мс. Голод и настроение тратятся по-разному.
+        function updateStatsOverTime() {
+            let now = Date.now();
+            let diffMs = now - lastActiveTime;
+            let diffHours = diffMs / (1000 * 60 * 60);
+            if (diffHours > 0) {
+                // Голод падает полностью за 15 часов (100 / 15 в час)
+                hunger = Math.max(0, hunger - (diffHours * (100 / 15)));
+                // Настроение падает за 20 часов
+                mood = Math.max(0, mood - (diffHours * (100 / 20)));
+                // Досуг падает за 12 часов
+                fun = Math.max(0, fun - (diffHours * (100 / 12)));
+            }
+            lastActiveTime = now;
+            saveData();
+
+            // Проверка на побег (если голод 0 и прошло больше 24 часов с момента обнуления)
+            if (hunger <= 0) {
+                let zeroHungerTime = parseInt(localStorage.getItem('blobby_zero_hunger_time')) || now;
+                if (now - zeroHungerTime > 24 * 60 * 60 * 1000) {
+                    document.getElementById('runawayScreen').classList.remove('hidden');
+                }
+            } else {
+                localStorage.setItem('blobby_zero_hunger_time', now);
+            }
+        }
 
         if (!currentPet || !petsData[currentPet]) {
             document.getElementById('selectScreen').classList.remove('hidden');
         } else {
+            updateStatsOverTime();
             initGame(currentPet);
+        }
+
+        function openSelectScreen() {
+            document.getElementById('selectScreen').classList.remove('hidden');
         }
 
         function choosePet(type) {
             currentPet = type;
             localStorage.setItem('blobby_pet', type);
+            hunger = 100; mood = 100; fun = 100;
             document.getElementById('selectScreen').classList.add('hidden');
+            document.getElementById('runawayScreen').classList.add('hidden');
             initGame(type);
+            saveData();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        function resetAfterRunaway() {
+            localStorage.removeItem('blobby_pet');
+            document.getElementById('runawayScreen').classList.add('hidden');
+            document.getElementById('selectScreen').classList.remove('hidden');
         }
 
         function initGame(type) {
             let p = petsData[type];
             document.getElementById('petImg').src = p.img;
             document.getElementById('petName').innerText = p.name;
-            document.getElementById('petDesc').innerText = p.desc;
             document.getElementById('gameTitle').innerText = p.name + ' 🐾';
             updateUI();
         }
@@ -418,11 +436,10 @@
             if (exp >= maxExp) {
                 exp -= maxExp;
                 lvl++;
-                maxExp = lvl * 100;
-                coins += 200; // Награда за уровень
-                toys += 1;    // Игрушка за уровень
+                coins += 200; // Награда 200 монет
+                toys += 1;    // Игрушка
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                alert(`🎉 Уровень повышен! Получено 200 🪙 и 1 игрушка!`);
+                alert(`🎉 Уровень повышен до ${lvl}! Получено 200 🪙 и игрушка!`);
             }
             saveData();
             updateUI();
@@ -435,19 +452,43 @@
             document.getElementById('maxExp').innerText = maxExp;
             document.getElementById('toysCount').innerText = toys;
             document.getElementById('friendCount').innerText = friends;
-            document.getElementById('hungerBar').style.width = hunger + '%';
-            document.getElementById('moodBar').style.width = mood + '%';
-            document.getElementById('funBar').style.width = fun + '%';
 
-            // Разблокировка еды по уровням
+            let hInt = Math.round(hunger);
+            let mInt = Math.round(mood);
+            let fInt = Math.round(fun);
+
+            document.getElementById('hungerText').innerText = hInt;
+            document.getElementById('moodText').innerText = mInt;
+            document.getElementById('funText').innerText = fInt;
+
+            document.getElementById('hungerBar').style.width = hInt + '%';
+            document.getElementById('moodBar').style.width = mInt + '%';
+            document.getElementById('funBar').style.width = fInt + '%';
+
             document.getElementById('food-lvl3').className = lvl >= 3 ? 'shop-btn' : 'shop-btn locked';
             document.getElementById('food-lvl5').className = lvl >= 5 ? 'shop-btn' : 'shop-btn locked';
             document.getElementById('food-lvl7').className = lvl >= 7 ? 'shop-btn' : 'shop-btn locked';
 
+            // Изменение лиц / эмоций в зависимости от настроения
             let imgEl = document.getElementById('petImg');
             if (currentPet === 'cloud') {
-                let hueRotate = (mood - 100) * 0.5;
+                let hueRotate = (mInt - 100) * 0.5;
                 imgEl.style.filter = `hue-rotate(${hueRotate}deg) drop-shadow(0 4px 8px rgba(0,0,0,0.1))`;
+            }
+
+            // Проверка кулдауна досуга (раз в час)
+            let timeLeft = (lastFunTime + 3600000) - Date.now();
+            let timerEl = document.getElementById('cooldownTimer');
+            let playBtn = document.getElementById('playBtn');
+            if (timeLeft > 0) {
+                let mins = Math.ceil(timeLeft / 60000);
+                timerEl.innerText = `Следующая игра через ${mins} мин.`;
+                playBtn.disabled = true;
+                playBtn.style.opacity = 0.5;
+            } else {
+                timerEl.innerText = `Готово к игре!`;
+                playBtn.disabled = false;
+                playBtn.style.opacity = 1;
             }
         }
 
@@ -460,9 +501,16 @@
             localStorage.setItem('blobby_fun', fun);
             localStorage.setItem('blobby_toys', toys);
             localStorage.setItem('blobby_friends', friends);
+            localStorage.setItem('blobby_last_time', lastActiveTime);
+            localStorage.setItem('blobby_last_fun', lastFunTime);
         }
 
         function feedPet(hungerBoost, cost, expGain) {
+            // Кормить только когда голоден (например, если голод ниже 90%)
+            if (hunger >= 90) {
+                alert('Питомец сыт и не хочет есть! 🚫');
+                return;
+            }
             if (coins < cost) {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 alert('Не хватает монеток! 🪙');
@@ -470,52 +518,54 @@
             }
             coins -= cost;
             hunger = Math.min(100, hunger + hungerBoost);
-            mood = Math.min(100, mood + 15);
+            mood = Math.min(100, mood + 10);
             addExp(expGain);
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        function playWithPet(funBoost, expGain) {
-            fun = Math.min(100, fun + funBoost);
-            mood = Math.min(100, mood + 20);
-            addExp(expGain);
+        function doFunActivity() {
+            let now = Date.now();
+            if (now - lastFunTime < 3600000) return;
+            lastFunTime = now;
+            fun = Math.min(100, fun + 30);
+            mood = Math.min(100, mood + 15);
+            addExp(150);
             saveData();
             updateUI();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            alert('🎉 Отлично поиграли! Досуг повышен.');
         }
 
         function copyRef() {
-            let copyText = document.getElementById("refLink");
-            navigator.clipboard.writeText(copyText.value);
-            alert("Инвайт-ссылка скопирована!");
+            navigator.clipboard.writeText(document.getElementById("refLink").value);
+            alert("Ссылка скопирована!");
         }
 
         function simulateFriendJoin() {
             friends++;
             coins += 300; // Бонус 300 монет за друга
-            addExp(50);
+            addExp(200);
             saveData();
             updateUI();
             alert("🎉 Друг присоединился! Вам начислено 300 🪙!");
         }
 
-        // Интерактив и живые анимации
+        // РЕАЛЬНАЯ ФИЗИКА СКВИША И ИНТЕРАКТИВ
         let stage = document.getElementById('stage');
         let imgEl = document.getElementById('petImg');
         let isDragging = false;
         let startX, startY;
 
         stage.addEventListener('pointerdown', (e) => {
-            if (currentPet === 'squish') {
-                isDragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
-            } else {
-                mood = Math.min(100, mood + 4);
-                addExp(10);
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            if (currentPet !== 'squish') {
+                mood = Math.min(100, mood + 3);
+                addExp(20);
                 updateUI();
                 if (currentPet === 'ghostcat' && tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('heavy'); // Мурчание / вибрация котика
+                    tg.HapticFeedback.impactOccurred('heavy'); // Мурчание котика
                 } else if (tg.HapticFeedback) {
                     tg.HapticFeedback.impactOccurred('medium');
                 }
@@ -523,22 +573,37 @@
         });
 
         window.addEventListener('pointermove', (e) => {
-            if (!isDragging || currentPet !== 'squish') return;
+            if (!isDragging) return;
             let deltaX = e.clientX - startX;
             let deltaY = e.clientY - startY;
-            let scaleX = 1 + Math.abs(deltaX) / 25;
-            let scaleY = 1 - Math.abs(deltaX) / 50;
-            imgEl.style.transform = `scale(${scaleX}, ${scaleY}) translate(${deltaX / 2}px, ${deltaY / 2}px)`;
+            if (currentPet === 'squish') {
+                // Сочный сквиш расплывается под пальцем
+                let scaleX = 1 + Math.abs(deltaX) / 20;
+                let scaleY = 1 - Math.abs(deltaX) / 40;
+                imgEl.style.transform = `scale(${scaleX}, ${scaleY}) translate(${deltaX / 2}px, ${deltaY / 2}px)`;
+            } else {
+                imgEl.style.transform = `translate(${deltaX / 3}px, ${deltaY / 3}px)`;
+            }
         });
 
         window.addEventListener('pointerup', () => {
-            if (isDragging && currentPet === 'squish') {
+            if (isDragging) {
                 isDragging = false;
                 imgEl.style.transform = 'scale(1) translate(0px, 0px)';
-                addExp(15);
+                if (currentPet === 'squish') {
+                    addExp(35);
+                    mood = Math.min(100, mood + 5);
+                    updateUI();
+                }
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             }
         });
+
+        // Фоновый апдейт статов каждую минуту
+        setInterval(() => {
+            updateStatsOverTime();
+            updateUI();
+        }, 60000);
     </script>
 </body>
 </html>
