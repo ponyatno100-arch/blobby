@@ -237,7 +237,7 @@
     <div id="runawayScreen" class="hidden">
         <div class="letter-card">
             <h3>Письмо от питомца 📜</h3>
-            <p>Видимо ты забыл о мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
+            <p>Видимо ты забыл обо мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
             <button class="action-btn" onclick="resetAfterRunaway()" style="width:100%; padding:8px; margin-top:10px;">Завести нового</button>
         </div>
     </div>
@@ -369,17 +369,26 @@
             ghostcat: { 
                 name: 'Котенок-призрак', 
                 desc: 'Мурчит и оживает', 
-                img: 'IMG_6570.png',
-                images: {
-                    afk: "IMG_6570.png",        // Обычное состояние
-                    waveHello: "IMG_6570.png",  // Приветствие лапкой (при возвращении в магазин/главную)
-                    flyUp: "IMG_6571.png",      // Полет при кормлении
-                    spin: "IMG_6569.png",       // Вращение при досуге[span_0](start_span)[span_0](end_span)
-                    surprised: "IMG_6568.png",  // Удивление, когда держишь/тащишь[span_1](start_span)[span_1](end_span)
-                    rollRight: "IMG_6567.png"   // Перекат[span_2](start_span)[span_2](end_span)
-                }
+                img: 'IMG_6570.png'
             }
         };
+
+        // Четкая привязка спрайтов котенка
+        const ghostCatImages = {
+            afk: "IMG_6570.png",       // Обычное состояние
+            waveHello: "IMG_6570.png", // Приветствие лапкой (при переходе на магазин)
+            surprised: "IMG_6568.png", // Удивление, когда держишь/тащишь[span_0](start_span)[span_0](end_span)
+            flyUp: "IMG_6571.png",     // Полет при кормлении
+            spin: "IMG_6569.png"       // Вращение при досуге[span_1](start_span)[span_1](end_span)
+        };
+
+        function setCatPose(poseKey) {
+            if (currentPet !== 'ghostcat') return;
+            let imgEl = document.getElementById('petImg');
+            if (imgEl && ghostCatImages[poseKey]) {
+                imgEl.src = ghostCatImages[poseKey];
+            }
+        }
 
         function loadPetData(type) {
             lvl = parseInt(localStorage.getItem(`blobby_${type}_lvl`)) || 1;
@@ -419,16 +428,6 @@
             if (currentPet === 'ghostcat' && purrAudio) {
                 purrAudio.currentTime = 0;
                 purrAudio.play().catch(e => console.log("Аудио ожидает клика"));
-            }
-        }
-
-        function setCatPose(poseName) {
-            if (currentPet === 'ghostcat') {
-                let p = petsData.ghostcat;
-                let imgEl = document.getElementById('petImg');
-                if (p.images && p.images[poseName]) {
-                    imgEl.src = p.images[poseName];
-                }
             }
         }
 
@@ -478,13 +477,17 @@
         function initGame(type) {
             let p = petsData[type];
             let imgEl = document.getElementById('petImg');
-            imgEl.src = p.images ? p.images.afk : p.img;
+            if (type === 'ghostcat') {
+                setCatPose('afk');
+            } else {
+                imgEl.src = p.img;
+            }
             document.getElementById('petName').innerText = p.name;
             document.getElementById('gameTitle').innerText = p.name + ' 🐾';
             updateUI();
         }
 
-        // Переключение вкладок (когда возвращаешься в магазин/главную — машет лапкой)
+        // Переключение вкладок (при переходе в магазин машет лапкой)
         function switchTab(tabName, btnEl) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -492,9 +495,11 @@
             btnEl.classList.add('active');
 
             if (tabName === 'food' && currentPet === 'ghostcat') {
-                setCatPose('waveHello'); // Приветствие лапкой при возвращении в магазин
+                setCatPose('waveHello');
                 playCatSound();
-                setTimeout(() => setCatPose('afk'), 1500);
+                setTimeout(() => {
+                    setCatPose('afk');
+                }, 1500);
             }
         }
 
@@ -559,7 +564,7 @@
         let isDragging = false;
         let startX, startY;
 
-        // Когда тащишь / зажимаешь котенка (удивленное лицо)
+        // Когда зажимаешь / тащишь котенка (удивленное лицо)[span_2](start_span)[span_2](end_span)
         stage.addEventListener('pointerdown', (e) => {
             isDragging = true;
             startX = e.clientX;
@@ -576,8 +581,7 @@
 
             let emoji = document.createElement('div');
             emoji.className = 'floating-emoji';
-            emoji.innerText = currentPet === 'ghostcat' ? '🐱💖' : (currentPet === 'squish' ? '✨' : '💖');
-            
+            emoji.innerText = currentPet === 'ghostcat' ? '🐱💖' : '💖';
             let rect = stage.getBoundingClientRect();
             emoji.style.left = (e.clientX - rect.left - 10) + 'px';
             stage.appendChild(emoji);
@@ -635,13 +639,15 @@
             if (currentPet === 'ghostcat') {
                 setCatPose('flyUp');
                 playCatSound();
-                setTimeout(() => setCatPose('afk'), 1500);
+                setTimeout(() => {
+                    setCatPose('afk');
+                }, 1500);
             }
 
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // Досуг / Игра (вращение волчком)[span_4](start_span)[span_4](end_span)
+        // Досуг / Игра (вращение)[span_4](start_span)[span_4](end_span)
         function doFunActivity() {
             let now = Date.now();
             if (now - lastFunTime < 3600000) return;
@@ -654,7 +660,9 @@
 
             if (currentPet === 'ghostcat') {
                 setCatPose('spin');[span_5](start_span)[span_5](end_span)
-                setTimeout(() => setCatPose('afk'), 2000);
+                setTimeout(() => {
+                    setCatPose('afk');
+                }, 2000);
             }
 
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
