@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Blobby - Карманный антистресс</title>
+    <title>Blobby - Живой антистресс</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -32,40 +32,7 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Экран выбора питомца */
-        #selectScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(15px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 200;
-            transition: opacity 0.4s ease;
-        }
-        .select-title { font-size: 18px; font-weight: 800; color: #374151; margin-bottom: 15px; text-align: center; }
-        .pets-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
-        .pet-option {
-            background: #fff;
-            border: 2px solid rgba(219, 39, 119, 0.2);
-            padding: 10px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-        }
-        .pet-option img { width: 50px; height: 50px; object-fit: contain; }
-        .pet-option-info h3 { margin: 0 0 2px 0; font-size: 14px; color: #374151; }
-        .pet-option-info p { margin: 0; font-size: 10px; color: #6b7280; }
-
-        /* Экран побега (записка) */
+        /* Экран побега */
         #runawayScreen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -91,6 +58,35 @@
         .letter-card h3 { margin-top: 0; color: #db2777; }
         .letter-card p { font-size: 13px; line-height: 1.4; }
 
+        /* Экран выбора */
+        #selectScreen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 200;
+        }
+        .select-title { font-size: 18px; font-weight: 800; color: #374151; margin-bottom: 15px; text-align: center; }
+        .pets-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; }
+        .pet-option {
+            background: #fff;
+            border: 2px solid rgba(219, 39, 119, 0.2);
+            padding: 10px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        .pet-option img { width: 50px; height: 50px; object-fit: contain; }
+        .pet-option-info h3 { margin: 0 0 2px 0; font-size: 14px; color: #374151; }
+        .pet-option-info p { margin: 0; font-size: 10px; color: #6b7280; }
+
         /* Шапка */
         .header { text-align: center; width: 100%; }
         .header-top { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 4px; }
@@ -109,12 +105,11 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
         }
         .coins { color: #d97706; }
-        .exp-text { color: #4f46e5; font-size: 10px; margin-top: 2px; text-align: center; }
 
         /* Игровая арена */
         .stage {
-            width: 220px;
-            height: 170px;
+            width: 240px;
+            height: 180px;
             background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(12px);
             border-radius: 25px;
@@ -125,30 +120,57 @@
             justify-content: center;
             position: relative;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
             touch-action: none;
         }
-        .character-card { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; justify-content: center; }
+
+        .character-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: absolute;
+            transition: transform 0.1s ease;
+        }
+
+        @keyframes idleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        .anim-idle { animation: idleFloat 3s ease-in-out infinite; }
+
         .pet-img {
-            width: 100px;
-            height: 100px;
+            width: 95px;
+            height: 95px;
             object-fit: contain;
             transition: filter 0.3s;
-            transform-origin: center;
         }
         .pet-name { font-size: 13px; font-weight: 700; color: #374151; margin-top: 2px; }
+        
+        /* Всплывающие эмоции */
+        .floating-emoji {
+            position: absolute;
+            top: 20px;
+            font-size: 16px;
+            animation: floatUp 1.5s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(0.8); }
+            100% { opacity: 0; transform: translateY(-35px) scale(1.2); }
+        }
 
-        /* Шкалы потребностей */
+        /* Шкалы */
         .bars-container {
             width: 90%;
             background: rgba(255, 255, 255, 0.6);
-            padding: 5px 10px;
+            padding: 6px 10px;
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
         }
         .bar-row { display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 600; }
-        .bar-bg { width: 65%; height: 6px; background: rgba(0, 0, 0, 0.08); border-radius: 3px; overflow: hidden; }
+        .bar-bg { width: 65%; height: 7px; background: rgba(0, 0, 0, 0.08); border-radius: 3px; overflow: hidden; }
         .bar-fill { height: 100%; background: #10b981; border-radius: 3px; transition: width 0.3s; }
         .bar-fill.hunger { background: #f59e0b; }
         .bar-fill.fun { background: #8b5cf6; }
@@ -217,16 +239,16 @@
 </head>
 <body>
 
-    <!-- ЭКРАН ПОБЕГА ПИТОМЦА -->
+    <!-- ЭКРАН ПОБЕГА -->
     <div id="runawayScreen" class="hidden">
         <div class="letter-card">
             <h3>Письмо от питомца 📜</h3>
-            <p id="runawayText">Видимо ты забыл обо мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
+            <p>Видимо ты забыл обо мне. нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга 😕</p>
             <button class="action-btn" onclick="resetAfterRunaway()" style="width:100%; padding:8px; margin-top:10px;">Завести нового</button>
         </div>
     </div>
 
-    <!-- ЭКРАН ВЫБОРА ПИТОМЦА -->
+    <!-- ЭКРАН ВЫБОРА -->
     <div id="selectScreen" class="hidden">
         <div class="select-title">Выбери своего питомца ✨</div>
         <div class="pets-grid">
@@ -234,21 +256,21 @@
                 <img src="IMG_6540.png" alt="Облачко">
                 <div class="pet-option-info">
                     <h3>Облачко</h3>
-                    <p>Меняет лицо от настроения</p>
+                    <p>Меняет мимику от настроения</p>
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('squish')">
                 <img src="IMG_6541.png" alt="Сквиш">
                 <div class="pet-option-info">
                     <h3>Шарик-сквиш</h3>
-                    <p>Живой физический антистресс</p>
+                    <p>Мягкий упругий антистресс</p>
                 </div>
             </div>
             <div class="pet-option" onclick="choosePet('ghostcat')">
                 <img src="IMG_6542.png" alt="Кот-призрак">
                 <div class="pet-option-info">
                     <h3>Котенок-призрак</h3>
-                    <p>Мягкий дух с мурчанием</p>
+                    <p>Мурчит и оживает</p>
                 </div>
             </div>
         </div>
@@ -257,7 +279,7 @@
     <!-- ШАПКА -->
     <div class="header">
         <div class="header-top">
-            <button class="switch-pet-btn" onclick="openSelectScreen()">🐾 Сменить / Новый</button>
+            <button class="switch-pet-btn" onclick="openSelectScreen()">🐾 Сменить</button>
             <h1 id="gameTitle">Blobby 🐾</h1>
             <span style="font-size:10px; color:#6b7280;">Игр: <span id="toysCount">1</span></span>
         </div>
@@ -270,7 +292,7 @@
 
     <!-- АРЕНА ПИТОМЦА -->
     <div class="stage" id="stage">
-        <div class="character-card" id="stageCard">
+        <div class="character-card anim-idle" id="characterCard">
             <img id="petImg" class="pet-img" src="IMG_6540.png" alt="Pet">
             <div class="pet-name" id="petName">Облачко</div>
         </div>
@@ -307,7 +329,7 @@
             </div>
         </div>
 
-        <!-- ДОСУГ / МИНИ-ИГРА -->
+        <!-- ДОСУГ -->
         <div id="tab-fun" class="tab-content">
             <div class="section-title">🧸 Досуг (доступно 1 раз в час)</div>
             <div class="minigame-area">
@@ -344,7 +366,7 @@
         let coins = parseInt(localStorage.getItem('blobby_coins')) || 500;
         let lvl = parseInt(localStorage.getItem('blobby_lvl')) || 1;
         let exp = parseInt(localStorage.getItem('blobby_exp')) || 0;
-        let maxExp = 2200; // Порог нового уровня ровно 2200
+        let maxExp = 2200;
         let hunger = parseFloat(localStorage.getItem('blobby_hunger')) ?? 100;
         let mood = parseFloat(localStorage.getItem('blobby_mood')) ?? 100;
         let fun = parseFloat(localStorage.getItem('blobby_fun')) ?? 100;
@@ -355,29 +377,23 @@
         let lastFunTime = parseInt(localStorage.getItem('blobby_last_fun')) || 0;
 
         const petsData = {
-            cloud: { name: 'Облачко', desc: 'Меняет лицо от настроения', img: 'IMG_6540.png' },
-            squish: { name: 'Шарик-сквиш', desc: 'Физический антистресс', img: 'IMG_6541.png' },
-            ghostcat: { name: 'Котенок-призрак', desc: 'Мягкий дух', img: 'IMG_6542.png' }
+            cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png' },
+            squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png' },
+            ghostcat: { name: 'Котенок-призрак', desc: 'Мурчит и оживает', img: 'IMG_6542.png' }
         };
 
-        // Расчет убывания статов за 15 часов оффлайна/времени
-        // 15 часов = 5400000 мс. Голод и настроение тратятся по-разному.
         function updateStatsOverTime() {
             let now = Date.now();
             let diffMs = now - lastActiveTime;
             let diffHours = diffMs / (1000 * 60 * 60);
             if (diffHours > 0) {
-                // Голод падает полностью за 15 часов (100 / 15 в час)
                 hunger = Math.max(0, hunger - (diffHours * (100 / 15)));
-                // Настроение падает за 20 часов
                 mood = Math.max(0, mood - (diffHours * (100 / 20)));
-                // Досуг падает за 12 часов
                 fun = Math.max(0, fun - (diffHours * (100 / 12)));
             }
             lastActiveTime = now;
             saveData();
 
-            // Проверка на побег (если голод 0 и прошло больше 24 часов с момента обнуления)
             if (hunger <= 0) {
                 let zeroHungerTime = parseInt(localStorage.getItem('blobby_zero_hunger_time')) || now;
                 if (now - zeroHungerTime > 24 * 60 * 60 * 1000) {
@@ -436,8 +452,8 @@
             if (exp >= maxExp) {
                 exp -= maxExp;
                 lvl++;
-                coins += 200; // Награда 200 монет
-                toys += 1;    // Игрушка
+                coins += 200;
+                toys += 1;
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 alert(`🎉 Уровень повышен до ${lvl}! Получено 200 🪙 и игрушка!`);
             }
@@ -469,14 +485,19 @@
             document.getElementById('food-lvl5').className = lvl >= 5 ? 'shop-btn' : 'shop-btn locked';
             document.getElementById('food-lvl7').className = lvl >= 7 ? 'shop-btn' : 'shop-btn locked';
 
-            // Изменение лиц / эмоций в зависимости от настроения
+            // Оживление лиц и эмоций в зависимости от настроения
             let imgEl = document.getElementById('petImg');
-            if (currentPet === 'cloud') {
-                let hueRotate = (mInt - 100) * 0.5;
-                imgEl.style.filter = `hue-rotate(${hueRotate}deg) drop-shadow(0 4px 8px rgba(0,0,0,0.1))`;
+            if (mInt > 70) {
+                // Счастливое лицо / сияние
+                imgEl.style.filter = 'drop-shadow(0 0 8px rgba(236, 72, 153, 0.6)) brightness(1.1)';
+            } else if (mInt > 30) {
+                // Нейтральное
+                imgEl.style.filter = 'drop-shadow(0 4px 6px rgba(0,0,0,0.1)) brightness(1)';
+            } else {
+                // Грустное / унылое лицо (чуть темнее / чб оттенок)
+                imgEl.style.filter = 'grayscale(0.5) brightness(0.85)';
             }
 
-            // Проверка кулдауна досуга (раз в час)
             let timeLeft = (lastFunTime + 3600000) - Date.now();
             let timerEl = document.getElementById('cooldownTimer');
             let playBtn = document.getElementById('playBtn');
@@ -505,8 +526,65 @@
             localStorage.setItem('blobby_last_fun', lastFunTime);
         }
 
+        // Интерактив по нажатию (без халявного опыта, но с реакцией, сердечками и мурчанием)
+        let stage = document.getElementById('stage');
+        let card = document.getElementById('characterCard');
+        let imgEl = document.getElementById('petImg');
+        let isDragging = false;
+        let startX, startY;
+
+        stage.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            // Поднимаем настроение при поглаживании
+            mood = Math.min(100, mood + 2);
+            saveData();
+            updateUI();
+
+            // Эмоции и отклик
+            let emoji = document.createElement('div');
+            emoji.className = 'floating-emoji';
+            if (currentPet === 'ghostcat') {
+                emoji.innerText = '😺 Мурр~';
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('heavy');
+            } else if (currentPet === 'squish') {
+                emoji.innerText = '💧';
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            } else {
+                emoji.innerText = '💖';
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            }
+            emoji.style.left = (e.clientX - stage.getBoundingClientRect().left) + 'px';
+            stage.appendChild(emoji);
+            setTimeout(() => emoji.remove(), 1500);
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            let deltaX = e.clientX - startX;
+            let deltaY = e.clientY - startY;
+
+            if (currentPet === 'squish') {
+                // Акуратный упругий сквиш, который не распадается
+                let scaleX = 1 + Math.min(0.2, Math.abs(deltaX) / 100);
+                let scaleY = 1 - Math.min(0.15, Math.abs(deltaX) / 150);
+                card.style.transform = `scale(${scaleX}, ${scaleY}) translate(${deltaX / 3}px, ${deltaY / 3}px)`;
+            } else {
+                card.style.transform = `translate(${deltaX / 4}px, ${deltaY / 4}px) rotate(${deltaX / 20}deg)`;
+            }
+        });
+
+        window.addEventListener('pointerup', () => {
+            if (isDragging) {
+                isDragging = false;
+                card.style.transform = 'translate(0px, 0px) scale(1)';
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            }
+        });
+
         function feedPet(hungerBoost, cost, expGain) {
-            // Кормить только когда голоден (например, если голод ниже 90%)
             if (hunger >= 90) {
                 alert('Питомец сыт и не хочет есть! 🚫');
                 return;
@@ -518,7 +596,7 @@
             }
             coins -= cost;
             hunger = Math.min(100, hunger + hungerBoost);
-            mood = Math.min(100, mood + 10);
+            mood = Math.min(100, mood + 15);
             addExp(expGain);
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
@@ -528,12 +606,12 @@
             if (now - lastFunTime < 3600000) return;
             lastFunTime = now;
             fun = Math.min(100, fun + 30);
-            mood = Math.min(100, mood + 15);
+            mood = Math.min(100, mood + 20);
             addExp(150);
             saveData();
             updateUI();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            alert('🎉 Отлично поиграли! Досуг повышен.');
+            alert('🎉 Отлично поиграли! Досуг восстановлен.');
         }
 
         function copyRef() {
@@ -543,63 +621,13 @@
 
         function simulateFriendJoin() {
             friends++;
-            coins += 300; // Бонус 300 монет за друга
+            coins += 300;
             addExp(200);
             saveData();
             updateUI();
             alert("🎉 Друг присоединился! Вам начислено 300 🪙!");
         }
 
-        // РЕАЛЬНАЯ ФИЗИКА СКВИША И ИНТЕРАКТИВ
-        let stage = document.getElementById('stage');
-        let imgEl = document.getElementById('petImg');
-        let isDragging = false;
-        let startX, startY;
-
-        stage.addEventListener('pointerdown', (e) => {
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            if (currentPet !== 'squish') {
-                mood = Math.min(100, mood + 3);
-                addExp(20);
-                updateUI();
-                if (currentPet === 'ghostcat' && tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('heavy'); // Мурчание котика
-                } else if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('medium');
-                }
-            }
-        });
-
-        window.addEventListener('pointermove', (e) => {
-            if (!isDragging) return;
-            let deltaX = e.clientX - startX;
-            let deltaY = e.clientY - startY;
-            if (currentPet === 'squish') {
-                // Сочный сквиш расплывается под пальцем
-                let scaleX = 1 + Math.abs(deltaX) / 20;
-                let scaleY = 1 - Math.abs(deltaX) / 40;
-                imgEl.style.transform = `scale(${scaleX}, ${scaleY}) translate(${deltaX / 2}px, ${deltaY / 2}px)`;
-            } else {
-                imgEl.style.transform = `translate(${deltaX / 3}px, ${deltaY / 3}px)`;
-            }
-        });
-
-        window.addEventListener('pointerup', () => {
-            if (isDragging) {
-                isDragging = false;
-                imgEl.style.transform = 'scale(1) translate(0px, 0px)';
-                if (currentPet === 'squish') {
-                    addExp(35);
-                    mood = Math.min(100, mood + 5);
-                    updateUI();
-                }
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            }
-        });
-
-        // Фоновый апдейт статов каждую минуту
         setInterval(() => {
             updateStatsOverTime();
             updateUI();
