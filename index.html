@@ -305,8 +305,9 @@
     </div>
 
     <div class="content-box">
+        <!-- Вкладка Еды (теперь отдельная) -->
         <div id="tab-food" class="tab-content active">
-            <div class="section-title">🍕 Кормить и Магазин</div>
+            <div class="section-title">🍕 Кормить питомца</div>
             <div class="items-grid">
                 <button class="shop-btn" onclick="feedPet(20, 30, 50)"><span>🍪 Печенька</span><span style="color:#d97706;">30 🪙</span></button>
                 <button class="shop-btn" onclick="feedPet(45, 60, 100)"><span>🧋 Матча</span><span style="color:#d97706;">60 🪙</span></button>
@@ -316,6 +317,7 @@
             </div>
         </div>
 
+        <!-- Вкладка Досуга -->
         <div id="tab-fun" class="tab-content">
             <div class="section-title">🧸 Досуг (доступно 1 раз в час)</div>
             <div class="minigame-area">
@@ -324,6 +326,7 @@
             </div>
         </div>
 
+        <!-- Вкладка Друзей -->
         <div id="tab-friends" class="tab-content">
             <div class="section-title">👥 Друзья (+300 🪙 за друга)</div>
             <div class="ref-box">
@@ -337,8 +340,9 @@
         </div>
     </div>
 
+    <!-- Навигация с отдельной кнопкой Еды -->
     <div class="nav-bar">
-        <button class="nav-item active" onclick="switchTab('food', this)">🍕 Магазин</button>
+        <button class="nav-item active" onclick="switchTab('food', this)">🍕 Еда</button>
         <button class="nav-item" onclick="switchTab('fun', this)">🧸 Досуг</button>
         <button class="nav-item" onclick="switchTab('friends', this)">👥 Друзья</button>
     </div>
@@ -362,6 +366,7 @@
         let toys = 1;
         let lastActiveTime = Date.now();
         let lastFunTime = 0;
+        let currentPoseTimer = null;
 
         const petsData = {
             cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png' },
@@ -373,20 +378,25 @@
             }
         };
 
-        // Четкая привязка спрайтов котенка
         const ghostCatImages = {
-            afk: "IMG_6570.png",       // Обычное состояние
-            waveHello: "IMG_6570.png", // Приветствие лапкой (при переходе на магазин)
-            surprised: "IMG_6568.png", // Удивление, когда держишь/тащишь[span_0](start_span)[span_0](end_span)
-            flyUp: "IMG_6571.png",     // Полет при кормлении
-            spin: "IMG_6569.png"       // Вращение при досуге[span_1](start_span)[span_1](end_span)
+            afk: "IMG_6570.png",       
+            waveHello: "IMG_6570.png", 
+            surprised: "IMG_6568.png",[span_0](start_span)[span_0](end_span)
+            flyUp: "IMG_6571.png",     
+            spin: "IMG_6569.png"      
         };
 
-        function setCatPose(poseKey) {
+        function setCatPose(poseKey, lockDuration = 0) {
             if (currentPet !== 'ghostcat') return;
             let imgEl = document.getElementById('petImg');
             if (imgEl && ghostCatImages[poseKey]) {
                 imgEl.src = ghostCatImages[poseKey];
+            }
+            if (lockDuration > 0) {
+                if (currentPoseTimer) clearTimeout(currentPoseTimer);
+                currentPoseTimer = setTimeout(() => {
+                    setCatPose('afk');
+                }, lockDuration);
             }
         }
 
@@ -487,7 +497,7 @@
             updateUI();
         }
 
-        // Переключение вкладок (при переходе в магазин машет лапкой)
+        // Переключение вкладок (лапка срабатывает ровно 1 раз при переходе на вкладку еды)
         function switchTab(tabName, btnEl) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -495,11 +505,8 @@
             btnEl.classList.add('active');
 
             if (tabName === 'food' && currentPet === 'ghostcat') {
-                setCatPose('waveHello');
+                setCatPose('waveHello', 1500);
                 playCatSound();
-                setTimeout(() => {
-                    setCatPose('afk');
-                }, 1500);
             }
         }
 
@@ -564,7 +571,7 @@
         let isDragging = false;
         let startX, startY;
 
-        // Когда зажимаешь / тащишь котенка (удивленное лицо)[span_2](start_span)[span_2](end_span)
+        // Зажатие / перетаскивание — анимация удивления включается сразу
         stage.addEventListener('pointerdown', (e) => {
             isDragging = true;
             startX = e.clientX;
@@ -575,7 +582,7 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                setCatPose('surprised');[span_3](start_span)[span_3](end_span)
+                setCatPose('surprised');[span_1](start_span)[span_1](end_span)
                 playCatSound();
             }
 
@@ -637,17 +644,14 @@
             addExp(expGain);
 
             if (currentPet === 'ghostcat') {
-                setCatPose('flyUp');
+                setCatPose('flyUp', 1500);
                 playCatSound();
-                setTimeout(() => {
-                    setCatPose('afk');
-                }, 1500);
             }
 
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        // Досуг / Игра (вращение)[span_4](start_span)[span_4](end_span)
+        // Досуг / Игра (вращение)
         function doFunActivity() {
             let now = Date.now();
             if (now - lastFunTime < 3600000) return;
@@ -659,10 +663,7 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                setCatPose('spin');[span_5](start_span)[span_5](end_span)
-                setTimeout(() => {
-                    setCatPose('afk');
-                }, 2000);
+                setCatPose('spin', 2000);
             }
 
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
