@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -444,12 +444,12 @@
         const ghostCatImages = {
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
-            surprised: "IMG_6568.png",
-            flyUp: "IMG_6571.png",
-            spin: "IMG_6567.png" // <--- Твоя картинка с вращением подключена на жесты и досуг!
+            surprised: "IMG_6568.png", // <--- Испуг при 3 нажатиях
+            flyUp: "IMG_6571.png",     // <--- Полет вверх
+            spin: "IMG_6567.png"       // <--- Твоя анимация вращения/катания при движении вбок
         };
 
-        // УЛЬТРА-МЯГКИЙ И УЮТНЫЙ ЗВУК МУРЧАНИЯ
+        // СУПЕР-МЯГКИЙ И ТИХИЙ ЗВУК МУРЧАНИЯ (УБРАНА РЕЗКОСТЬ И ГРОМКОСТЬ)
         function initAudio() {
             if (!audioCtx) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -472,19 +472,21 @@
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
                 
+                // Очень низкая мягкая синусоида
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(28, now);
-                osc.frequency.linearRampToValueAtTime(35, now + 0.3);
-                osc.frequency.linearRampToValueAtTime(28, now + 0.7);
+                osc.frequency.setValueAtTime(26, now);
+                osc.frequency.linearRampToValueAtTime(32, now + 0.4);
+                osc.frequency.linearRampToValueAtTime(26, now + 0.9);
 
+                // Предельно тихий уровень (громкость уменьшена в разы)
                 gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.035, now + 0.2);
-                gain.gain.linearRampToValueAtTime(0.001, now + 0.7);
+                gain.gain.linearRampToValueAtTime(0.012, now + 0.3);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.9);
 
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start(now);
-                osc.stop(now + 0.7);
+                osc.stop(now + 0.9);
             } catch(e) {}
         }
 
@@ -697,7 +699,7 @@
             }
         }
 
-        // ОБРАБОТЧИК КАСАТИЙ И ЖЕСТОВ С ВРАЩЕНИЕМ И ПОЛЕТОМ
+        // ОБРАБОТЧИК КАСАТИЙ И ЖЕСТОВ
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -719,16 +721,15 @@
             updateUI();
 
             if (currentPet === 'ghostcat') {
-                playSoftPurr();
+                playSoftPurr(); // Мягкое тихое мурчание
                 
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
+                // 3 быстрых тапа возвращают ИСПУГ (IMG_6568.png)
                 if (rapidClickCount >= 3) {
                     setCatPose('surprised', 2500);
                     rapidClickCount = 0;
-                } else {
-                    setCatPose('flyUp');
                 }
 
                 rapidClickTimer = setTimeout(() => { rapidClickCount = 0; }, 600);
@@ -748,12 +749,12 @@
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
 
-            // Динамическая смена поз при перетаскивании (используем твою картинку spin!)
+            // Анимации при перетаскивании (включая твое вращение/катание spin и полет flyUp)
             if (currentPet === 'ghostcat') {
-                if (Math.abs(currentDeltaX) > 30) {
-                    setCatPose('spin'); // Крутится при движении вбок
+                if (Math.abs(currentDeltaX) > 25) {
+                    setCatPose('spin'); // IMG_6567.png при движении вбок
                 } else if (currentDeltaY < -20) {
-                    setCatPose('flyUp'); // Летит при подъеме вверх
+                    setCatPose('flyUp'); // IMG_6571.png при подъеме вверх
                 } else {
                     setCatPose('afk');
                 }
