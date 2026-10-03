@@ -107,20 +107,19 @@
         .stage {
             width: 100%;
             max-width: 320px;
-            height: 150px;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
+            height: 155px;
             border-radius: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
             overflow: hidden;
             touch-action: none;
             cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            transition: background 0.5s ease;
         }
 
         .character-card {
@@ -142,10 +141,10 @@
             width: 95px;
             height: 95px;
             object-fit: contain;
-            filter: drop-shadow(0 4px 10px rgba(236, 72, 153, 0.3));
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
             pointer-events: none;
         }
-        .pet-name { font-size: 11px; font-weight: 700; color: #374151; margin-top: 2px; }
+        .pet-name { font-size: 11px; font-weight: 700; color: #374151; margin-top: 2px; text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
         
         .floating-emoji {
             position: absolute;
@@ -210,6 +209,11 @@
         .shop-btn:active { transform: scale(0.95); }
         .shop-btn.locked { opacity: 0.4; filter: grayscale(1); }
 
+        .home-tab-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px; text-align: center; font-size: 11px; }
+        .inventory-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+        .inv-item-card { background: #fff; border: 1px solid rgba(0,0,0,0.06); padding: 4px 8px; border-radius: 8px; font-size: 9px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+        .inv-item-card:active { transform: scale(0.95); }
+
         .minigame-area { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px; text-align: center; }
         .mg-btn { background: #8b5cf6; color: #fff; border: none; padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 10px; cursor: pointer; }
 
@@ -231,7 +235,7 @@
             margin-bottom: 10px;
         }
         .nav-item {
-            background: none; border: none; font-size: 11px; font-weight: 600; color: #6b7280; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+            background: none; border: none; font-size: 10px; font-weight: 600; color: #6b7280; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
         }
         .nav-item.active { color: #db2777; }
         .hidden { opacity: 0; pointer-events: none; display: none !important; }
@@ -283,7 +287,7 @@
         <div class="stats-panel">
             <span>⭐ Ур. <span id="lvl">1</span></span>
             <span class="coins">🪙 <span id="coins">500</span></span>
-            <span>🏆 Опыт: <span id="exp">0</span>/<span id="maxExp">2200</span></span>
+            <span>🏆 Опыт: <span id="exp">0</span>/<span id="maxExp">300</span></span>
         </div>
     </div>
 
@@ -310,14 +314,22 @@
     </div>
 
     <div class="content-box">
-        <div id="tab-food" class="tab-content active">
-            <div class="section-title">🍕 Кормить питомца</div>
+        <div id="tab-home" class="tab-content active">
+            <div class="section-title">🎒 Сумка (твоя еда)</div>
+            <div class="home-tab-inner">
+                <div style="font-size: 10px; color:#6b7280;">Нажми на еду, чтобы покормить питомца:</div>
+                <div class="inventory-row" id="inventoryRow"></div>
+            </div>
+        </div>
+
+        <div id="tab-shop" class="tab-content">
+            <div class="section-title">🛒 Магазин еды</div>
             <div class="items-grid">
-                <button class="shop-btn" onclick="feedPet(20, 30, 50)"><span>🍪 Печенька</span><span style="color:#d97706;">30 🪙</span></button>
-                <button class="shop-btn" onclick="feedPet(45, 60, 100)"><span>🧋 Матча</span><span style="color:#d97706;">60 🪙</span></button>
-                <button class="shop-btn" onclick="feedPet(80, 120, 200)"><span>🍰 Тортик</span><span style="color:#d97706;">120 🪙</span></button>
-                <button class="shop-btn" id="food-lvl3" onclick="feedPet(100, 180, 300)"><span>🍣 Роллы (Ур.3)</span><span style="color:#d97706;">180 🪙</span></button>
-                <button class="shop-btn" id="food-lvl5" onclick="feedPet(100, 250, 500)"><span>🍔 Рамен (Ур.5)</span><span style="color:#d97706;">250 🪙</span></button>
+                <button class="shop-btn" onclick="buyFood('cookie', 30, 20, 50)"><span>🍪 Печенька</span><span style="color:#d97706;">30 🪙</span></button>
+                <button class="shop-btn" onclick="buyFood('matcha', 60, 45, 100)"><span>🧋 Матча</span><span style="color:#d97706;">60 🪙</span></button>
+                <button class="shop-btn" onclick="buyFood('cake', 120, 80, 200)"><span>🍰 Тортик</span><span style="color:#d97706;">120 🪙</span></button>
+                <button class="shop-btn" id="food-lvl3" onclick="buyFood('sushi', 180, 100, 300)"><span>🍣 Роллы (Ур.3)</span><span style="color:#d97706;">180 🪙</span></button>
+                <button class="shop-btn" id="food-lvl5" onclick="buyFood('ramen', 250, 100, 500)"><span>🍔 Рамен (Ур.5)</span><span style="color:#d97706;">250 🪙</span></button>
             </div>
         </div>
 
@@ -343,7 +355,8 @@
     </div>
 
     <div class="nav-bar">
-        <button class="nav-item active" onclick="switchTab('food', this)">🍕 Еда</button>
+        <button class="nav-item active" onclick="switchTab('home', this)">🏠 Главная</button>
+        <button class="nav-item" onclick="switchTab('shop', this)">🛒 Магазин</button>
         <button class="nav-item" onclick="switchTab('fun', this)">🧸 Досуг</button>
         <button class="nav-item" onclick="switchTab('friends', this)">👥 Друзья</button>
     </div>
@@ -360,7 +373,7 @@
 
         let lvl = 1;
         let exp = 0;
-        let maxExp = 2200;
+        let maxExp = 300;
         let hunger = 100;
         let mood = 100;
         let fun = 100;
@@ -369,14 +382,20 @@
         let lastFunTime = 0;
         let catPoseTimeout = null;
 
+        let inventory = { cookie: 0, matcha: 0, cake: 0, sushi: 0, ramen: 0 };
+
         const petsData = {
-            cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png' },
-            squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png' },
-            ghostcat: { 
-                name: 'Котенок-призрак', 
-                desc: 'Мурчит и оживает', 
-                img: 'IMG_6570.png'
-            }
+            cloud: { name: 'Облачко', desc: 'Меняет мимику от настроения', img: 'IMG_6540.png', bg: 'linear-gradient(135deg, #e0f2fe, #bae6fd, #e0e7ff)' },
+            squish: { name: 'Шарик-сквиш', desc: 'Мягкий упругий антистресс', img: 'IMG_6541.png', bg: 'linear-gradient(135deg, #fce7f3, #fbcfe8, #fed7aa)' },
+            ghostcat: { name: 'Котенок-призрак', desc: 'Мурчит и оживает', img: 'IMG_6570.png', bg: 'linear-gradient(135deg, #f3e8ff, #e9d5ff, #ccfbf1)' }
+        };
+
+        const foodNames = {
+            cookie: { name: '🍪 Печенька', boost: 20, exp: 50 },
+            matcha: { name: '🧋 Матча', boost: 45, exp: 100 },
+            cake: { name: '🍰 Тортик', boost: 80, exp: 200 },
+            sushi: { name: '🍣 Роллы', boost: 100, exp: 300 },
+            ramen: { name: '🍔 Рамен', boost: 100, exp: 500 }
         };
 
         const ghostCatImages = {
@@ -412,6 +431,7 @@
         function loadPetData(type) {
             lvl = parseInt(localStorage.getItem(`blobby_${type}_lvl`)) || 1;
             exp = parseInt(localStorage.getItem(`blobby_${type}_exp`)) || 0;
+            maxExp = 300 + (lvl - 1) * 250;
             
             let h = parseFloat(localStorage.getItem(`blobby_${type}_hunger`));
             hunger = (isNaN(h) || h < 0 || h > 100) ? 100 : h;
@@ -425,6 +445,13 @@
             toys = parseInt(localStorage.getItem(`blobby_${type}_toys`)) || 1;
             lastActiveTime = parseInt(localStorage.getItem(`blobby_${type}_last_time`)) || Date.now();
             lastFunTime = parseInt(localStorage.getItem(`blobby_${type}_last_fun`)) || 0;
+
+            let savedInv = localStorage.getItem(`blobby_${type}_inv`);
+            if (savedInv) {
+                try { inventory = JSON.parse(savedInv); } catch(e) {}
+            } else {
+                inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
+            }
         }
 
         function saveData() {
@@ -440,6 +467,7 @@
             localStorage.setItem(`blobby_${currentPet}_toys`, toys);
             localStorage.setItem(`blobby_${currentPet}_last_time`, lastActiveTime);
             localStorage.setItem(`blobby_${currentPet}_last_fun`, lastFunTime);
+            localStorage.setItem(`blobby_${currentPet}_inv`, JSON.stringify(inventory));
         }
 
         let purrAudio = document.getElementById('purr-sound');
@@ -478,6 +506,10 @@
         function choosePet(type) {
             currentPet = type;
             localStorage.setItem('blobby_pet', type);
+            
+            if (!localStorage.getItem(`blobby_${type}_inv`)) {
+                inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0 };
+            }
             loadPetData(type);
             
             document.getElementById('selectScreen').classList.add('hidden');
@@ -501,6 +533,7 @@
             } else {
                 imgEl.src = p.img;
             }
+            document.getElementById('stage').style.background = p.bg;
             document.getElementById('petName').innerText = p.name;
             document.getElementById('gameTitle').innerText = p.name + ' 🐾';
             updateUI();
@@ -512,7 +545,7 @@
             document.getElementById('tab-' + tabName).classList.add('active');
             btnEl.classList.add('active');
 
-            if (tabName === 'food' && currentPet === 'ghostcat') {
+            if (tabName === 'home' && currentPet === 'ghostcat') {
                 setCatPose('waveHello', 1000);
                 playCatSound();
             }
@@ -520,11 +553,13 @@
 
         function addExp(amount) {
             exp += amount;
+            maxExp = 300 + (lvl - 1) * 250;
             if (exp >= maxExp) {
                 exp -= maxExp;
                 lvl++;
                 coins += 200;
                 toys += 1;
+                maxExp = 300 + (lvl - 1) * 250;
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 alert(`🎉 Уровень повышен до ${lvl}! Получено 200 🪙 и игрушка!`);
             }
@@ -556,6 +591,24 @@
             if (fL3) fL3.className = lvl >= 3 ? 'shop-btn' : 'shop-btn locked';
             let fL5 = document.getElementById('food-lvl5');
             if (fL5) fL5.className = lvl >= 5 ? 'shop-btn' : 'shop-btn locked';
+
+            let invRow = document.getElementById('inventoryRow');
+            invRow.innerHTML = '';
+            let hasAnyFood = false;
+            for (let key in inventory) {
+                if (inventory[key] > 0) {
+                    hasAnyFood = true;
+                    let fData = foodNames[key];
+                    let cardEl = document.createElement('div');
+                    cardEl.className = 'inv-item-card';
+                    cardEl.innerHTML = `<span>${fData.name}</span> <span style="color:#db2777; font-weight:700;">x${inventory[key]}</span>`;
+                    cardEl.onclick = () => useFoodFromInventory(key);
+                    invRow.appendChild(cardEl);
+                }
+            }
+            if (!hasAnyFood) {
+                invRow.innerHTML = `<span style="font-size:10px; color:#6b7280;">Сумка пуста. Купи еду в магазине! 🛒</span>`;
+            }
 
             let timeLeft = (lastFunTime + 3600000) - Date.now();
             let timerEl = document.getElementById('cooldownTimer');
@@ -634,20 +687,35 @@
             }
         });
 
-        function feedPet(hungerBoost, cost, expGain) {
-            if (hunger >= 90) {
-                alert('Питомец сыт и не хочет есть! 🚫');
-                return;
-            }
+        function buyFood(foodKey, cost, boost, expGain) {
             if (coins < cost) {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 alert('Не хватает монеток! 🪙');
                 return;
             }
             coins -= cost;
-            hunger = Math.min(100, hunger + hungerBoost);
+            inventory[foodKey] = (inventory[foodKey] || 0) + 1;
+            saveData();
+            updateUI();
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            alert(`🛒 Куплено: ${foodNames[foodKey].name}! Еда добавлена в сумку.`);
+        }
+
+        function useFoodFromInventory(foodKey) {
+            if (hunger >= 90) {
+                alert('Питомец сыт и не хочет есть! 🚫');
+                return;
+            }
+            if (!inventory[foodKey] || inventory[foodKey] <= 0) {
+                alert('Этой еды больше нет в сумке! Купи в магазине.');
+                return;
+            }
+
+            inventory[foodKey]--;
+            let fData = foodNames[foodKey];
+            hunger = Math.min(100, hunger + fData.boost);
             mood = Math.min(100, mood + 15);
-            addExp(expGain);
+            addExp(fData.exp);
 
             if (currentPet === 'ghostcat') {
                 setCatPose('flyUp', 1500);
