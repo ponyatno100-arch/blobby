@@ -586,8 +586,8 @@
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
             surprised: "IMG_6568.png",
-            flyUp: "IMG_6571.png",
-            spin: "IMG_6567.png"
+            spin: "IMG_6567.png",
+            flyUp: "IMG_6571.png"
         };
 
         function initAudio() {
@@ -840,7 +840,7 @@
             if (currentPet === 'ghostcat') {
                 playSoftPurr();
                 if (!poseLocked) {
-                    setCatPose('flyUp'); // При начале перетаскивания активируем анимацию полета/движения
+                    setCatPose('spin'); // Включаем анимацию вращения при перетаскивании
                 }
                 
                 rapidClickCount++;
@@ -882,13 +882,12 @@
                         }, 1500);
                     }
                 } else {
-                    // Если тянем вверх-вниз или в другие стороны — таймер сбрасывается, но анимация движения (flyUp) активна
                     if (rightHoldTimer) {
                         clearTimeout(rightHoldTimer);
                         rightHoldTimer = null;
                     }
-                    if (currentPose !== 'flyUp') {
-                        setCatPose('flyUp');
+                    if (currentPose !== 'spin') {
+                        setCatPose('spin');
                     }
                 }
             }
