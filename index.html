@@ -93,7 +93,7 @@
             color: var(--text-main);
         }
 
-        /* ИГРОВАЯ СЦЕНА */
+        /* ИГРОВАЯ СЦЕНА И АНИМАЦИЯ ЛЕВИТАЦИИ */
         .stage {
             flex: 1;
             display: flex;
@@ -104,6 +104,13 @@
             width: 100%;
             padding-bottom: 80px;
         }
+
+        @keyframes floatIdle {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+            100% { transform: translateY(0px); }
+        }
+
         .character-card {
             width: 300px;
             height: 300px;
@@ -114,7 +121,7 @@
             touch-action: none;
             -webkit-touch-callout: none;
             user-select: none;
-            transition: transform 0.08s ease-out;
+            animation: floatIdle 3s ease-in-out infinite;
             z-index: 5;
         }
         .character-card img {
@@ -582,13 +589,12 @@
             laser: { name: '🔴 Лазер', type: 'toy', stat: 'fun', boost: 80, exp: 200 }
         };
 
-        // Правильное сопоставление файлов с анимациями
         const ghostCatImages = {
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
             surprised: "IMG_6568.png",
-            spin: "IMG_6569.png",
-            flyUp: "IMG_6571.png" // Летящий кот с полосами скорости
+            spin: "IMG_6567.png",   // Анимация при перетаскивании по экрану
+            flyUp: "IMG_6571.png"   // Анимация при подношении к краю экрана для перемещения
         };
 
         function initAudio() {
@@ -665,6 +671,18 @@
             let f = parseFloat(localStorage.getItem(`gothic_${type}_fun`));
             fun = (isNaN(f) || f < 0 || f > 100) ? 100 : f;
 
+            let lastActive = parseInt(localStorage.getItem(`gothic_${type}_last_active`)) || Date.now();
+            let hoursPassed = (Date.now() - lastActive) / (1000 * 60 * 60);
+            if (hoursPassed > 0.5) {
+                hunger = Math.max(0, hunger - Math.floor(hoursPassed * 3));
+                mood = Math.max(0, mood - Math.floor(hoursPassed * 2));
+                fun = Math.max(0, fun - Math.floor(hoursPassed * 4));
+
+                if (hunger <= 0 || mood <= 0 || fun <= 0) {
+                    document.getElementById('runawayScreen').classList.remove('hidden');
+                }
+            }
+
             let savedInv = localStorage.getItem(`gothic_${type}_inv`);
             if (savedInv) {
                 try { inventory = JSON.parse(savedInv); } catch(e) {}
@@ -684,6 +702,7 @@
             localStorage.setItem(`gothic_${currentPet}_mood`, mood);
             localStorage.setItem(`gothic_${currentPet}_fun`, fun);
             localStorage.setItem(`gothic_${currentPet}_inv`, JSON.stringify(inventory));
+            localStorage.setItem(`gothic_${currentPet}_last_active`, Date.now());
         }
 
         if (!currentPet || !petsData[currentPet]) {
@@ -841,7 +860,7 @@
             if (currentPet === 'ghostcat') {
                 playSoftPurr();
                 if (!poseLocked) {
-                    setCatPose('flyUp'); // Активируем летящего кота при перетаскивании
+                    setCatPose('spin'); // При начале касания запускаем спин/таскание
                 }
                 
                 rapidClickCount++;
@@ -870,9 +889,12 @@
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
 
-            // Логика движения и удержания вправо для смены вкладки
             if (currentPet === 'ghostcat' && !poseLocked) {
+                // Если подвели к краю экрана для перемещения
                 if (currentDeltaX > 70) {
+                    if (currentPose !== 'flyUp') {
+                        setCatPose('flyUp');
+                    }
                     if (!rightHoldTimer) {
                         rightHoldTimer = setTimeout(() => {
                             switchToNextTab();
@@ -886,8 +908,9 @@
                         clearTimeout(rightHoldTimer);
                         rightHoldTimer = null;
                     }
-                    if (currentPose !== 'flyUp') {
-                        setCatPose('flyUp');
+                    // Когда просто катаем/таскаем по экрану
+                    if (currentPose !== 'spin') {
+                        setCatPose('spin');
                     }
                 }
             }
@@ -959,7 +982,7 @@
             addExp(meta.exp);
 
             if (currentPet === 'ghostcat') {
-                setCatPose('flyUp', 1200);
+                setCatPose('spin', 1200);
             }
             saveData();
             updateUI();
@@ -979,7 +1002,7 @@
             saveData();
             updateUI();
 
-            if (currentPet === 'ghostcat') setCatPose('flyUp', 2000);
+            if (currentPet === 'ghostcat') setCatPose('spin', 2000);
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
