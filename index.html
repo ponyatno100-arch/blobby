@@ -250,7 +250,7 @@
 </div>
 
 <script>
-    // Безопасная инициализация Telegram WebApp с поддержкой тестов в обычном браузере
+    // Безопасная инициализация Telegram WebApp (не падает в обычном браузере)
     const tg = window.Telegram?.WebApp || {};
     if (typeof tg.expand === 'function') {
         tg.expand();
@@ -276,12 +276,13 @@
         localStorage.setItem('gothic_escaped', gameState.isEscaped);
     }
 
+    // Проверка уменьшения характеристик и побега через 3 дня
     function processTimePassing() {
         if (gameState.isEscaped) return;
 
         let now = Date.now();
         let elapsedSeconds = Math.floor((now - gameState.lastUpdate) / 1000);
-        let decaySteps = Math.floor(elapsedSeconds / 30);
+        let decaySteps = Math.floor(elapsedSeconds / 30); // 1% каждые 30 секунд
         
         if (decaySteps > 0) {
             gameState.hunger = Math.max(0, gameState.hunger - decaySteps);
@@ -291,6 +292,7 @@
             saveState();
         }
 
+        // Условие побега: прошло 3 дня (3 * 24 * 60 * 60 * 1000 мс) и все параметры на нуле
         const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
         if ((now - gameState.lastUpdate >= THREE_DAYS) && (gameState.hunger === 0 && gameState.energy === 0 && gameState.happiness === 0)) {
             triggerEscape();
@@ -361,20 +363,12 @@
     function initApp() {
         processTimePassing();
 
-        // Получаем Telegram ID или ставим демо-режим для браузера
+        // Получаем реальный Telegram ID или создаем демо-ID для обычного браузера
         let telegramId = tg.initDataUnsafe?.user?.id || 'demo_user_' + Math.floor(Math.random() * 10000);
         document.getElementById('userIdDisplay').innerText = telegramId;
 
-        // Проверка параметра реферала (если кто-то открыл приложение по чужой ссылке)
-        let startParam = tg.initDataUnsafe?.start_param;
-        if (startParam && startParam.startsWith('ref_')) {
-            let inviterId = startParam.replace('ref_', '');
-            console.лох("Пользователь пришел от реферера:", inviterId);
-            // Здесь в будущем будет отправка запроса на бэкенд, чтобы начислить бонус пригласившему
-        }
-
-        // Формирование ссылки
-        let botUsername = 'gothic_pet_bot'; // Замени на юзернейм своего бота
+        // ⚠️ ЗАМЕНИ 'gothic_pet_bot' на реальный юзернейм твоего Telegram-бота (без @)
+        let botUsername = 'gothic_pet_bot'; 
         let realRefLink = `https://t.me/${botUsername}?start=ref_${telegramId}`;
 
         let refInput = document.getElementById('refLink');
@@ -390,12 +384,12 @@
         }, 10000);
     }
 
-    // Надежная функция шеринга (работает и в Telegram, и в обычном браузере)
     function shareToTelegram() {
         let refLink = document.getElementById("refLink").value;
         let text = encodeURIComponent("🖤 Заходи вырастить своего готического питомца со мной!");
         let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${text}`;
         
+        // Работает и внутри Telegram, и открывает вкладку шеринга в обычном браузере
         if (typeof tg.openTelegramLink === 'function') {
             tg.openTelegramLink(shareUrl);
         } else {
@@ -406,12 +400,11 @@
     function copyRef() {
         let refInput = document.getElementById("refLink");
         refInput.select();
-        refInput.setSelectionRange(0, 99999); // Для мобильных устройств
+        refInput.setSelectionRange(0, 99999);
         
         navigator.clipboard.writeText(refInput.value).then(() => {
             alert("Ссылка скопирована в буфер обмена!");
         }).catch(err => {
-            // Запасной вариант, если clipboard API заблокирован браузером
             document.execCommand('copy');
             alert("Ссылка скопирована!");
         });
