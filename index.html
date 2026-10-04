@@ -593,8 +593,8 @@
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
             surprised: "IMG_6568.png",
-            spin: "IMG_6567.png",   // Анимация при перетаскивании по экрану
-            flyUp: "IMG_6571.png"   // Анимация при подношении к краю экрана для перемещения
+            spin: "IMG_6567.png",   // Анимация при катании по экрану
+            flyUp: "IMG_6571.png"   // Анимация при подношении к краю экрана
         };
 
         function initAudio() {
@@ -859,9 +859,6 @@
 
             if (currentPet === 'ghostcat') {
                 playSoftPurr();
-                if (!poseLocked) {
-                    setCatPose('spin'); // При начале касания запускаем спин/таскание
-                }
                 
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
@@ -890,27 +887,31 @@
             currentDeltaY = e.clientY - startY;
 
             if (currentPet === 'ghostcat' && !poseLocked) {
-                // Если подвели к краю экрана для перемещения
-                if (currentDeltaX > 70) {
-                    if (currentPose !== 'flyUp') {
-                        setCatPose('flyUp');
-                    }
-                    if (!rightHoldTimer) {
-                        rightHoldTimer = setTimeout(() => {
-                            switchToNextTab();
+                let distance = Math.hypot(currentDeltaX, currentDeltaY);
+                
+                if (distance > 12) { // Если реально начали тягать
+                    // Проверяем, поднесли ли к правому краю экрана (менее 70px от правого края)
+                    if (e.clientX >= window.innerWidth - 70) {
+                        if (currentPose !== 'flyUp') {
+                            setCatPose('flyUp');
+                        }
+                        if (!rightHoldTimer) {
+                            rightHoldTimer = setTimeout(() => {
+                                switchToNextTab();
+                                rightHoldTimer = null;
+                                poseLocked = false;
+                                setCatPose('afk');
+                            }, 1500);
+                        }
+                    } else {
+                        if (rightHoldTimer) {
+                            clearTimeout(rightHoldTimer);
                             rightHoldTimer = null;
-                            poseLocked = false;
-                            setCatPose('afk');
-                        }, 1500);
-                    }
-                } else {
-                    if (rightHoldTimer) {
-                        clearTimeout(rightHoldTimer);
-                        rightHoldTimer = null;
-                    }
-                    // Когда просто катаем/таскаем по экрану
-                    if (currentPose !== 'spin') {
-                        setCatPose('spin');
+                        }
+                        // Когда просто катаем/тягаем по экрану
+                        if (currentPose !== 'spin') {
+                            setCatPose('spin');
+                        }
                     }
                 }
             }
