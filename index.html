@@ -93,7 +93,7 @@
             color: var(--text-main);
         }
 
-        /* СЦЕНА КОТА (МАКСИМУМ ПРОСТРАНСТВА) */
+        /* ИГРОВАЯ СЦЕНА */
         .stage {
             flex: 1;
             display: flex;
@@ -144,7 +144,7 @@
         }
 
         .content-body {
-            max-height: 20vh;
+            max-height: 22vh;
             overflow-y: auto;
             margin-bottom: 12px;
             padding-right: 2px;
@@ -156,16 +156,15 @@
             display: block;
         }
 
-        /* ПАНЕЛЬ СТАТИСТИКИ (СНИЗУ ПОД КОНТЕНТОМ) */
+        /* ПАНЕЛЬ ПОТРЕБНОСТЕЙ (ТОЛЬКО ДЛЯ ДОМА) */
         .bottom-stats {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
-            padding: 8px 12px;
+            padding: 10px 12px;
             border-radius: 14px;
-            margin-bottom: 10px;
         }
         .stat-bar-container {
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         .stat-bar-container:last-child {
             margin-bottom: 0;
@@ -269,7 +268,7 @@
             background: rgba(255, 255, 255, 0.03);
             color: #555;
         }
-        .pet-choice-card, .theme-card {
+        .pet-choice-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
             padding: 14px;
@@ -285,6 +284,17 @@
             object-fit: contain;
             margin-bottom: 4px;
             filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+        }
+        .theme-emoji-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            font-size: 24px;
+            padding: 14px 0;
+            border-radius: 16px;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+            transition: border-color 0.2s, background 0.2s;
         }
         .floating-emoji {
             position: absolute;
@@ -335,25 +345,12 @@
             </div>
 
             <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.8px;">Тема оформления</h3>
-            <div class="theme-card" onclick="setTheme('obsidian')" data-theme="obsidian">
-                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-main);">🖤 Обсидиан</h4>
-                <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Глубокий готический стиль с багрянцем</p>
-            </div>
-            <div class="theme-card" onclick="setTheme('ghost')" data-theme="ghost">
-                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-main);">🌫 Кладбищенский туман</h4>
-                <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Сумеречные тона с призрачным свечением</p>
-            </div>
-            <div class="theme-card" onclick="setTheme('cyber')" data-theme="cyber">
-                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-main);">💻 Кибер-Гранж</h4>
-                <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Нео-нуар с токсичными акцентами</p>
-            </div>
-            <div class="theme-card" onclick="setTheme('vampire')" data-theme="vampire">
-                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-main);">🍷 Вампирский бархат</h4>
-                <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Винные и бордовые оттенки</p>
-            </div>
-            <div class="theme-card" onclick="setTheme('sakura')" data-theme="sakura">
-                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-main);">🌸 Полуночная сакура</h4>
-                <p style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Чернильно-синий с приглушенным розовым</p>
+            <div style="display: flex; gap: 8px;">
+                <div class="theme-emoji-btn" onclick="setTheme('obsidian')" data-theme="obsidian">🖤</div>
+                <div class="theme-emoji-btn" onclick="setTheme('ghost')" data-theme="ghost">🌫</div>
+                <div class="theme-emoji-btn" onclick="setTheme('cyber')" data-theme="cyber">💻</div>
+                <div class="theme-emoji-btn" onclick="setTheme('vampire')" data-theme="vampire">🍷</div>
+                <div class="theme-emoji-btn" onclick="setTheme('sakura')" data-theme="sakura">🌸</div>
             </div>
         </div>
     </div>
@@ -375,7 +372,7 @@
             </div>
         </header>
 
-        <!-- ИГРОВАЯ СЦЕНА (ВСЕ ОСТАЛЬНОЕ ПРОСТРАНСТВО) -->
+        <!-- ИГРОВАЯ СЦЕНА -->
         <div class="stage" id="stage">
             <div class="character-card" id="characterCard">
                 <img id="petImg" src="IMG_6542.PNG" alt="Питомец">
@@ -386,12 +383,29 @@
         <div class="bottom-sheet">
             
             <div class="content-body">
-                <!-- ДОМ -->
+                <!-- ДОМ (ПОТРЕБНОСТИ ОТОБРАЖАЮТСЯ ТОЛЬКО ТУТ) -->
                 <div id="tab-home" class="tab-content active">
-                    <p style="font-size: 10px; color: var(--text-muted); text-align: center; padding: 12px 0;">Здесь живет ваша сущность. Взаимодействуйте с ней на экране.</p>
+                    <div class="bottom-stats">
+                        <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">
+                            <span id="petName">Питомец</span>
+                            <span style="color: var(--text-muted); font-size: 9px;">Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="stat-info"><span>Сытость</span><span id="hungerText">100</span>%</div>
+                            <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: var(--text-main);"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="stat-info"><span>Настроение</span><span id="moodText">100</span>%</div>
+                            <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: var(--text-muted);"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="stat-info"><span>Досуг</span><span id="funText">100</span>%</div>
+                            <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: var(--accent);"></div></div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- ЛАВКА (НЕ ТРОНУТА) -->
+                <!-- ЛАВКА -->
                 <div id="tab-shop" class="tab-content">
                     <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Лавка</h3>
                     <div class="shop-grid">
@@ -435,26 +449,6 @@
                 </div>
             </div>
 
-            <!-- ПАНЕЛЬ ПОТРЕБНОСТЕЙ (СМЕЩЕНА ВНИЗ ПОД ВКЛАДКИ) -->
-            <div class="bottom-stats">
-                <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">
-                    <span id="petName">Питомец</span>
-                    <span style="color: var(--text-muted); font-size: 9px;">Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
-                </div>
-                <div class="stat-bar-container">
-                    <div class="stat-info"><span>Сытость</span><span id="hungerText">100</span>%</div>
-                    <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: var(--text-main);"></div></div>
-                </div>
-                <div class="stat-bar-container">
-                    <div class="stat-info"><span>Настроение</span><span id="moodText">100</span>%</div>
-                    <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: var(--text-muted);"></div></div>
-                </div>
-                <div class="stat-bar-container">
-                    <div class="stat-info"><span>Досуг</span><span id="funText">100</span>%</div>
-                    <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: var(--accent);"></div></div>
-                </div>
-            </div>
-
             <!-- НАВИГАЦИЯ -->
             <nav class="nav-bar">
                 <button class="nav-item active" onclick="switchTab('home', this)">Дом</button>
@@ -485,13 +479,15 @@
         let catPoseTimeout = null;
         let poseLocked = false;
         let currentPose = 'afk';
+        let rightHoldTimer = null;
 
         let rapidClickCount = 0;
         let rapidClickTimer = null;
         let audioCtx = null;
 
-        // Инвентарь (еда + игрушки)
         let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
+
+        const tabsOrder = ['home', 'shop', 'play', 'friends'];
 
         const themes = {
             obsidian: {
@@ -561,8 +557,9 @@
             root.style.setProperty('--badge-bg', t.badgeBg);
             root.style.setProperty('--border-color', t.border);
 
-            document.querySelectorAll('.theme-card').forEach(card => {
-                card.style.borderColor = card.dataset.theme === themeKey ? t.accent : 'var(--border-color)';
+            document.querySelectorAll('.theme-emoji-btn').forEach(btn => {
+                btn.style.borderColor = btn.dataset.theme === themeKey ? t.accent : 'var(--border-color)';
+                btn.style.background = btn.dataset.theme === themeKey ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)';
             });
             if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
         }
@@ -741,11 +738,25 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
-            btnEl.classList.add('active');
+            if (btnEl) btnEl.classList.add('active');
 
             if (tabName === 'home' && currentPet === 'ghostcat') {
                 setCatPose('waveHello', 1200);
             }
+        }
+
+        function switchToNextTab() {
+            let activeTabEl = document.querySelector('.tab-content.active');
+            let currentTabId = activeTabEl ? activeTabEl.id.replace('tab-', '') : 'home';
+            let currentIndex = tabsOrder.indexOf(currentTabId);
+            let nextIndex = (currentIndex + 1) % tabsOrder.length;
+            let nextTabName = tabsOrder[nextIndex];
+            
+            let navButtons = document.querySelectorAll('.nav-item');
+            let targetNavBtn = navButtons[nextIndex];
+            
+            switchTab(nextTabName, targetNavBtn);
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function addExp(amount) {
@@ -784,7 +795,6 @@
             let fL3 = document.getElementById('food-lvl3');
             if (fL3) fL3.className = lvl >= 3 ? 'shop-btn' : 'shop-btn locked';
 
-            // Рендер инвентаря в Досуге
             let invRow = document.getElementById('inventoryRow');
             invRow.innerHTML = '';
             let hasAnyItem = false;
@@ -804,7 +814,7 @@
             }
         }
 
-        // ЖЕСТЫ
+        // ЖЕСТЫ И ПЕРЕТАСКИВАНИЕ
         let stage = document.getElementById('stage');
         let card = document.getElementById('characterCard');
         let isDragging = false;
@@ -817,6 +827,8 @@
             isDragging = true;
             startX = e.clientX;
             startY = e.clientY;
+            currentDeltaX = 0;
+            currentDeltaY = 0;
             
             card.style.transition = 'none';
             card.setPointerCapture(e.pointerId);
@@ -854,12 +866,23 @@
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
 
+            // Логика перетягивания вправо и удержание 1.5 сек для смены вкладки
             if (currentPet === 'ghostcat' && !poseLocked) {
-                if (currentDeltaX > 35) {
+                if (currentDeltaX > 70) {
                     setCatPose('flyUp');
-                } else if (Math.abs(currentDeltaY) > 30) {
-                    setCatPose('spin');
+                    if (!rightHoldTimer) {
+                        rightHoldTimer = setTimeout(() => {
+                            switchToNextTab();
+                            rightHoldTimer = null;
+                            poseLocked = false;
+                            setCatPose('afk');
+                        }, 1500); // 1.5 секунды удержания вправо
+                    }
                 } else {
+                    if (rightHoldTimer) {
+                        clearTimeout(rightHoldTimer);
+                        rightHoldTimer = null;
+                    }
                     setCatPose('afk');
                 }
             }
@@ -876,6 +899,11 @@
         window.addEventListener('pointerup', (e) => {
             if (!isDragging) return;
             isDragging = false;
+
+            if (rightHoldTimer) {
+                clearTimeout(rightHoldTimer);
+                rightHoldTimer = null;
+            }
 
             if (currentPet === 'ghostcat' && !poseLocked) {
                 setCatPose('afk');
@@ -926,7 +954,7 @@
             addExp(meta.exp);
 
             if (currentPet === 'ghostcat') {
-                setCatPose(meta.stat === 'fun' ? 'spin' : 'flyUp', 1200);
+                setCatPose('spin', 1200);
             }
             saveData();
             updateUI();
