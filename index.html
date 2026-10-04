@@ -2,1044 +2,420 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gothic Pet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gothic Pet Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-main: #050407;
-            --stage-grad: radial-gradient(circle at center, #14101c 0%, #050407 80%);
-            --accent: #7a1c24;
-            --text-main: #e2e1e6;
-            --text-muted: #8c8994;
-            --sheet-bg: rgba(10, 8, 14, 0.92);
-            --badge-bg: rgba(15, 13, 20, 0.7);
-            --border-color: rgba(255, 255, 255, 0.06);
+            --bg-color: #0d0d0d;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --text-main: #f0f0f0;
+            --text-muted: #888888;
+            --accent: #b026ff;
+            --border-color: rgba(255, 255, 255, 0.08);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
-        }
         body {
-            background-color: var(--bg-main);
+            background-color: var(--bg-color);
             color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden;
-            transition: background 0.3s ease, color 0.3s ease;
+            box-sizing: border-box;
         }
-        .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 100;
-            padding: 24px 20px;
-            overflow-y: auto;
-            transition: opacity 0.3s ease;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .app-container {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-            max-width: 480px;
+
+        .container {
+            max-width: 400px;
             margin: 0 auto;
-            overflow: hidden;
-            background: var(--stage-grad);
-            transition: background 0.3s ease;
-        }
-        
-        /* ХЕДЕР */
-        header {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            z-index: 20;
-            pointer-events: none;
-        }
-        header > * {
-            pointer-events: auto;
-        }
-        .stat-badge {
-            background: var(--badge-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 11px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--text-main);
-        }
-
-        /* ИГРОВАЯ СЦЕНА И АНИМАЦИЯ ЛЕВИТАЦИИ */
-        .stage {
+            flex-direction: column;
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            width: 100%;
-            padding-bottom: 80px;
         }
 
-        @keyframes floatIdle {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-12px); }
-            100% { transform: translateY(0px); }
-        }
-
-        .character-card {
-            width: 300px;
-            height: 300px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: grab;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            user-select: none;
-            z-index: 5;
-        }
-        .character-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-            filter: drop-shadow(0 30px 40px rgba(0,0,0,0.85));
-            animation: floatIdle 3s ease-in-out infinite;
-        }
-
-        /* НИЖНЯЯ ПАНЕЛЬ */
-        .bottom-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: var(--sheet-bg);
-            backdrop-filter: blur(24px);
-            border-top: 1px solid var(--border-color);
-            border-top-left-radius: 28px;
-            border-top-right-radius: 28px;
-            padding: 16px 20px 20px 20px;
-            z-index: 20;
-            box-shadow: 0 -20px 40px rgba(0,0,0,0.6);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .content-body {
-            max-height: 22vh;
-            overflow-y: auto;
-            margin-bottom: 12px;
-            padding-right: 2px;
-        }
         .tab-content {
             display: none;
+            flex: 1;
+            overflow-y: auto;
         }
         .tab-content.active {
             display: block;
         }
 
-        /* ПАНЕЛЬ ПОТРЕБНОСТЕЙ */
-        .bottom-stats {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            padding: 10px 12px;
-            border-radius: 14px;
-        }
-        .stat-bar-container {
-            margin-bottom: 5px;
-        }
-        .stat-bar-container:last-child {
-            margin-bottom: 0;
-        }
-        .stat-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            margin-bottom: 2px;
-            font-weight: 500;
+        h3 {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
             color: var(--text-muted);
-            letter-spacing: 0.5px;
             text-transform: uppercase;
-        }
-        .progress-bar {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            width: 100%;
-            border-radius: 3px;
-            transition: width 0.4s ease;
+            letter-spacing: 0.8px;
         }
 
-        /* НАВИГАЦИЯ */
-        .nav-bar {
-            display: flex;
-            background: rgba(255, 255, 255, 0.02);
+        .card {
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 4px;
-            gap: 4px;
-        }
-        .nav-item {
-            flex: 1;
-            padding: 10px 0;
-            text-align: center;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: all 0.2s ease;
             border-radius: 12px;
-            text-transform: uppercase;
+            padding: 12px;
+            margin-bottom: 10px;
+            text-align: center;
         }
-        .nav-item.active {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.08);
+
+        .stat-bar-container {
+            text-align: left;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+        .stat-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .stat-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 100%;
+            transition: width 0.3s;
         }
 
         .btn {
-            background: var(--text-main);
-            color: var(--bg-main);
-            border: none;
-            padding: 12px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            cursor: pointer;
             width: 100%;
-            transition: opacity 0.2s ease, transform 0.1s ease;
-        }
-        .btn:active {
-            transform: scale(0.98);
-            opacity: 0.85;
-        }
-        .shop-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .shop-card {
-            background: rgba(255, 255, 255, 0.02);
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-color);
-            padding: 12px;
-            border-radius: 14px;
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 6px;
             text-align: center;
+            box-sizing: border-box;
         }
-        .shop-btn {
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .btn-accent {
             background: var(--accent);
             color: #fff;
             border: none;
-            padding: 7px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 10px;
-            letter-spacing: 0.5px;
-            margin-top: 8px;
-            cursor: pointer;
+        }
+
+        input[type="text"] {
             width: 100%;
-        }
-        .shop-btn.locked {
-            background: rgba(255, 255, 255, 0.03);
-            color: #555;
-            cursor: not-allowed;
-        }
-        .pet-choice-card {
+            box-sizing: border-box;
+            padding: 8px;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
-            padding: 14px;
-            border-radius: 16px;
-            text-align: center;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .pet-choice-card img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            margin-bottom: 4px;
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
-        }
-        .theme-emoji-btn {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            font-size: 24px;
-            padding: 14px 0;
-            border-radius: 16px;
-            cursor: pointer;
-            text-align: center;
-            flex: 1;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .floating-emoji {
-            position: absolute;
-            font-size: 24px;
-            animation: floatUp 1s ease-out forwards;
-            pointer-events: none;
-            z-index: 25;
-        }
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(0.8); opacity: 1; }
-            100% { transform: translateY(-70px) scale(1.2); opacity: 0; }
-        }
-        .inv-item-card {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 10px 14px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: var(--text-main);
+            border-radius: 8px;
             margin-bottom: 6px;
-            border: 1px solid var(--border-color);
+            font-size: 10px;
+            outline: none;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            margin-top: auto;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 10px;
             cursor: pointer;
+            padding: 6px;
+        }
+        .nav-btn.active {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Экран побега и письма */
+        #escapeScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 13, 13, 0.95);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .letter-card {
+            background: #151515;
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            max-width: 320px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
 
-    <!-- ЭКРАН НАСТРОЕК -->
-    <div id="selectScreen" class="screen hidden">
-        <div style="width: 100%; max-width: 360px; padding-bottom: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-main);">Настройки</h2>
-                <button onclick="closeSelectScreen()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
-            </div>
-
-            <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.8px;">Сущность</h3>
-            <div class="pet-choice-card" onclick="choosePet('cloud')">
-                <img src="IMG_6540.png" alt="Облачко">
-                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-main);">Облачко</h3>
-            </div>
-            <div class="pet-choice-card" onclick="choosePet('squish')">
-                <img src="IMG_6541.png" alt="Сквиш">
-                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-main);">Шарик-сквиш</h3>
-            </div>
-            <div class="pet-choice-card" onclick="choosePet('ghostcat')">
-                <img src="IMG_6542.PNG" alt="Призрак">
-                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-main);">Котенок-призрак</h3>
-            </div>
-
-            <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.8px;">Тема оформления</h3>
-            <div style="display: flex; gap: 8px;">
-                <div class="theme-emoji-btn" onclick="setTheme('obsidian')" data-theme="obsidian">🖤</div>
-                <div class="theme-emoji-btn" onclick="setTheme('ghost')" data-theme="ghost">🌫</div>
-                <div class="theme-emoji-btn" onclick="setTheme('cyber')" data-theme="cyber">💻</div>
-                <div class="theme-emoji-btn" onclick="setTheme('vampire')" data-theme="vampire">🍷</div>
-                <div class="theme-emoji-btn" onclick="setTheme('sakura')" data-theme="sakura">🌸</div>
-            </div>
-        </div>
+<!-- Экран письма при побеге питомца -->
+<div id="escapeScreen">
+    <div class="letter-card">
+        <div style="font-size: 32px; margin-bottom: 10px;">📜</div>
+        <h3 style="color: var(--accent); margin-bottom: 12px;">Письмо от Ноны</h3>
+        <p style="font-size: 11px; line-height: 1.5; color: var(--text-main); margin-bottom: 16px;">
+            «Видимо ты забыл обо мне. Нам было с тобой очень весело, но увы мне придется уйти в поисках нового друга.»
+        </p>
+        <button class="btn btn-accent" onclick="resetPet()">Завести нового питомца</button>
     </div>
+</div>
 
-    <!-- ЭКРАН ПОБЕГА -->
-    <div id="runawayScreen" class="screen hidden" style="justify-content: center;">
-        <h2 style="margin-bottom: 10px; color: var(--accent); font-size: 18px; font-weight: 500;">Сущность покинула вас</h2>
-        <p style="text-align: center; color: var(--text-muted); font-size: 11px; margin-bottom: 24px;">Слишком долгое отсутствие привело к разрыву связи.</p>
-        <button class="btn" onclick="resetAfterRunaway()">Начать заново</button>
-    </div>
+<div class="container" id="mainContainer">
 
-    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
-    <div class="app-container">
-        <header>
-            <div id="gameTitle" style="font-weight: 600; font-size: 13px; color: var(--text-main);">Сущность</div>
-            <div style="display: flex; gap: 6px;">
-                <div class="stat-badge">🪙 <span id="coins">500</span></div>
-                <div class="stat-badge" onclick="openSelectScreen()" style="cursor: pointer;">⚙️</div>
+    <!-- 1. Вкладка: Питомец -->
+    <div id="tab-pet" class="tab-content active">
+        <h3>Готический питомец</h3>
+        <div class="card">
+            <div style="font-size: 36px; margin-bottom: 6px;">🦇</div>
+            <p style="font-size: 12px; margin: 0 0 8px 0;">Нона спит в гробу</p>
+            <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px;">Монет: <span id="coinCount">0</span></p>
+
+            <div class="stat-bar-container">
+                Голод: <span id="hungerText">100</span>%
+                <div class="stat-bar-bg"><div id="hungerBar" class="stat-bar-fill"></div></div>
             </div>
-        </header>
-
-        <!-- ИГРОВАЯ СЦЕНА -->
-        <div class="stage" id="stage">
-            <div class="character-card" id="characterCard">
-                <img id="petImg" src="IMG_6542.PNG" alt="Питомец">
+            <div class="stat-bar-container">
+                Энергия (Сон): <span id="energyText">100</span>%
+                <div class="stat-bar-bg"><div id="energyBar" class="stat-bar-fill"></div></div>
+            </div>
+            <div class="stat-bar-container">
+                Настроение: <span id="happinessText">100</span>%
+                <div class="stat-bar-bg"><div id="happinessBar" class="stat-bar-fill"></div></div>
             </div>
         </div>
 
-        <!-- НИЖНЯЯ ПЛАВАЮЩАЯ ПАНЕЛЬ -->
-        <div class="bottom-sheet">
-            
-            <div class="content-body">
-                <!-- ДОМ -->
-                <div id="tab-home" class="tab-content active">
-                    <div class="bottom-stats">
-                        <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">
-                            <span id="petName">Питомец</span>
-                            <span style="color: var(--text-muted); font-size: 9px;">Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
-                        </div>
-                        <div class="stat-bar-container">
-                            <div class="stat-info"><span>Сытость</span><span id="hungerText">100</span>%</div>
-                            <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: var(--text-main);"></div></div>
-                        </div>
-                        <div class="stat-bar-container">
-                            <div class="stat-info"><span>Настроение</span><span id="moodText">100</span>%</div>
-                            <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: var(--text-muted);"></div></div>
-                        </div>
-                        <div class="stat-bar-container">
-                            <div class="stat-info"><span>Досуг</span><span id="funText">100</span>%</div>
-                            <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: var(--accent);"></div></div>
-                        </div>
-                    </div>
-                </div>
+        <button class="btn btn-accent" onclick="feedPet()">Покормить (+1 монета, +Голод)</button>
+        <button class="btn" onclick="sleepPet()">Уложить спать (+Энергия)</button>
+        <button class="btn" onclick="playPet()">Поиграть (+Настроение)</button>
+        <button class="btn" onclick="triggerEscape()" style="background: rgba(176,38,255,0.1); color: var(--accent); font-size: 9px; margin-top: 10px;">[Тест] Показать письмо об уходе</button>
+    </div>
 
-                <!-- ЛАВКА -->
-                <div id="tab-shop" class="tab-content">
-                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Лавка</h3>
-                    <div class="shop-grid" id="shopGrid">
-                        <!-- Динамически рендерится в updateUI -->
-                    </div>
-                </div>
-
-                <!-- ДОСУГ -->
-                <div id="tab-play" class="tab-content">
-                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Инвентарь (Еда и Игрушки)</h3>
-                    <div id="inventoryRow" style="margin-bottom: 8px;"></div>
-                    <button class="btn" onclick="doFunActivity()">Быстрая активность</button>
-                </div>
-
-                <!-- СВЯЗИ -->
-                <div id="tab-friends" class="tab-content">
-                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Связи</h3>
-                    <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">Приглашено: <span id="friendCount">0</span></p>
-                    <input type="text" id="refLink" value="https://t.me/gothic_pet_bot?start=ref123" readonly style="width: 100%; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; margin-bottom: 6px; font-size: 10px; outline: none;">
-                    <button class="btn" onclick="copyRef()" style="margin-bottom: 4px;">Копировать ссылку</button>
-                    <button class="btn" onclick="simulateFriendJoin()" style="background: rgba(255,255,255,0.06); color: var(--text-main);">Тест: Добавить друга</button>
-                </div>
-            </div>
-
-            <!-- НАВИГАЦИЯ -->
-            <nav class="nav-bar">
-                <button class="nav-item active" onclick="switchTab('home', this)">Дом</button>
-                <button class="nav-item" onclick="switchTab('shop', this)">Лавка</button>
-                <button class="nav-item" onclick="switchTab('play', this)">Досуг</button>
-                <button class="nav-item" onclick="switchTab('friends', this)">Связи</button>
-            </nav>
+    <!-- 2. Вкладка: Магазин -->
+    <div id="tab-shop" class="tab-content">
+        <h3>Магазин</h3>
+        <div class="card">
+            <p style="font-size: 11px; margin-bottom: 6px;">Бархатный гробик (Эпик)</p>
+            <button class="btn" onclick="alert('Скоро в продаже!')">Купить (100 монет)</button>
         </div>
     </div>
 
-    <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
+    <!-- 3. Вкладка: Связи -->
+    <div id="tab-friends" class="tab-content">
+        <h3>Связи</h3>
+        <div class="card" style="text-align: left;">
+            <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">Приглашено друзей: <span id="friendCount">0</span></p>
+            <input type="text" id="refLink" readonly>
+            <button class="btn btn-accent" onclick="shareToTelegram()">Поделиться с другом</button>
+            <button class="btn" onclick="copyRef()">Копировать ссылку</button>
+            <button class="btn" onclick="simulateFriendJoin()" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">[Тест] +1 друг</button>
+        </div>
+    </div>
 
-        let coins = parseInt(localStorage.getItem('gothic_coins')) || 500;
-        let friends = parseInt(localStorage.getItem('gothic_friends')) || 0;
-        let currentPet = localStorage.getItem('gothic_pet') || '';
-        let currentTheme = localStorage.getItem('gothic_theme') || 'obsidian';
+    <!-- 4. Вкладка: Профиль -->
+    <div id="tab-profile" class="tab-content">
+        <h3>Профиль</h3>
+        <div class="card" style="text-align: left;">
+            <p style="font-size: 10px; margin-bottom: 4px;">ID игрока: <span id="userIdDisplay">загрузка...</span></p>
+            <p style="font-size: 10px; margin-bottom: 0; color: var(--text-muted);">Статус: Начинающий гот</p>
+        </div>
+    </div>
 
-        let lvl = 1;
-        let exp = 0;
-        let maxExp = 300;
-        let hunger = 100;
-        let mood = 100;
-        let fun = 100;
-        let lastFunTime = 0;
+    <div class="nav-bar">
+        <button class="nav-btn active" onclick="switchTab('pet', this)">Питомец</button>
+        <button class="nav-btn" onclick="switchTab('shop', this)">Магазин</button>
+        <button class="nav-btn" onclick="switchTab('friends', this)">Связи</button>
+        <button class="nav-btn" onclick="switchTab('profile', this)">Профиль</button>
+    </div>
+
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    let gameState = {
+        coins: parseInt(localStorage.getItem('gothic_coins')) || 0,
+        friends: parseInt(localStorage.getItem('gothic_friends')) || 0,
+        hunger: parseInt(localStorage.getItem('gothic_hunger')) ?? 100,
+        energy: parseInt(localStorage.getItem('gothic_energy')) ?? 100,
+        happiness: parseInt(localStorage.getItem('gothic_happiness')) ?? 100,
+        lastUpdate: parseInt(localStorage.getItem('gothic_last_update')) || Date.now(),
+        isEscaped: localStorage.getItem('gothic_escaped') === 'true'
+    };
+
+    function saveState() {
+        localStorage.setItem('gothic_coins', gameState.coins);
+        localStorage.setItem('gothic_friends', gameState.friends);
+        localStorage.setItem('gothic_hunger', gameState.hunger);
+        localStorage.setItem('gothic_energy', gameState.energy);
+        localStorage.setItem('gothic_happiness', gameState.happiness);
+        localStorage.setItem('gothic_last_update', gameState.lastUpdate);
+        localStorage.setItem('gothic_escaped', gameState.isEscaped);
+    }
+
+    // Проверка уменьшения характеристик и побега через 3 дня
+    function processTimePassing() {
+        if (gameState.isEscaped) return;
+
+        let now = Date.now();
+        let elapsedSeconds = Math.floor((now - gameState.lastUpdate) / 1000);
+        let decaySteps = Math.floor(elapsedSeconds / 30); // 1% каждые 30 секунд
         
-        let catPoseTimeout = null;
-        let poseLocked = false;
-        let currentPose = 'afk';
-        let rightHoldTimer = null;
-
-        let rapidClickCount = 0;
-        let rapidClickTimer = null;
-        let audioCtx = null;
-
-        let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
-
-        const tabsOrder = ['home', 'shop', 'play', 'friends'];
-
-        const shopItems = [
-            { key: 'cookie', name: '🍪 Печенье', cost: 50, boost: 20, reqLvl: 1 },
-            { key: 'matcha', name: '🧋 Матча', cost: 110, boost: 45, reqLvl: 1 },
-            { key: 'cake', name: '🍰 Пирог', cost: 200, boost: 80, reqLvl: 1 },
-            { key: 'sushi', name: '🍣 Сет', cost: 350, boost: 100, reqLvl: 3 },
-            { key: 'ramen', name: '🍜 Рамен', cost: 500, boost: 130, reqLvl: 5 },
-            { key: 'bento', name: '🍱 Бенто', cost: 700, boost: 160, reqLvl: 7 },
-            { key: 'elixir', name: '🍷 Эликсир', cost: 1000, boost: 200, reqLvl: 10 }
-        ];
-
-        const themes = {
-            obsidian: {
-                bg: '#050407',
-                stageGrad: 'radial-gradient(circle at center, #14101c 0%, #050407 80%)',
-                accent: '#7a1c24',
-                textMain: '#e2e1e6',
-                textMuted: '#8c8994',
-                sheetBg: 'rgba(10, 8, 14, 0.92)',
-                badgeBg: 'rgba(15, 13, 20, 0.7)',
-                border: 'rgba(255, 255, 255, 0.06)'
-            },
-            ghost: {
-                bg: '#0a0b0e',
-                stageGrad: 'radial-gradient(circle at center, #161b22 0%, #0a0b0e 80%)',
-                accent: '#58a6ff',
-                textMain: '#c9d1d9',
-                textMuted: '#8b949e',
-                sheetBg: 'rgba(13, 17, 23, 0.92)',
-                badgeBg: 'rgba(22, 27, 34, 0.7)',
-                border: 'rgba(255, 255, 255, 0.08)'
-            },
-            cyber: {
-                bg: '#030706',
-                stageGrad: 'radial-gradient(circle at center, #0b1f1a 0%, #030706 80%)',
-                accent: '#00ffcc',
-                textMain: '#e0fbfc',
-                textMuted: '#669988',
-                sheetBg: 'rgba(4, 12, 10, 0.92)',
-                badgeBg: 'rgba(8, 24, 20, 0.7)',
-                border: 'rgba(0, 255, 204, 0.15)'
-            },
-            vampire: {
-                bg: '#0a0304',
-                stageGrad: 'radial-gradient(circle at center, #240c0f 0%, #0a0304 80%)',
-                accent: '#b31924',
-                textMain: '#f5e1e2',
-                textMuted: '#9e7a7c',
-                sheetBg: 'rgba(15, 5, 6, 0.92)',
-                badgeBg: 'rgba(25, 8, 10, 0.7)',
-                border: 'rgba(179, 25, 36, 0.2)'
-            },
-            sakura: {
-                bg: '#06060c',
-                stageGrad: 'radial-gradient(circle at center, #15142b 0%, #06060c 80%)',
-                accent: '#ff75b5',
-                textMain: '#f0eff5',
-                textMuted: '#8f8da8',
-                sheetBg: 'rgba(10, 10, 18, 0.92)',
-                badgeBg: 'rgba(18, 18, 30, 0.7)',
-                border: 'rgba(255, 117, 181, 0.15)'
-            }
-        };
-
-        function setTheme(themeKey) {
-            if (!themes[themeKey]) themeKey = 'obsidian';
-            currentTheme = themeKey;
-            localStorage.setItem('gothic_theme', themeKey);
-            let t = themes[themeKey];
-            let root = document.documentElement;
-            root.style.setProperty('--bg-main', t.bg);
-            root.style.setProperty('--stage-grad', t.stageGrad);
-            root.style.setProperty('--accent', t.accent);
-            root.style.setProperty('--text-main', t.textMain);
-            root.style.setProperty('--text-muted', t.textMuted);
-            root.style.setProperty('--sheet-bg', t.sheetBg);
-            root.style.setProperty('--badge-bg', t.badgeBg);
-            root.style.setProperty('--border-color', t.border);
-
-            document.querySelectorAll('.theme-emoji-btn').forEach(btn => {
-                btn.style.borderColor = btn.dataset.theme === themeKey ? t.accent : 'var(--border-color)';
-                btn.style.background = btn.dataset.theme === themeKey ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)';
-            });
-            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+        if (decaySteps > 0) {
+            gameState.hunger = Math.max(0, gameState.hunger - decaySteps);
+            gameState.energy = Math.max(0, gameState.energy - decaySteps);
+            gameState.happiness = Math.max(0, gameState.happiness - decaySteps);
+            gameState.lastUpdate = now;
+            saveState();
         }
 
-        setTheme(currentTheme);
-
-        const petsData = {
-            cloud: { name: 'Облачко', img: 'IMG_6540.png' },
-            squish: { name: 'Шарик-сквиш', img: 'IMG_6541.png' },
-            ghostcat: { name: 'Котенок-призрак', img: 'IMG_6542.PNG' }
-        };
-
-        const itemsMeta = {
-            cookie: { name: '🍪 Печенье', type: 'food', stat: 'hunger', boost: 20, exp: 50 },
-            matcha: { name: '🧋 Матча', type: 'food', stat: 'hunger', boost: 45, exp: 100 },
-            cake: { name: '🍰 Пирог', type: 'food', stat: 'hunger', boost: 80, exp: 200 },
-            sushi: { name: '🍣 Сет', type: 'food', stat: 'hunger', boost: 100, exp: 300 },
-            ramen: { name: '🍜 Рамен', type: 'food', stat: 'hunger', boost: 130, exp: 400 },
-            bento: { name: '🍱 Бенто', type: 'food', stat: 'hunger', boost: 160, exp: 550 },
-            elixir: { name: '🍷 Эликсир', type: 'food', stat: 'hunger', boost: 200, exp: 800 },
-            ball: { name: '🧶 Клубок', type: 'toy', stat: 'fun', boost: 30, exp: 70 },
-            feather: { name: '🪶 Перо', type: 'toy', stat: 'fun', boost: 50, exp: 120 },
-            laser: { name: '🔴 Лазер', type: 'toy', stat: 'fun', boost: 80, exp: 200 }
-        };
-
-        const ghostCatImages = {
-            afk: "IMG_6542.PNG",
-            waveHello: "IMG_6570.png",
-            surprised: "IMG_6568.png",
-            spin: "IMG_6567.png",
-            flyUp: "IMG_6571.png"
-        };
-
-        function initAudio() {
-            if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) audioCtx = new AudioContext();
-            }
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        // Условие побега: прошло 3 дня (3 * 24 * 60 * 60 * 1000 мс) и все параметры на нуле
+        const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+        if ((now - gameState.lastUpdate >= THREE_DAYS) && (gameState.hunger === 0 && gameState.energy === 0 && gameState.happiness === 0)) {
+            triggerEscape();
         }
+    }
 
-        function playSoftPurr() {
-            if (currentPet !== 'ghostcat') return;
-            try {
-                initAudio();
-                if (!audioCtx) return;
-                let now = audioCtx.currentTime;
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(26, now);
-                osc.frequency.linearRampToValueAtTime(32, now + 0.4);
-                
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                gain.gain.linearRampToValueAtTime(0.001, now + 0.8);
+    function triggerEscape() {
+        gameState.isEscaped = true;
+        saveState();
+        updateUI();
+    }
 
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.8);
-            } catch(e) {}
-        }
+    function resetPet() {
+        gameState.hunger = 100;
+        gameState.energy = 100;
+        gameState.happiness = 100;
+        gameState.isEscaped = false;
+        gameState.lastUpdate = Date.now();
+        saveState();
+        updateUI();
+    }
 
-        function setCatPose(poseKey, lockDuration = 0) {
-            if (currentPet !== 'ghostcat') return;
-            if (poseLocked && lockDuration === 0) return;
-
-            if (catPoseTimeout) {
-                clearTimeout(catPoseTimeout);
-                catPoseTimeout = null;
-            }
-
-            if (currentPose !== poseKey) {
-                currentPose = poseKey;
-                let imgEl = document.getElementById('petImg');
-                if (imgEl && ghostCatImages[poseKey]) {
-                    imgEl.src = ghostCatImages[poseKey];
-                }
-            }
-
-            if (lockDuration > 0) {
-                poseLocked = true;
-                catPoseTimeout = setTimeout(() => {
-                    poseLocked = false;
-                    if (currentPet === 'ghostcat') {
-                        setCatPose('afk');
-                    }
-                }, lockDuration);
-            }
-        }
-
-        function loadPetData(type) {
-            lvl = parseInt(localStorage.getItem(`gothic_${type}_lvl`)) || 1;
-            exp = parseInt(localStorage.getItem(`gothic_${type}_exp`)) || 0;
-            maxExp = 300 + (lvl - 1) * 250;
-            
-            let h = parseFloat(localStorage.getItem(`gothic_${type}_hunger`));
-            hunger = (isNaN(h) || h < 0 || h > 100) ? 100 : h;
-
-            let m = parseFloat(localStorage.getItem(`gothic_${type}_mood`));
-            mood = (isNaN(m) || m < 0 || m > 100) ? 100 : m;
-
-            let f = parseFloat(localStorage.getItem(`gothic_${type}_fun`));
-            fun = (isNaN(f) || f < 0 || f > 100) ? 100 : f;
-
-            lastFunTime = parseInt(localStorage.getItem(`gothic_${type}_last_fun`)) || 0;
-
-            let lastActive = parseInt(localStorage.getItem(`gothic_${type}_last_active`)) || Date.now();
-            let hoursPassed = (Date.now() - lastActive) / (1000 * 60 * 60);
-            if (hoursPassed > 0.5) {
-                hunger = Math.max(0, hunger - Math.floor(hoursPassed * 3));
-                mood = Math.max(0, mood - Math.floor(hoursPassed * 2));
-                fun = Math.max(0, fun - Math.floor(hoursPassed * 4));
-
-                if (hunger <= 0 || mood <= 0 || fun <= 0) {
-                    document.getElementById('runawayScreen').classList.remove('hidden');
-                }
-            }
-
-            let defaultInv = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
-            let savedInv = localStorage.getItem(`gothic_${type}_inv`);
-            if (savedInv) {
-                try { 
-                    inventory = JSON.parse(savedInv); 
-                    for (let key in defaultInv) {
-                        if (inventory[key] === undefined) inventory[key] = defaultInv[key];
-                    }
-                } catch(e) { inventory = { ...defaultInv }; }
-            } else {
-                inventory = { ...defaultInv };
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem('gothic_coins', coins);
-            localStorage.setItem('gothic_friends', friends);
-            if (!currentPet) return;
-
-            localStorage.setItem(`gothic_${currentPet}_lvl`, lvl);
-            localStorage.setItem(`gothic_${currentPet}_exp`, exp);
-            localStorage.setItem(`gothic_${currentPet}_hunger`, hunger);
-            localStorage.setItem(`gothic_${currentPet}_mood`, mood);
-            localStorage.setItem(`gothic_${currentPet}_fun`, fun);
-            localStorage.setItem(`gothic_${currentPet}_last_fun`, lastFunTime);
-            localStorage.setItem(`gothic_${currentPet}_inv`, JSON.stringify(inventory));
-            localStorage.setItem(`gothic_${currentPet}_last_active`, Date.now());
-        }
-
-        if (!currentPet || !petsData[currentPet]) {
-            document.getElementById('selectScreen').classList.remove('hidden');
+    function updateUI() {
+        if (gameState.isEscaped) {
+            document.getElementById('escapeScreen').style.display = 'flex';
+            document.getElementById('mainContainer').style.display = 'none';
+            return;
         } else {
-            loadPetData(currentPet);
-            initGame(currentPet);
+            document.getElementById('escapeScreen').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'flex';
         }
 
-        function openSelectScreen() {
-            document.getElementById('selectScreen').classList.remove('hidden');
+        document.getElementById('coinCount').innerText = gameState.coins;
+        document.getElementById('friendCount').innerText = gameState.friends;
+
+        document.getElementById('hungerText').innerText = gameState.hunger;
+        document.getElementById('hungerBar').style.width = gameState.hunger + '%';
+
+        document.getElementById('energyText').innerText = gameState.energy;
+        document.getElementById('energyBar').style.width = gameState.energy + '%';
+
+        document.getElementById('happinessText').innerText = gameState.happiness;
+        document.getElementById('happinessBar').style.width = gameState.happiness + '%';
+    }
+
+    function feedPet() {
+        gameState.coins += 1;
+        gameState.hunger = Math.min(100, gameState.hunger + 15);
+        gameState.lastUpdate = Date.now();
+        saveState();
+        updateUI();
+    }
+
+    function sleepPet() {
+        gameState.energy = Math.min(100, gameState.energy + 25);
+        gameState.lastUpdate = Date.now();
+        saveState();
+        updateUI();
+    }
+
+    function playPet() {
+        gameState.happiness = Math.min(100, gameState.happiness + 20);
+        gameState.lastUpdate = Date.now();
+        saveState();
+        updateUI();
+    }
+
+    function initApp() {
+        processTimePassing();
+
+        let telegramId = tg.initDataUnsafe?.user?.id || 'demo_user';
+        document.getElementById('userIdDisplay').innerText = telegramId;
+
+        let botUsername = 'gothic_pet_bot'; 
+        let realRefLink = `https://t.me/${botUsername}?start=ref_${telegramId}`;
+
+        let refInput = document.getElementById('refLink');
+        if (refInput) {
+            refInput.value = realRefLink;
         }
 
-        function closeSelectScreen() {
-            if (!currentPet) return;
-            document.getElementById('selectScreen').classList.add('hidden');
-        }
+        updateUI();
 
-        function choosePet(type) {
-            initAudio();
-            currentPet = type;
-            localStorage.setItem('gothic_pet', type);
-            inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
-            loadPetData(type);
-            document.getElementById('selectScreen').classList.add('hidden');
-            document.getElementById('runawayScreen').classList.add('hidden');
-            initGame(type);
-            saveData();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        function resetAfterRunaway() {
-            localStorage.removeItem('gothic_pet');
-            document.getElementById('runawayScreen').classList.add('hidden');
-            document.getElementById('selectScreen').classList.remove('hidden');
-        }
-
-        function initGame(type) {
-            let p = petsData[type];
-            let imgEl = document.getElementById('petImg');
-            if (type === 'ghostcat') {
-                poseLocked = false;
-                setCatPose('afk');
-            } else {
-                imgEl.src = p.img;
-            }
-            document.getElementById('petName').innerText = p.name;
-            document.getElementById('gameTitle').innerText = p.name;
+        setInterval(() => {
+            processTimePassing();
             updateUI();
-        }
+        }, 10000);
+    }
 
-        function switchTab(tabName, btnEl) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-            if (btnEl) btnEl.classList.add('active');
+    function shareToTelegram() {
+        let refLink = document.getElementById("refLink").value;
+        let text = encodeURIComponent("🖤 Заходи вырастить своего готического питомца со мной!");
+        let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${text}`;
+        tg.openTelegramLink(shareUrl);
+    }
 
-            if (tabName === 'home' && currentPet === 'ghostcat') {
-                setCatPose('waveHello', 1200);
-            }
-        }
+    function copyRef() {
+        let refInput = document.getElementById("refLink");
+        refInput.select();
+        navigator.clipboard.writeText(refInput.value).then(() => {
+            alert("Ссылка скопирована в буфер обмена!");
+        });
+    }
 
-        function switchToNextTab() {
-            let activeTabEl = document.querySelector('.tab-content.active');
-            let currentTabId = activeTabEl ? activeTabEl.id.replace('tab-', '') : 'home';
-            let currentIndex = tabsOrder.indexOf(currentTabId);
-            let nextIndex = (currentIndex + 1) % tabsOrder.length;
-            let nextTabName = tabsOrder[nextIndex];
-            
-            let navButtons = document.querySelectorAll('.nav-item');
-            let targetNavBtn = navButtons[nextIndex];
-            
-            switchTab(nextTabName, targetNavBtn);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
+    function simulateFriendJoin() {
+        gameState.friends += 1;
+        saveState();
+        updateUI();
+    }
 
-        function addExp(amount) {
-            exp += amount;
-            maxExp = 300 + (lvl - 1) * 250;
-            if (exp >= maxExp) {
-                exp -= maxExp;
-                lvl++;
-                coins += 200;
-                maxExp = 300 + (lvl - 1) * 250;
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }
-            saveData();
-            updateUI();
-        }
-
-        function updateUI() {
-            document.getElementById('coins').innerText = coins;
-            document.getElementById('lvl').innerText = lvl;
-            document.getElementById('exp').innerText = exp;
-            document.getElementById('maxExp').innerText = maxExp;
-            document.getElementById('friendCount').innerText = friends;
-
-            let hInt = Math.round(isNaN(hunger) ? 100 : hunger);
-            let mInt = Math.round(isNaN(mood) ? 100 : mood);
-            let fInt = Math.round(isNaN(fun) ? 100 : fun);
-
-            document.getElementById('hungerText').innerText = hInt;
-            document.getElementById('moodText').innerText = mInt;
-            document.getElementById('funText').innerText = fInt;
-
-            document.getElementById('hungerBar').style.width = hInt + '%';
-            document.getElementById('moodBar').style.width = mInt + '%';
-            document.getElementById('funBar').style.width = fInt + '%';
-
-            // Динамический рендеринг лавки еды с уровнями
-            let shopGrid = document.getElementById('shopGrid');
-            shopGrid.innerHTML = '';
-            shopItems.forEach(item => {
-                let isUnlocked = lvl >= item.reqLvl;
-                let card = document.createElement('div');
-                card.className = 'shop-card';
-                card.innerHTML = `
-                    <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">${item.name}</p>
-                    <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">${isUnlocked ? `+${item.boost} Сытости` : `Требует Ур. ${item.reqLvl}`}</p>
-                    <button class="shop-btn ${isUnlocked ? '' : 'locked'}" onclick="buyFood('${item.key}', ${item.cost}, ${item.reqLvl})">${item.cost} 🪙</button>
-                `;
-                shopGrid.appendChild(card);
-            });
-
-            // Инвентарь
-            let invRow = document.getElementById('inventoryRow');
-            invRow.innerHTML = '';
-            let hasAnyItem = false;
-            for (let key in inventory) {
-                if (inventory[key] > 0 && itemsMeta[key]) {
-                    hasAnyItem = true;
-                    let meta = itemsMeta[key];
-                    let cardEl = document.createElement('div');
-                    cardEl.className = 'inv-item-card';
-                    cardEl.innerHTML = `<span style="font-size:11px; color:var(--text-main);">${meta.name}</span> <span style="color:var(--text-muted); font-weight:600; font-size:11px;">x${inventory[key]}</span>`;
-                    cardEl.onclick = () => useInventoryItem(key);
-                    invRow.appendChild(cardEl);
-                }
-            }
-            if (!hasAnyItem) {
-                invRow.innerHTML = `<span style="font-size:10px; color:#555;">Инвентарь пуст.</span>`;
-            }
-        }
-
-        // ЖЕСТЫ И ПЕРЕТАСКИВАНИЕ
-        let stage = document.getElementById('stage');
-        let card = document.getElementById('characterCard');
-        let isDragging = false;
-        let startX, startY;
-        let currentDeltaX = 0;
-        let currentDeltaY = 0;
-
-        card.addEventListener('pointerdown', (e) => {
-            initAudio();
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            currentDeltaX = 0;
-            currentDeltaY = 0;
-            
-            card.style.transition = 'none';
-            card.setPointerCapture(e.pointerId);
-
-            mood = Math.min(100, mood + 1);
-            saveData();
-            updateUI();
-
-            if (currentPet === 'ghostcat') {
-                playSoftPurr();
-                
-                rapidClickCount++;
-                if (rapidClickTimer) clearTimeout(rapidClickTimer);
-
-                if (rapidClickCount >= 3) {
-                    setCatPose('surprised', 3000);
-                    rapidClickCount = 0;
-                }
-
-                rapidClickTimer = setTimeout(() => { rapidClickCount = 0; }, 600);
-            }
-
-            let emoji = document.createElement('div');
-            emoji.className = 'floating-emoji';
-            emoji.innerText = '✨';
-            let rect = stage.getBoundingClientRect();
-            emoji.style.left = (e.clientX - rect.left - 10) + 'px';
-            emoji.style.top = (e.clientY - rect.top - 20) + 'px';
-            stage.appendChild(emoji);
-            setTimeout(() => emoji.remove(), 1000);
+    function switchTab(tabId, element) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
         });
 
-        window.addEventListener('pointermove', (e) => {
-            if (!isDragging) return;
-            currentDeltaX = e.clientX - startX;
-            currentDeltaY = e.clientY - startY;
+        document.getElementById('tab-' + tabId).classList.add('active');
+        element.classList.add('active');
+    }
 
-            if (currentPet === 'ghostcat' && !poseLocked) {
-                let distance = Math.hypot(currentDeltaX, currentDeltaY);
-                
-                if (distance > 12) {
-                    if (e.clientX >= window.innerWidth - 70) {
-                        if (currentPose !== 'flyUp') {
-                            setCatPose('flyUp');
-                        }
-                        if (!rightHoldTimer) {
-                            rightHoldTimer = setTimeout(() => {
-                                switchToNextTab();
-                                rightHoldTimer = null;
-                                poseLocked = false;
-                                setCatPose('afk');
-                            }, 1500);
-                        }
-                    } else {
-                        if (rightHoldTimer) {
-                            clearTimeout(rightHoldTimer);
-                            rightHoldTimer = null;
-                        }
-                        if (currentPose !== 'spin') {
-                            setCatPose('spin');
-                        }
-                    }
-                }
-            }
+    window.addEventListener('DOMContentLoaded', () => {
+        initApp();
+    });
+</script>
 
-            if (currentPet === 'squish') {
-                let stretchX = Math.min(0.6, Math.abs(currentDeltaX) / 35);
-                let stretchY = Math.min(0.6, Math.abs(currentDeltaY) / 35);
-                card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) scale(${1 + stretchX}, ${Math.max(0.7, 1 - stretchY/1.5)})`;
-            } else {
-                card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) rotate(${currentDeltaX / 12}deg)`;
-            }
-        });
-
-        window.addEventListener('pointerup', (e) => {
-            if (!isDragging) return;
-            isDragging = false;
-
-            if (rightHoldTimer) {
-                clearTimeout(rightHoldTimer);
-                rightHoldTimer = null;
-            }
-
-            if (currentPet === 'ghostcat' && !poseLocked) {
-                setCatPose('afk');
-            }
-
-            card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
-            card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
-
-            try { card.releasePointerCapture(e.pointerId); } catch(err) {}
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-        });
-
-        function buyFood(foodKey, cost, reqLvl) {
-            if (lvl < reqLvl) {
-                alert(`Этот предмет доступен только с ${reqLvl} уровня!`);
-                return;
-            }
-            if (coins < cost) {
-                alert('Недостаточно средств');
-                return;
-            }
-            coins -= cost;
-            inventory[foodKey] = (inventory[foodKey] || 0) + 1;
-            saveData();
-            updateUI();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        function useInventoryItem(itemKey) {
-            let meta = itemsMeta[itemKey];
-            if (!meta || !inventory[itemKey] || inventory[itemKey] <= 0) return;
-
-            if (meta.stat === 'hunger' && hunger >= 95) {
-                alert('Сущность сыта');
-                return;
-            }
-            if (meta.stat === 'fun' && fun >= 95) {
-                alert('Сущность уже наигралась');
-                return;
-            }
-
-            inventory[itemKey]--;
-
-            if (meta.stat === 'hunger') {
-                hunger = Math.min(100, hunger + meta.boost);
-                mood = Math.min(100, mood + 15);
-            } else if (meta.stat === 'fun') {
-                fun = Math.min(100, fun + meta.boost);
-                mood = Math.min(100, mood + 20);
-            }
-
-            addExp(itemsMeta[itemKey].exp || 100);
-
-            if (currentPet === 'ghostcat') {
-                setCatPose('spin', 1200);
-            }
-            saveData();
-            updateUI();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        function doFunActivity() {
-            let now = Date.now();
-            let cooldown = 3600000; // 1 час (3600000 мс)
-            if (now - lastFunTime < cooldown) {
-                let remainingMins = Math.ceil((cooldown - (now - lastFunTime)) / 60000);
-                alert(`Требуется восстановление! Осталось ждать: ${remainingMins} мин.`);
-                return;
-            }
-            lastFunTime = now;
-            fun = Math.min(100, fun + 30);
-            mood = Math.min(100, mood + 20);
-            addExp(150);
-            saveData();
-            updateUI();
-
-            if (currentPet === 'ghostcat') setCatPose('spin', 2000);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        function copyRef() {
-            navigator.clipboard.writeText(document.getElementById("refLink").value);
-            alert("Ссылка скопирована");
-        }
-
-        function simulateFriendJoin() {
-            friends++;
-            coins += 300;
-            addExp(200);
-            saveData();
-            updateUI();
-        }
-    </script>
 </body>
 </html>
