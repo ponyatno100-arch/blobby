@@ -25,6 +25,7 @@
             flex-direction: column;
             height: 100vh;
             box-sizing: border-box;
+            user-select: none;
         }
 
         .container {
@@ -34,15 +35,18 @@
             display: flex;
             flex-direction: column;
             flex: 1;
+            overflow: hidden;
         }
 
         .tab-content {
             display: none;
             flex: 1;
             overflow-y: auto;
+            padding-bottom: 10px;
         }
         .tab-content.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
         h3 {
@@ -61,6 +65,26 @@
             padding: 12px;
             margin-bottom: 10px;
             text-align: center;
+        }
+
+        /* Анимация и интерактив с Ноной */
+        .pet-avatar-container {
+            position: relative;
+            cursor: pointer;
+            display: inline-block;
+            margin: 10px 0;
+            transition: transform 0.1s ease;
+        }
+        .pet-avatar-container:active {
+            transform: scale(0.92);
+        }
+        .pet-emoji {
+            font-size: 48px;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+        .pet-avatar-container.scared .pet-emoji {
+            transform: translateY(-15px) rotate(-10deg);
         }
 
         .stat-bar-container {
@@ -106,6 +130,9 @@
             color: #fff;
             border: none;
         }
+        .btn-accent:hover {
+            background: #9a1ee6;
+        }
 
         input[type="text"] {
             width: 100%;
@@ -120,12 +147,28 @@
             outline: none;
         }
 
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .item-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+        }
+
         .nav-bar {
             display: flex;
             justify-content: space-around;
             border-top: 1px solid var(--border-color);
             padding-top: 10px;
             margin-top: auto;
+            background: var(--bg-color);
         }
         .nav-btn {
             background: none;
@@ -186,8 +229,11 @@
     <div id="tab-pet" class="tab-content active">
         <h3>Готический питомец</h3>
         <div class="card">
-            <div style="font-size: 36px; margin-bottom: 6px;">🦇</div>
-            <p style="font-size: 12px; margin: 0 0 8px 0;">Нона спит в гробу</p>
+            <div class="pet-avatar-container" id="petAvatar" onclick="tapPet()">
+                <span class="pet-emoji">🦇</span>
+            </div>
+            <p style="font-size: 12px; margin: 0 0 4px 0;">Нона спит в гробу</p>
+            <p style="font-size: 9px; color: var(--text-muted); margin-bottom: 8px;">(Нажми на нее, чтобы разбудить!)</p>
             <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px;">Монет: <span id="coinCount">0</span></p>
 
             <div class="stat-bar-container">
@@ -206,11 +252,49 @@
 
         <button class="btn btn-accent" onclick="feedPet()">Покормить (+1 монета, +Голод)</button>
         <button class="btn" onclick="sleepPet()">Уложить спать (+Энергия)</button>
-        <button class="btn" onclick="playPet()">Поиграть (+Настроение)</button>
-        <button class="btn" onclick="triggerEscape()" style="background: rgba(176,38,255,0.1); color: var(--accent); font-size: 9px; margin-top: 10px;">[Тест] Показать письмо об уходе</button>
+        <button class="btn" onclick="triggerEscape()" style="background: rgba(176,38,255,0.1); color: var(--accent); font-size: 9px; margin-top: 6px;">[Тест] Показать письмо об уходе</button>
     </div>
 
-    <!-- 2. Вкладка: Магазин -->
+    <!-- 2. Вкладка: Досуг (Инвентарь еды и игрушек) -->
+    <div id="tab-leisure" class="tab-content">
+        <h3>Досуг и Инвентарь</h3>
+        
+        <div class="card" style="text-align: left;">
+            <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">Запасы еды:</p>
+            <div class="inventory-grid">
+                <div class="item-card">
+                    <div>🩸 Кровавый сок</div>
+                    <div style="font-size: 9px; color: var(--text-muted); margin: 4px 0;">Шт: <span id="foodJuice">2</span></div>
+                    <button class="btn btn-accent" style="padding: 6px; font-size: 9px; margin:0;" onclick="useInventory('juice')">Выпить</button>
+                </div>
+                <div class="item-card">
+                    <div>🖤 Черный зефир</div>
+                    <div style="font-size: 9px; color: var(--text-muted); margin: 4px 0;">Шт: <span id="foodMarshmallow">1</span></div>
+                    <button class="btn btn-accent" style="padding: 6px; font-size: 9px; margin:0;" onclick="useInventory('marshmallow')">Съесть</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: left;">
+            <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">Игрушки и развлечения:</p>
+            <div class="inventory-grid">
+                <div class="item-card">
+                    <div>🦇 Плюшевая мышь</div>
+                    <div style="font-size: 9px; color: var(--text-muted); margin: 4px 0;">Шт: <span id="toyBat">1</span></div>
+                    <button class="btn btn-accent" style="padding: 6px; font-size: 9px; margin:0;" onclick="useInventory('toy')">Играть</button>
+                </div>
+                <div class="item-card">
+                    <div>🥀 Засушенная роза</div>
+                    <div style="font-size: 9px; color: var(--text-muted); margin: 4px 0;">Шт: <span id="toyRose">1</span></div>
+                    <button class="btn btn-accent" style="padding: 6px; font-size: 9px; margin:0;" onclick="useInventory('rose')">Понюхать</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="buyRandomItem()">Купить набор снабжения (10 монет)</button>
+    </div>
+
+    <!-- 3. Вкладка: Магазин -->
     <div id="tab-shop" class="tab-content">
         <h3>Магазин</h3>
         <div class="card">
@@ -219,7 +303,7 @@
         </div>
     </div>
 
-    <!-- 3. Вкладка: Связи -->
+    <!-- 4. Вкладка: Связи -->
     <div id="tab-friends" class="tab-content">
         <h3>Связи</h3>
         <div class="card" style="text-align: left;">
@@ -231,7 +315,7 @@
         </div>
     </div>
 
-    <!-- 4. Вкладка: Профиль -->
+    <!-- 5. Вкладка: Профиль -->
     <div id="tab-profile" class="tab-content">
         <h3>Профиль</h3>
         <div class="card" style="text-align: left;">
@@ -242,6 +326,7 @@
 
     <div class="nav-bar">
         <button class="nav-btn active" onclick="switchTab('pet', this)">Питомец</button>
+        <button class="nav-btn" onclick="switchTab('leisure', this)">Досуг</button>
         <button class="nav-btn" onclick="switchTab('shop', this)">Магазин</button>
         <button class="nav-btn" onclick="switchTab('friends', this)">Связи</button>
         <button class="nav-btn" onclick="switchTab('profile', this)">Профиль</button>
@@ -250,20 +335,24 @@
 </div>
 
 <script>
-    // Безопасная инициализация Telegram WebApp (не падает в обычном браузере)
     const tg = window.Telegram?.WebApp || {};
     if (typeof tg.expand === 'function') {
         tg.expand();
     }
 
     let gameState = {
-        coins: parseInt(localStorage.getItem('gothic_coins')) || 0,
+        coins: parseInt(localStorage.getItem('gothic_coins')) || 5,
         friends: parseInt(localStorage.getItem('gothic_friends')) || 0,
         hunger: parseInt(localStorage.getItem('gothic_hunger')) ?? 100,
         energy: parseInt(localStorage.getItem('gothic_energy')) ?? 100,
         happiness: parseInt(localStorage.getItem('gothic_happiness')) ?? 100,
         lastUpdate: parseInt(localStorage.getItem('gothic_last_update')) || Date.now(),
-        isEscaped: localStorage.getItem('gothic_escaped') === 'true'
+        isEscaped: localStorage.getItem('gothic_escaped') === 'true',
+        // Инвентарь
+        foodJuice: parseInt(localStorage.getItem('gothic_juice')) ?? 2,
+        foodMarshmallow: parseInt(localStorage.getItem('gothic_marshmallow')) ?? 1,
+        toyBat: parseInt(localStorage.getItem('gothic_toyBat')) ?? 1,
+        toyRose: parseInt(localStorage.getItem('gothic_toyRose')) ?? 1
     };
 
     function saveState() {
@@ -274,15 +363,18 @@
         localStorage.setItem('gothic_happiness', gameState.happiness);
         localStorage.setItem('gothic_last_update', gameState.lastUpdate);
         localStorage.setItem('gothic_escaped', gameState.isEscaped);
+        localStorage.setItem('gothic_juice', gameState.foodJuice);
+        localStorage.setItem('gothic_marshmallow', gameState.foodMarshmallow);
+        localStorage.setItem('gothic_toyBat', gameState.toyBat);
+        localStorage.setItem('gothic_toyRose', gameState.toyRose);
     }
 
-    // Проверка уменьшения характеристик и побега через 3 дня
     function processTimePassing() {
         if (gameState.isEscaped) return;
 
         let now = Date.now();
         let elapsedSeconds = Math.floor((now - gameState.lastUpdate) / 1000);
-        let decaySteps = Math.floor(elapsedSeconds / 30); // 1% каждые 30 секунд
+        let decaySteps = Math.floor(elapsedSeconds / 30);
         
         if (decaySteps > 0) {
             gameState.hunger = Math.max(0, gameState.hunger - decaySteps);
@@ -292,7 +384,6 @@
             saveState();
         }
 
-        // Условие побега: прошло 3 дня (3 * 24 * 60 * 60 * 1000 мс) и все параметры на нуле
         const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
         if ((now - gameState.lastUpdate >= THREE_DAYS) && (gameState.hunger === 0 && gameState.energy === 0 && gameState.happiness === 0)) {
             triggerEscape();
@@ -336,6 +427,12 @@
 
         document.getElementById('happinessText').innerText = gameState.happiness;
         document.getElementById('happinessBar').style.width = gameState.happiness + '%';
+
+        // Обновление счетчиков инвентаря
+        document.getElementById('foodJuice').innerText = gameState.foodJuice;
+        document.getElementById('foodMarshmallow').innerText = gameState.foodMarshmallow;
+        document.getElementById('toyBat').innerText = gameState.toyBat;
+        document.getElementById('toyRose').innerText = gameState.toyRose;
     }
 
     function feedPet() {
@@ -353,21 +450,81 @@
         updateUI();
     }
 
-    function playPet() {
-        gameState.happiness = Math.min(100, gameState.happiness + 20);
+    // Интерактив по тапу на Нону
+    function tapPet() {
+        let avatar = document.getElementById('petAvatar');
+        avatar.classList.add('scared');
+        gameState.happiness = Math.min(100, gameState.happiness + 5);
+        saveState();
+        updateUI();
+        setTimeout(() => {
+            avatar.classList.remove('scared');
+        }, 300);
+    }
+
+    // Использование предметов из инвентаря
+    function useInventory(itemType) {
+        if (itemType === 'juice') {
+            if (gameState.foodJuice > 0) {
+                gameState.foodJuice--;
+                gameState.hunger = Math.min(100, gameState.hunger + 25);
+            } else {
+                alert('Кровавый сок закончился!');
+                return;
+            }
+        } else if (itemType === 'marshmallow') {
+            if (gameState.foodMarshmallow > 0) {
+                gameState.foodMarshmallow--;
+                gameState.hunger = Math.min(100, gameState.hunger + 20);
+                gameState.happiness = Math.min(100, gameState.happiness + 10);
+            } else {
+                alert('Черный зефир закончился!');
+                return;
+            }
+        } else if (itemType === 'toy') {
+            if (gameState.toyBat > 0) {
+                gameState.toyBat--;
+                gameState.happiness = Math.min(100, gameState.happiness + 30);
+            } else {
+                alert('Плюшевая мышь порвалась!');
+                return;
+            }
+        } else if (itemType === 'rose') {
+            if (gameState.toyRose > 0) {
+                gameState.toyRose--;
+                gameState.happiness = Math.min(100, gameState.happiness + 20);
+            } else {
+                alert('Роза завяла полностью!');
+                return;
+            }
+        }
         gameState.lastUpdate = Date.now();
         saveState();
         updateUI();
     }
 
+    function buyRandomItem() {
+        if (gameState.coins >= 10) {
+            gameState.coins -= 10;
+            let randomChoice = Math.floor(Math.random() * 4);
+            if (randomChoice === 0) gameState.foodJuice++;
+            else if (randomChoice === 1) gameState.foodMarshmallow++;
+            else if (randomChoice === 2) gameState.toyBat++;
+            else gameState.toyRose++;
+            saveState();
+            updateUI();
+            alert('Вы приобрели новый предмет для досуга!');
+        } else {
+            alert('Не хватает монет!');
+        }
+    }
+
     function initApp() {
         processTimePassing();
 
-        // Получаем реальный Telegram ID или создаем демо-ID для обычного браузера
         let telegramId = tg.initDataUnsafe?.user?.id || 'demo_user_' + Math.floor(Math.random() * 10000);
         document.getElementById('userIdDisplay').innerText = telegramId;
 
-        // ⚠️ ЗАМЕНИ 'gothic_pet_bot' на реальный юзернейм твоего Telegram-бота (без @)
         let botUsername = 'gothic_pet_bot'; 
         let realRefLink = `https://t.me/${botUsername}?start=ref_${telegramId}`;
 
@@ -389,7 +546,6 @@
         let text = encodeURIComponent("🖤 Заходи вырастить своего готического питомца со мной!");
         let shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${text}`;
         
-        // Работает и внутри Telegram, и открывает вкладку шеринга в обычном браузере
         if (typeof tg.openTelegramLink === 'function') {
             tg.openTelegramLink(shareUrl);
         } else {
@@ -404,8 +560,7 @@
         
         navigator.clipboard.writeText(refInput.value).then(() => {
             alert("Ссылка скопирована в буфер обмена!");
-        }).catch(err => {
-            document.execCommand('copy');
+        }).catch(() => {
             alert("Ссылка скопирована!");
         });
     }
