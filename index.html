@@ -582,12 +582,13 @@
             laser: { name: '🔴 Лазер', type: 'toy', stat: 'fun', boost: 80, exp: 200 }
         };
 
+        // Правильное сопоставление файлов с анимациями
         const ghostCatImages = {
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
             surprised: "IMG_6568.png",
-            spin: "IMG_6567.png",
-            flyUp: "IMG_6571.png"
+            spin: "IMG_6569.png",
+            flyUp: "IMG_6571.png" // Летящий кот с полосами скорости
         };
 
         function initAudio() {
@@ -840,7 +841,7 @@
             if (currentPet === 'ghostcat') {
                 playSoftPurr();
                 if (!poseLocked) {
-                    setCatPose('spin'); // Включаем анимацию вращения при перетаскивании
+                    setCatPose('flyUp'); // Активируем летящего кота при перетаскивании
                 }
                 
                 rapidClickCount++;
@@ -872,7 +873,6 @@
             // Логика движения и удержания вправо для смены вкладки
             if (currentPet === 'ghostcat' && !poseLocked) {
                 if (currentDeltaX > 70) {
-                    // Тянем вправо — проверяем удержание 1.5 сек
                     if (!rightHoldTimer) {
                         rightHoldTimer = setTimeout(() => {
                             switchToNextTab();
@@ -886,8 +886,8 @@
                         clearTimeout(rightHoldTimer);
                         rightHoldTimer = null;
                     }
-                    if (currentPose !== 'spin') {
-                        setCatPose('spin');
+                    if (currentPose !== 'flyUp') {
+                        setCatPose('flyUp');
                     }
                 }
             }
@@ -911,7 +911,7 @@
             }
 
             if (currentPet === 'ghostcat' && !poseLocked) {
-                setCatPose('afk'); // Возвращаем в покой при отпускании
+                setCatPose('afk');
             }
 
             card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
@@ -959,7 +959,7 @@
             addExp(meta.exp);
 
             if (currentPet === 'ghostcat') {
-                setCatPose('spin', 1200);
+                setCatPose('flyUp', 1200);
             }
             saveData();
             updateUI();
@@ -979,7 +979,7 @@
             saveData();
             updateUI();
 
-            if (currentPet === 'ghostcat') setCatPose('spin', 2000);
+            if (currentPet === 'ghostcat') setCatPose('flyUp', 2000);
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
