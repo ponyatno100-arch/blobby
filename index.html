@@ -156,7 +156,7 @@
             display: block;
         }
 
-        /* ПАНЕЛЬ ПОТРЕБНОСТЕЙ (ТОЛЬКО ДЛЯ ДОМА) */
+        /* ПАНЕЛЬ ПОТРЕБНОСТЕЙ */
         .bottom-stats {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
@@ -383,7 +383,7 @@
         <div class="bottom-sheet">
             
             <div class="content-body">
-                <!-- ДОМ (ПОТРЕБНОСТИ ОТОБРАЖАЮТСЯ ТОЛЬКО ТУТ) -->
+                <!-- ДОМ -->
                 <div id="tab-home" class="tab-content active">
                     <div class="bottom-stats">
                         <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">
@@ -432,7 +432,7 @@
                     </div>
                 </div>
 
-                <!-- ДОСУГ (ИНВЕНТАРЬ ЕДЫ И ИГРУШЕК) -->
+                <!-- ДОСУГ -->
                 <div id="tab-play" class="tab-content">
                     <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Инвентарь (Еда и Игрушки)</h3>
                     <div id="inventoryRow" style="margin-bottom: 8px;"></div>
@@ -839,6 +839,9 @@
 
             if (currentPet === 'ghostcat') {
                 playSoftPurr();
+                if (!poseLocked) {
+                    setCatPose('flyUp'); // При начале перетаскивания активируем анимацию полета/движения
+                }
                 
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
@@ -866,24 +869,27 @@
             currentDeltaX = e.clientX - startX;
             currentDeltaY = e.clientY - startY;
 
-            // Логика перетягивания вправо и удержание 1.5 сек для смены вкладки
+            // Логика движения и удержания вправо для смены вкладки
             if (currentPet === 'ghostcat' && !poseLocked) {
                 if (currentDeltaX > 70) {
-                    setCatPose('flyUp');
+                    // Тянем вправо — проверяем удержание 1.5 сек
                     if (!rightHoldTimer) {
                         rightHoldTimer = setTimeout(() => {
                             switchToNextTab();
                             rightHoldTimer = null;
                             poseLocked = false;
                             setCatPose('afk');
-                        }, 1500); // 1.5 секунды удержания вправо
+                        }, 1500);
                     }
                 } else {
+                    // Если тянем вверх-вниз или в другие стороны — таймер сбрасывается, но анимация движения (flyUp) активна
                     if (rightHoldTimer) {
                         clearTimeout(rightHoldTimer);
                         rightHoldTimer = null;
                     }
-                    setCatPose('afk');
+                    if (currentPose !== 'flyUp') {
+                        setCatPose('flyUp');
+                    }
                 }
             }
 
@@ -906,7 +912,7 @@
             }
 
             if (currentPet === 'ghostcat' && !poseLocked) {
-                setCatPose('afk');
+                setCatPose('afk'); // Возвращаем в покой при отпускании
             }
 
             card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
