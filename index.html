@@ -326,6 +326,56 @@
             border: 1px solid var(--border-color);
             cursor: pointer;
         }
+
+        /* СТИЛИ ДЛЯ ТУМБЛЕРОВ В НАСТРОЙКАХ */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 14px;
+            margin-bottom: 8px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-main);
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
     </style>
 </head>
 <body>
@@ -353,12 +403,28 @@
             </div>
 
             <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.8px;">Тема оформления</h3>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
                 <div class="theme-emoji-btn" onclick="setTheme('obsidian')" data-theme="obsidian">🖤</div>
                 <div class="theme-emoji-btn" onclick="setTheme('ghost')" data-theme="ghost">🌫</div>
                 <div class="theme-emoji-btn" onclick="setTheme('cyber')" data-theme="cyber">💻</div>
                 <div class="theme-emoji-btn" onclick="setTheme('vampire')" data-theme="vampire">🍷</div>
                 <div class="theme-emoji-btn" onclick="setTheme('sakura')" data-theme="sakura">🌸</div>
+            </div>
+
+            <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.8px;">Параметры</h3>
+            <div class="setting-row">
+                <span style="font-size: 12px; color: var(--text-main);">Звук / Мурчание</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="soundToggle" onchange="toggleSound(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span style="font-size: 12px; color: var(--text-main);">Вибрация (Haptic)</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="hapticToggle" onchange="toggleHaptic(this)">
+                    <span class="toggle-slider"></span>
+                </label>
             </div>
         </div>
     </div>
@@ -432,7 +498,7 @@
                 <div id="tab-friends" class="tab-content">
                     <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Связи</h3>
                     <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">Приглашено: <span id="friendCount">0</span></p>
-                    <input type="text" id="refLink" readonly style="width: 100%; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; margin-bottom: 6px; font-size: 10px; outline: none;">
+                    <input type="text" id="refLink" value="https://t.me/blobbypet_bot?start=ref123" readonly style="width: 100%; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; margin-bottom: 6px; font-size: 10px; outline: none;">
                     <button class="btn" onclick="copyRef()" style="margin-bottom: 4px;">Копировать ссылку</button>
                     <button class="btn" onclick="simulateFriendJoin()" style="background: rgba(255,255,255,0.06); color: var(--text-main);">Тест: Добавить друга</button>
                 </div>
@@ -452,19 +518,28 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- ГЕНЕРАЦИЯ ПЕРСОНАЛЬНОЙ РЕФЕРАЛЬНОЙ ССЫЛКИ ---
-        let userId = tg.initDataUnsafe?.user?.id || 'demo_' + Math.floor(Math.random() * 10000);
-        let botUsername = 'gothic_pet_bot'; // ⚠️ Замените 'gothic_pet_bot' на юзернейм вашего бота в Telegram (без @)
-        let userRefLink = `https://t.me/${botUsername}?start=ref_${userId}`;
-
-        // Вставляем сгенерированную ссылку в инпут вкладки «Связи»
-        document.getElementById('refLink').value = userRefLink;
-        // ------------------------------------------------
-
         let coins = parseInt(localStorage.getItem('gothic_coins')) || 500;
         let friends = parseInt(localStorage.getItem('gothic_friends')) || 0;
         let currentPet = localStorage.getItem('gothic_pet') || '';
         let currentTheme = localStorage.getItem('gothic_theme') || 'obsidian';
+
+        // Настройки тумблеров
+        let soundEnabled = localStorage.getItem('gothic_sound') !== 'false';
+        let hapticEnabled = localStorage.getItem('gothic_haptic') !== 'false';
+
+        document.getElementById('soundToggle').checked = soundEnabled;
+        document.getElementById('hapticToggle').checked = hapticEnabled;
+
+        function toggleSound(el) {
+            soundEnabled = el.checked;
+            localStorage.setItem('gothic_sound', soundEnabled);
+            if (soundEnabled) initAudio();
+        }
+
+        function toggleHaptic(el) {
+            hapticEnabled = el.checked;
+            localStorage.setItem('gothic_haptic', hapticEnabled);
+        }
 
         let lvl = 1;
         let exp = 0;
@@ -569,7 +644,7 @@
                 btn.style.borderColor = btn.dataset.theme === themeKey ? t.accent : 'var(--border-color)';
                 btn.style.background = btn.dataset.theme === themeKey ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)';
             });
-            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
         }
 
         setTheme(currentTheme);
@@ -602,6 +677,7 @@
         };
 
         function initAudio() {
+            if (!soundEnabled) return;
             if (!audioCtx) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (AudioContext) audioCtx = new AudioContext();
@@ -610,7 +686,7 @@
         }
 
         function playSoftPurr() {
-            if (currentPet !== 'ghostcat') return;
+            if (!soundEnabled || currentPet !== 'ghostcat') return;
             try {
                 initAudio();
                 if (!audioCtx) return;
@@ -744,7 +820,7 @@
             document.getElementById('runawayScreen').classList.add('hidden');
             initGame(type);
             saveData();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function resetAfterRunaway() {
@@ -789,7 +865,7 @@
             let targetNavBtn = navButtons[nextIndex];
             
             switchTab(nextTabName, targetNavBtn);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function addExp(amount) {
@@ -800,7 +876,7 @@
                 lvl++;
                 coins += 200;
                 maxExp = 300 + (lvl - 1) * 250;
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
             saveData();
             updateUI();
@@ -825,7 +901,6 @@
             document.getElementById('moodBar').style.width = mInt + '%';
             document.getElementById('funBar').style.width = fInt + '%';
 
-            // Динамический рендеринг лавки еды с уровнями
             let shopGrid = document.getElementById('shopGrid');
             shopGrid.innerHTML = '';
             shopItems.forEach(item => {
@@ -840,7 +915,6 @@
                 shopGrid.appendChild(card);
             });
 
-            // Инвентарь
             let invRow = document.getElementById('inventoryRow');
             invRow.innerHTML = '';
             let hasAnyItem = false;
@@ -966,7 +1040,7 @@
             card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
 
             try { card.releasePointerCapture(e.pointerId); } catch(err) {}
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         });
 
         function buyFood(foodKey, cost, reqLvl) {
@@ -982,7 +1056,7 @@
             inventory[foodKey] = (inventory[foodKey] || 0) + 1;
             saveData();
             updateUI();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function useInventoryItem(itemKey) {
@@ -1015,12 +1089,12 @@
             }
             saveData();
             updateUI();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function doFunActivity() {
             let now = Date.now();
-            let cooldown = 3600000; // 1 час
+            let cooldown = 3600000;
             if (now - lastFunTime < cooldown) {
                 let remainingMins = Math.ceil((cooldown - (now - lastFunTime)) / 60000);
                 alert(`Требуется восстановление! Осталось ждать: ${remainingMins} мин.`);
@@ -1034,7 +1108,7 @@
             updateUI();
 
             if (currentPet === 'ghostcat') setCatPose('spin', 2000);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
         function copyRef() {
