@@ -433,7 +433,7 @@
                         </div>
                         <div class="shop-card" id="food-lvl3">
                             <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">🍣 Сет (Ур. 3)</p>
-                            <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">Максимум</p>
+                            <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">Требует Ур. 3</p>
                             <button class="shop-btn" onclick="buyFood('sushi', 350, 100, 300)">350 🪙</button>
                         </div>
                     </div>
@@ -671,6 +671,8 @@
             let f = parseFloat(localStorage.getItem(`gothic_${type}_fun`));
             fun = (isNaN(f) || f < 0 || f > 100) ? 100 : f;
 
+            lastFunTime = parseInt(localStorage.getItem(`gothic_${type}_last_fun`)) || 0;
+
             let lastActive = parseInt(localStorage.getItem(`gothic_${type}_last_active`)) || Date.now();
             let hoursPassed = (Date.now() - lastActive) / (1000 * 60 * 60);
             if (hoursPassed > 0.5) {
@@ -683,11 +685,17 @@
                 }
             }
 
+            let defaultInv = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
             let savedInv = localStorage.getItem(`gothic_${type}_inv`);
             if (savedInv) {
-                try { inventory = JSON.parse(savedInv); } catch(e) {}
+                try { 
+                    inventory = JSON.parse(savedInv); 
+                    for (let key in defaultInv) {
+                        if (inventory[key] === undefined) inventory[key] = defaultInv[key];
+                    }
+                } catch(e) { inventory = { ...defaultInv }; }
             } else {
-                inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
+                inventory = { ...defaultInv };
             }
         }
 
@@ -701,6 +709,7 @@
             localStorage.setItem(`gothic_${currentPet}_hunger`, hunger);
             localStorage.setItem(`gothic_${currentPet}_mood`, mood);
             localStorage.setItem(`gothic_${currentPet}_fun`, fun);
+            localStorage.setItem(`gothic_${currentPet}_last_fun`, lastFunTime);
             localStorage.setItem(`gothic_${currentPet}_inv`, JSON.stringify(inventory));
             localStorage.setItem(`gothic_${currentPet}_last_active`, Date.now());
         }
@@ -944,6 +953,10 @@
         });
 
         function buyFood(foodKey, cost, boost, expGain) {
+            if (foodKey === 'sushi' && lvl < 3) {
+                alert('Суши-сет доступен только с 3 уровня!');
+                return;
+            }
             if (coins < cost) {
                 alert('Недостаточно средств');
                 return;
@@ -990,8 +1003,10 @@
 
         function doFunActivity() {
             let now = Date.now();
-            if (now - lastFunTime < 3600000) {
-                alert('Требуется восстановление');
+            let cooldown = 3600000; // 1 час (3600000 мс)
+            if (now - lastFunTime < cooldown) {
+                let remainingMins = Math.ceil((cooldown - (now - lastFunTime)) / 60000);
+                alert(`Требуется восстановление! Осталось ждать: ${remainingMins} мин.`);
                 return;
             }
             lastFunTime = now;
