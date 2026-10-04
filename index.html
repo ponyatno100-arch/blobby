@@ -274,6 +274,7 @@
         .shop-btn.locked {
             background: rgba(255, 255, 255, 0.03);
             color: #555;
+            cursor: not-allowed;
         }
         .pet-choice-card {
             background: rgba(255, 255, 255, 0.02);
@@ -415,27 +416,8 @@
                 <!-- ЛАВКА -->
                 <div id="tab-shop" class="tab-content">
                     <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Лавка</h3>
-                    <div class="shop-grid">
-                        <div class="shop-card">
-                            <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">🍪 Печенье</p>
-                            <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">+20 Сытости</p>
-                            <button class="shop-btn" onclick="buyFood('cookie', 50, 20, 50)">50 🪙</button>
-                        </div>
-                        <div class="shop-card">
-                            <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">🧋 Матча</p>
-                            <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">+45 Сытости</p>
-                            <button class="shop-btn" onclick="buyFood('matcha', 110, 45, 100)">110 🪙</button>
-                        </div>
-                        <div class="shop-card">
-                            <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">🍰 Пирог</p>
-                            <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">+80 Сытости</p>
-                            <button class="shop-btn" onclick="buyFood('cake', 200, 80, 200)">200 🪙</button>
-                        </div>
-                        <div class="shop-card" id="food-lvl3">
-                            <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">🍣 Сет (Ур. 3)</p>
-                            <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">Требует Ур. 3</p>
-                            <button class="shop-btn" onclick="buyFood('sushi', 350, 100, 300)">350 🪙</button>
-                        </div>
+                    <div class="shop-grid" id="shopGrid">
+                        <!-- Динамически рендерится в updateUI -->
                     </div>
                 </div>
 
@@ -492,9 +474,19 @@
         let rapidClickTimer = null;
         let audioCtx = null;
 
-        let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
+        let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
 
         const tabsOrder = ['home', 'shop', 'play', 'friends'];
+
+        const shopItems = [
+            { key: 'cookie', name: '🍪 Печенье', cost: 50, boost: 20, reqLvl: 1 },
+            { key: 'matcha', name: '🧋 Матча', cost: 110, boost: 45, reqLvl: 1 },
+            { key: 'cake', name: '🍰 Пирог', cost: 200, boost: 80, reqLvl: 1 },
+            { key: 'sushi', name: '🍣 Сет', cost: 350, boost: 100, reqLvl: 3 },
+            { key: 'ramen', name: '🍜 Рамен', cost: 500, boost: 130, reqLvl: 5 },
+            { key: 'bento', name: '🍱 Бенто', cost: 700, boost: 160, reqLvl: 7 },
+            { key: 'elixir', name: '🍷 Эликсир', cost: 1000, boost: 200, reqLvl: 10 }
+        ];
 
         const themes = {
             obsidian: {
@@ -584,6 +576,9 @@
             matcha: { name: '🧋 Матча', type: 'food', stat: 'hunger', boost: 45, exp: 100 },
             cake: { name: '🍰 Пирог', type: 'food', stat: 'hunger', boost: 80, exp: 200 },
             sushi: { name: '🍣 Сет', type: 'food', stat: 'hunger', boost: 100, exp: 300 },
+            ramen: { name: '🍜 Рамен', type: 'food', stat: 'hunger', boost: 130, exp: 400 },
+            bento: { name: '🍱 Бенто', type: 'food', stat: 'hunger', boost: 160, exp: 550 },
+            elixir: { name: '🍷 Эликсир', type: 'food', stat: 'hunger', boost: 200, exp: 800 },
             ball: { name: '🧶 Клубок', type: 'toy', stat: 'fun', boost: 30, exp: 70 },
             feather: { name: '🪶 Перо', type: 'toy', stat: 'fun', boost: 50, exp: 120 },
             laser: { name: '🔴 Лазер', type: 'toy', stat: 'fun', boost: 80, exp: 200 }
@@ -685,7 +680,7 @@
                 }
             }
 
-            let defaultInv = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
+            let defaultInv = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
             let savedInv = localStorage.getItem(`gothic_${type}_inv`);
             if (savedInv) {
                 try { 
@@ -734,7 +729,7 @@
             initAudio();
             currentPet = type;
             localStorage.setItem('gothic_pet', type);
-            inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
+            inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
             loadPetData(type);
             document.getElementById('selectScreen').classList.add('hidden');
             document.getElementById('runawayScreen').classList.add('hidden');
@@ -821,9 +816,22 @@
             document.getElementById('moodBar').style.width = mInt + '%';
             document.getElementById('funBar').style.width = fInt + '%';
 
-            let fL3 = document.getElementById('food-lvl3');
-            if (fL3) fL3.className = lvl >= 3 ? 'shop-btn' : 'shop-btn locked';
+            // Динамический рендеринг лавки еды с уровнями
+            let shopGrid = document.getElementById('shopGrid');
+            shopGrid.innerHTML = '';
+            shopItems.forEach(item => {
+                let isUnlocked = lvl >= item.reqLvl;
+                let card = document.createElement('div');
+                card.className = 'shop-card';
+                card.innerHTML = `
+                    <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">${item.name}</p>
+                    <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">${isUnlocked ? `+${item.boost} Сытости` : `Требует Ур. ${item.reqLvl}`}</p>
+                    <button class="shop-btn ${isUnlocked ? '' : 'locked'}" onclick="buyFood('${item.key}', ${item.cost}, ${item.reqLvl})">${item.cost} 🪙</button>
+                `;
+                shopGrid.appendChild(card);
+            });
 
+            // Инвентарь
             let invRow = document.getElementById('inventoryRow');
             invRow.innerHTML = '';
             let hasAnyItem = false;
@@ -952,9 +960,9 @@
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
         });
 
-        function buyFood(foodKey, cost, boost, expGain) {
-            if (foodKey === 'sushi' && lvl < 3) {
-                alert('Суши-сет доступен только с 3 уровня!');
+        function buyFood(foodKey, cost, reqLvl) {
+            if (lvl < reqLvl) {
+                alert(`Этот предмет доступен только с ${reqLvl} уровня!`);
                 return;
             }
             if (coins < cost) {
@@ -991,7 +999,7 @@
                 mood = Math.min(100, mood + 20);
             }
 
-            addExp(meta.exp);
+            addExp(itemsMeta[itemKey].exp || 100);
 
             if (currentPet === 'ghostcat') {
                 setCatPose('spin', 1200);
