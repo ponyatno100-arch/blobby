@@ -432,7 +432,7 @@
                 <div id="tab-friends" class="tab-content">
                     <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Связи</h3>
                     <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">Приглашено: <span id="friendCount">0</span></p>
-                    <input type="text" id="refLink" value="https://t.me/gothic_pet_bot?start=ref123" readonly style="width: 100%; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; margin-bottom: 6px; font-size: 10px; outline: none;">
+                    <input type="text" id="refLink" readonly style="width: 100%; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; margin-bottom: 6px; font-size: 10px; outline: none;">
                     <button class="btn" onclick="copyRef()" style="margin-bottom: 4px;">Копировать ссылку</button>
                     <button class="btn" onclick="simulateFriendJoin()" style="background: rgba(255,255,255,0.06); color: var(--text-main);">Тест: Добавить друга</button>
                 </div>
@@ -451,6 +451,15 @@
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
+
+        // --- ГЕНЕРАЦИЯ ПЕРСОНАЛЬНОЙ РЕФЕРАЛЬНОЙ ССЫЛКИ ---
+        let userId = tg.initDataUnsafe?.user?.id || 'demo_' + Math.floor(Math.random() * 10000);
+        let botUsername = 'gothic_pet_bot'; // ⚠️ Замените 'gothic_pet_bot' на юзернейм вашего бота в Telegram (без @)
+        let userRefLink = `https://t.me/${botUsername}?start=ref_${userId}`;
+
+        // Вставляем сгенерированную ссылку в инпут вкладки «Связи»
+        document.getElementById('refLink').value = userRefLink;
+        // ------------------------------------------------
 
         let coins = parseInt(localStorage.getItem('gothic_coins')) || 500;
         let friends = parseInt(localStorage.getItem('gothic_friends')) || 0;
@@ -1011,7 +1020,7 @@
 
         function doFunActivity() {
             let now = Date.now();
-            let cooldown = 3600000; // 1 час (3600000 мс)
+            let cooldown = 3600000; // 1 час
             if (now - lastFunTime < cooldown) {
                 let remainingMins = Math.ceil((cooldown - (now - lastFunTime)) / 60000);
                 alert(`Требуется восстановление! Осталось ждать: ${remainingMins} мин.`);
