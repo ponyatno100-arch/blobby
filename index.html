@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +12,7 @@
             --accent: #7a1c24;
             --text-main: #e2e1e6;
             --text-muted: #8c8994;
-            --sheet-bg: rgba(10, 8, 14, 0.88);
+            --sheet-bg: rgba(10, 8, 14, 0.92);
             --badge-bg: rgba(15, 13, 20, 0.7);
             --border-color: rgba(255, 255, 255, 0.06);
         }
@@ -63,7 +63,7 @@
             transition: background 0.3s ease;
         }
         
-        /* ПЛАВАЮЩИЙ ХЕДЕР */
+        /* ХЕДЕР */
         header {
             position: absolute;
             top: 0;
@@ -93,7 +93,7 @@
             color: var(--text-main);
         }
 
-        /* ВСЯ СЦЕНА ОТДАДЕНА КОТУ */
+        /* СЦЕНА КОТА */
         .stage {
             flex: 1;
             display: flex;
@@ -102,11 +102,11 @@
             align-items: center;
             position: relative;
             width: 100%;
-            height: 100%;
+            margin-bottom: 120px;
         }
         .character-card {
-            width: 300px;
-            height: 300px;
+            width: 280px;
+            height: 280px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -125,50 +125,7 @@
             filter: drop-shadow(0 30px 40px rgba(0,0,0,0.85));
         }
 
-        /* ПЛАВАЮЩИЙ БЛОК СТАТИСТИКИ */
-        .floating-stats {
-            position: absolute;
-            top: 64px;
-            left: 20px;
-            right: 20px;
-            background: var(--sheet-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            padding: 12px 16px;
-            border-radius: 20px;
-            z-index: 15;
-        }
-        .stat-bar-container {
-            margin-bottom: 8px;
-        }
-        .stat-bar-container:last-child {
-            margin-bottom: 0;
-        }
-        .stat-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            margin-bottom: 3px;
-            font-weight: 500;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            width: 100%;
-            border-radius: 4px;
-            transition: width 0.4s ease;
-        }
-
-        /* НИЖНЯЯ ПАНЕЛЬ */
+        /* НИЖНЯЯ ПАНЕЛЬ СТАТИСТИКИ И МЕНЮ */
         .bottom-sheet {
             position: absolute;
             bottom: 0;
@@ -179,17 +136,55 @@
             border-top: 1px solid var(--border-color);
             border-top-left-radius: 28px;
             border-top-right-radius: 28px;
-            padding: 20px 20px 24px 20px;
+            padding: 16px 20px 20px 20px;
             z-index: 20;
             box-shadow: 0 -20px 40px rgba(0,0,0,0.6);
-            max-height: 45vh;
             display: flex;
             flex-direction: column;
         }
-        .content-body {
-            overflow-y: auto;
-            flex: 1;
+        
+        /* ПАНЕЛЬ СТАТИСТИКИ СНИЗУ */
+        .bottom-stats {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 16px;
             margin-bottom: 12px;
+        }
+        .stat-bar-container {
+            margin-bottom: 6px;
+        }
+        .stat-bar-container:last-child {
+            margin-bottom: 0;
+        }
+        .stat-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            margin-bottom: 2px;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 100%;
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+
+        .content-body {
+            max-height: 22vh;
+            overflow-y: auto;
+            margin-bottom: 10px;
             padding-right: 2px;
         }
         .tab-content {
@@ -232,10 +227,10 @@
             background: var(--text-main);
             color: var(--bg-main);
             border: none;
-            padding: 14px;
+            padding: 12px;
             border-radius: 12px;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             letter-spacing: 0.5px;
             cursor: pointer;
             width: 100%;
@@ -248,12 +243,12 @@
         .shop-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
         .shop-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
-            padding: 14px;
+            padding: 12px;
             border-radius: 14px;
             text-align: center;
         }
@@ -261,12 +256,12 @@
             background: var(--accent);
             color: #fff;
             border: none;
-            padding: 8px;
+            padding: 7px;
             border-radius: 8px;
             font-weight: 600;
             font-size: 10px;
             letter-spacing: 0.5px;
-            margin-top: 10px;
+            margin-top: 8px;
             cursor: pointer;
             width: 100%;
         }
@@ -277,18 +272,18 @@
         .pet-choice-card, .theme-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-color);
-            padding: 16px;
+            padding: 14px;
             border-radius: 16px;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             cursor: pointer;
             transition: border-color 0.2s;
         }
         .pet-choice-card img {
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
             object-fit: contain;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
         }
         .floating-emoji {
@@ -304,12 +299,12 @@
         }
         .inv-item-card {
             background: rgba(255, 255, 255, 0.02);
-            padding: 12px 14px;
+            padding: 10px 14px;
             border-radius: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             border: 1px solid var(--border-color);
             cursor: pointer;
         }
@@ -317,7 +312,7 @@
 </head>
 <body>
 
-    <!-- ЭКРАН НАСТРОЕК (ВЫБОР СУЩНОСТИ И ТЕМЫ) -->
+    <!-- ЭКРАН НАСТРОЕК -->
     <div id="selectScreen" class="screen hidden">
         <div style="width: 100%; max-width: 360px; padding-bottom: 40px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -380,43 +375,46 @@
             </div>
         </header>
 
-        <!-- ПЛАВАЮЩИЕ СТАТИСТИКИ СВЕРХУ -->
-        <div class="floating-stats">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">
-                <span id="petName">Питомец</span>
-                <span style="color: var(--text-muted); font-size: 10px;">Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
-            </div>
-            <div class="stat-bar-container">
-                <div class="stat-info"><span>Сытость</span><span id="hungerText">100</span>%</div>
-                <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: var(--text-main);"></div></div>
-            </div>
-            <div class="stat-bar-container">
-                <div class="stat-info"><span>Настроение</span><span id="moodText">100</span>%</div>
-                <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: var(--text-muted);"></div></div>
-            </div>
-            <div class="stat-bar-container">
-                <div class="stat-info"><span>Досуг</span><span id="funText">100</span>%</div>
-                <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: var(--accent);"></div></div>
-            </div>
-        </div>
-
-        <!-- ИГРОВАЯ СЦЕНА НА ВЕСЬ ЭКРАН -->
+        <!-- ИГРОВАЯ СЦЕНА -->
         <div class="stage" id="stage">
             <div class="character-card" id="characterCard">
                 <img id="petImg" src="IMG_6542.PNG" alt="Питомец">
             </div>
         </div>
 
-        <!-- НИЖНЯЯ ПЛАВАЮЩАЯ ПАНЕЛЬ -->
+        <!-- НИЖНЯЯ ПЛАВАЮЩАЯ ПАНЕЛЬ С СТАТИСТИКОЙ И ВКЛАДКАМИ -->
         <div class="bottom-sheet">
+            
+            <!-- ПАНЕЛЬ СТАТИСТИКИ (СМЕЩЕНА В САМЫЙ НИЗ) -->
+            <div class="bottom-stats">
+                <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-main);">
+                    <span id="petName">Питомец</span>
+                    <span style="color: var(--text-muted); font-size: 9px;">Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
+                </div>
+                <div class="stat-bar-container">
+                    <div class="stat-info"><span>Сытость</span><span id="hungerText">100</span>%</div>
+                    <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: var(--text-main);"></div></div>
+                </div>
+                <div class="stat-bar-container">
+                    <div class="stat-info"><span>Настроение</span><span id="moodText">100</span>%</div>
+                    <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: var(--text-muted);"></div></div>
+                </div>
+                <div class="stat-bar-container">
+                    <div class="stat-info"><span>Досуг</span><span id="funText">100</span>%</div>
+                    <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: var(--accent);"></div></div>
+                </div>
+            </div>
+
             <div class="content-body">
+                <!-- ДОМ (ОБЪЕДИНЕННЫЙ ИНВЕНТАРЬ ЕДЫ И ИГРУШЕК) -->
                 <div id="tab-home" class="tab-content active">
-                    <h3 style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Инвентарь еды</h3>
+                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Инвентарь (Еда и Игрушки)</h3>
                     <div id="inventoryRow"></div>
                 </div>
 
+                <!-- ЛАВКА (НЕ ТРОНУТА) -->
                 <div id="tab-shop" class="tab-content">
-                    <h3 style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Лавка</h3>
+                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Лавка</h3>
                     <div class="shop-grid">
                         <div class="shop-card">
                             <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">🍪 Печенье</p>
@@ -441,17 +439,19 @@
                     </div>
                 </div>
 
+                <!-- ДОСУГ -->
                 <div id="tab-play" class="tab-content">
-                    <h3 style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Активность</h3>
-                    <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 10px;">Готово к взаимодействию</p>
-                    <button class="btn" onclick="doFunActivity()">Взаимодействовать</button>
+                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Досуг</h3>
+                    <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">Используйте игрушки из инвентаря или взаимодействуйте</p>
+                    <button class="btn" onclick="doFunActivity()">Быстрая активность</button>
                 </div>
 
+                <!-- СВЯЗИ -->
                 <div id="tab-friends" class="tab-content">
-                    <h3 style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Связи</h3>
-                    <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">Приглашено: <span id="friendCount">0</span></p>
-                    <input type="text" id="refLink" value="https://t.me/gothic_pet_bot?start=ref123" readonly style="width: 100%; padding: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 10px; margin-bottom: 8px; font-size: 10px; outline: none;">
-                    <button class="btn" onclick="copyRef()" style="margin-bottom: 6px;">Копировать ссылку</button>
+                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Связи</h3>
+                    <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">Приглашено: <span id="friendCount">0</span></p>
+                    <input type="text" id="refLink" value="https://t.me/gothic_pet_bot?start=ref123" readonly style="width: 100%; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; margin-bottom: 6px; font-size: 10px; outline: none;">
+                    <button class="btn" onclick="copyRef()" style="margin-bottom: 4px;">Копировать ссылку</button>
                     <button class="btn" onclick="simulateFriendJoin()" style="background: rgba(255,255,255,0.06); color: var(--text-main);">Тест: Добавить друга</button>
                 </div>
             </div>
@@ -491,7 +491,8 @@
         let rapidClickTimer = null;
         let audioCtx = null;
 
-        let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0 };
+        // Объединенный инвентарь (еда + игрушки)
+        let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
 
         const themes = {
             obsidian: {
@@ -500,7 +501,7 @@
                 accent: '#7a1c24',
                 textMain: '#e2e1e6',
                 textMuted: '#8c8994',
-                sheetBg: 'rgba(10, 8, 14, 0.88)',
+                sheetBg: 'rgba(10, 8, 14, 0.92)',
                 badgeBg: 'rgba(15, 13, 20, 0.7)',
                 border: 'rgba(255, 255, 255, 0.06)'
             },
@@ -510,7 +511,7 @@
                 accent: '#58a6ff',
                 textMain: '#c9d1d9',
                 textMuted: '#8b949e',
-                sheetBg: 'rgba(13, 17, 23, 0.88)',
+                sheetBg: 'rgba(13, 17, 23, 0.92)',
                 badgeBg: 'rgba(22, 27, 34, 0.7)',
                 border: 'rgba(255, 255, 255, 0.08)'
             },
@@ -520,7 +521,7 @@
                 accent: '#00ffcc',
                 textMain: '#e0fbfc',
                 textMuted: '#669988',
-                sheetBg: 'rgba(4, 12, 10, 0.88)',
+                sheetBg: 'rgba(4, 12, 10, 0.92)',
                 badgeBg: 'rgba(8, 24, 20, 0.7)',
                 border: 'rgba(0, 255, 204, 0.15)'
             },
@@ -530,7 +531,7 @@
                 accent: '#b31924',
                 textMain: '#f5e1e2',
                 textMuted: '#9e7a7c',
-                sheetBg: 'rgba(15, 5, 6, 0.88)',
+                sheetBg: 'rgba(15, 5, 6, 0.92)',
                 badgeBg: 'rgba(25, 8, 10, 0.7)',
                 border: 'rgba(179, 25, 36, 0.2)'
             },
@@ -540,7 +541,7 @@
                 accent: '#ff75b5',
                 textMain: '#f0eff5',
                 textMuted: '#8f8da8',
-                sheetBg: 'rgba(10, 10, 18, 0.88)',
+                sheetBg: 'rgba(10, 10, 18, 0.92)',
                 badgeBg: 'rgba(18, 18, 30, 0.7)',
                 border: 'rgba(255, 117, 181, 0.15)'
             }
@@ -575,17 +576,21 @@
             ghostcat: { name: 'Котенок-призрак', img: 'IMG_6542.PNG' }
         };
 
-        const foodNames = {
-            cookie: { name: '🍪 Печенье', boost: 20, exp: 50 },
-            matcha: { name: '🧋 Матча', boost: 45, exp: 100 },
-            cake: { name: '🍰 Пирог', boost: 80, exp: 200 },
-            sushi: { name: '🍣 Сет', boost: 100, exp: 300 }
+        // Характеристики предметов (еда и игрушки)
+        const itemsMeta = {
+            cookie: { name: '🍪 Печенье', type: 'food', stat: 'hunger', boost: 20, exp: 50 },
+            matcha: { name: '🧋 Матча', type: 'food', stat: 'hunger', boost: 45, exp: 100 },
+            cake: { name: '🍰 Пирог', type: 'food', stat: 'hunger', boost: 80, exp: 200 },
+            sushi: { name: '🍣 Сет', type: 'food', stat: 'hunger', boost: 100, exp: 300 },
+            ball: { name: '🧶 Клубок', type: 'toy', stat: 'fun', boost: 30, exp: 70 },
+            feather: { name: '🪶 Перо', type: 'toy', stat: 'fun', boost: 50, exp: 120 },
+            laser: { name: '🔴 Лазер', type: 'toy', stat: 'fun', boost: 80, exp: 200 }
         };
 
         const ghostCatImages = {
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
-            surprised: "IMG_6568.png", // 3 тапа — испуг ровно 3 секунды (3000 мс)
+            surprised: "IMG_6568.png",
             flyUp: "IMG_6571.png",
             spin: "IMG_6567.png"
         };
@@ -668,7 +673,7 @@
             if (savedInv) {
                 try { inventory = JSON.parse(savedInv); } catch(e) {}
             } else {
-                inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0 };
+                inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
             }
         }
 
@@ -705,7 +710,7 @@
             initAudio();
             currentPet = type;
             localStorage.setItem('gothic_pet', type);
-            inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0 };
+            inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ball: 2, feather: 1, laser: 1 };
             loadPetData(type);
             document.getElementById('selectScreen').classList.add('hidden');
             document.getElementById('runawayScreen').classList.add('hidden');
@@ -781,21 +786,22 @@
             let fL3 = document.getElementById('food-lvl3');
             if (fL3) fL3.className = lvl >= 3 ? 'shop-btn' : 'shop-btn locked';
 
+            // Рендер объединенного инвентаря
             let invRow = document.getElementById('inventoryRow');
             invRow.innerHTML = '';
-            let hasAnyFood = false;
+            let hasAnyItem = false;
             for (let key in inventory) {
-                if (inventory[key] > 0) {
-                    hasAnyFood = true;
-                    let fData = foodNames[key];
+                if (inventory[key] > 0 && itemsMeta[key]) {
+                    hasAnyItem = true;
+                    let meta = itemsMeta[key];
                     let cardEl = document.createElement('div');
                     cardEl.className = 'inv-item-card';
-                    cardEl.innerHTML = `<span style="font-size:11px; color:var(--text-main);">${fData.name}</span> <span style="color:var(--text-muted); font-weight:600; font-size:11px;">x${inventory[key]}</span>`;
-                    cardEl.onclick = () => useFoodFromInventory(key);
+                    cardEl.innerHTML = `<span style="font-size:11px; color:var(--text-main);">${meta.name}</span> <span style="color:var(--text-muted); font-weight:600; font-size:11px;">x${inventory[key]}</span>`;
+                    cardEl.onclick = () => useInventoryItem(key);
                     invRow.appendChild(cardEl);
                 }
             }
-            if (!hasAnyFood) {
+            if (!hasAnyItem) {
                 invRow.innerHTML = `<span style="font-size:10px; color:#555;">Инвентарь пуст.</span>`;
             }
         }
@@ -827,7 +833,6 @@
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
 
-                // 3 нажатия — Испуг ровно на 3000 мс (3 секунды)
                 if (rapidClickCount >= 3) {
                     setCatPose('surprised', 3000);
                     rapidClickCount = 0;
@@ -897,17 +902,35 @@
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         }
 
-        function useFoodFromInventory(foodKey) {
-            if (hunger >= 95) { alert('Сущность сыта'); return; }
-            if (!inventory[foodKey] || inventory[foodKey] <= 0) return;
+        // Использование предметов из общего инвентаря (и еда, и игрушки)
+        function useInventoryItem(itemKey) {
+            let meta = itemsMeta[itemKey];
+            if (!meta || !inventory[itemKey] || inventory[itemKey] <= 0) return;
 
-            inventory[foodKey]--;
-            let fData = foodNames[foodKey];
-            hunger = Math.min(100, hunger + fData.boost);
-            mood = Math.min(100, mood + 15);
-            addExp(fData.exp);
+            if (meta.stat === 'hunger' && hunger >= 95) {
+                alert('Сущность сыта');
+                return;
+            }
+            if (meta.stat === 'fun' && fun >= 95) {
+                alert('Сущность уже наигралась');
+                return;
+            }
 
-            if (currentPet === 'ghostcat') setCatPose('flyUp', 1200);
+            inventory[itemKey]--;
+
+            if (meta.stat === 'hunger') {
+                hunger = Math.min(100, hunger + meta.boost);
+                mood = Math.min(100, mood + 15);
+            } else if (meta.stat === 'fun') {
+                fun = Math.min(100, fun + meta.boost);
+                mood = Math.min(100, mood + 20);
+            }
+
+            addExp(meta.exp);
+
+            if (currentPet === 'ghostcat') {
+                setCatPose(meta.stat === 'fun' ? 'spin' : 'flyUp', 1200);
+            }
             saveData();
             updateUI();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
