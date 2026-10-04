@@ -121,7 +121,6 @@
             touch-action: none;
             -webkit-touch-callout: none;
             user-select: none;
-            animation: floatIdle 3s ease-in-out infinite;
             z-index: 5;
         }
         .character-card img {
@@ -130,6 +129,7 @@
             object-fit: contain;
             pointer-events: none;
             filter: drop-shadow(0 30px 40px rgba(0,0,0,0.85));
+            animation: floatIdle 3s ease-in-out infinite;
         }
 
         /* НИЖНЯЯ ПАНЕЛЬ */
@@ -593,8 +593,8 @@
             afk: "IMG_6542.PNG",
             waveHello: "IMG_6570.png",
             surprised: "IMG_6568.png",
-            spin: "IMG_6567.png",   // Анимация при катании по экрану
-            flyUp: "IMG_6571.png"   // Анимация при подношении к краю экрана
+            spin: "IMG_6567.png",
+            flyUp: "IMG_6571.png"
         };
 
         function initAudio() {
@@ -889,8 +889,7 @@
             if (currentPet === 'ghostcat' && !poseLocked) {
                 let distance = Math.hypot(currentDeltaX, currentDeltaY);
                 
-                if (distance > 12) { // Если реально начали тягать
-                    // Проверяем, поднесли ли к правому краю экрана (менее 70px от правого края)
+                if (distance > 12) {
                     if (e.clientX >= window.innerWidth - 70) {
                         if (currentPose !== 'flyUp') {
                             setCatPose('flyUp');
@@ -908,7 +907,6 @@
                             clearTimeout(rightHoldTimer);
                             rightHoldTimer = null;
                         }
-                        // Когда просто катаем/тягаем по экрану
                         if (currentPose !== 'spin') {
                             setCatPose('spin');
                         }
