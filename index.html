@@ -1687,7 +1687,7 @@
   .pet-area.evo2:not(.sad) .pet-body img{filter:hue-rotate(35deg) saturate(1.3) drop-shadow(0 0 22px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
   .pet-area.evo3:not(.sad) .pet-body img{filter:hue-rotate(-40deg) saturate(1.4) brightness(1.12) drop-shadow(0 0 34px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
   .pet-area.evo3 .pet-glow{opacity:.85}
-  .pet-area.sleep .pet-body img{filter:brightness(.55) drop-shadow(0 26px 30px rgba(0,0,0,.8))!important}
+  .pet-area.sleep .pet-body img{filter:brightness(.88) drop-shadow(0 26px 30px rgba(0,0,0,.8))!important}
   .say{position:absolute;top:-16%;left:-6%;max-width:62%;z-index:9;background:var(--badge-bg);backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);border:1px solid var(--border-color);border-radius:16px;padding:7px 11px;font-size:12px;
     opacity:0;transform:translateY(6px);transition:.3s;pointer-events:none}
@@ -2177,6 +2177,195 @@
       clearInterval(w); try { handle(); } catch (e) {}
     }, 1500);
   }
+})();
+
+    </script>
+    <script>
+/* Gothic Pet — аддон 3: образы (скины) и коробка-лотерея */
+(function () {
+  const D = document, ls = localStorage;
+
+  /* ============ НАСТРОЙКИ КОРОБКИ ============ */
+  const BOX_PRICE = 500;      // цена коробки в монетах (раз в день можно открыть бесплатно)
+  const SKIN_CHANCE = 0.3;    // шанс образа с одной коробки (0.3 = 30%)
+  const PITY = 4;             // после стольких неудач подряд следующая коробка точно с образом
+
+  /* ============ ОБРАЗЫ — ВСЁ ЗДЕСЬ ============
+     Чтобы добавить новый образ, скопируй блок «sailor», поменяй ключ (латиницей),
+     name, rarity и имена файлов. Файлы должны лежать рядом с index.html.
+     rarity: 'common' — обычный, 'rare' — редкий, 'epic' — эпик.
+     poses (только для котёнка-призрака):
+       afk       — спокойная поза (когда ничего не происходит)
+       waveHello — машет рукой (при переходе на вкладку «Дом»)
+       surprised — удивление (при быстрых тапах)
+       spin      — вращение (когда тащишь пальцем)
+       flyUp     — полёт (когда тащишь к правому краю)
+     Для облачка и сквиша вместо poses пишется одна картинка: img: 'файл.png', pet: 'cloud' */
+  const SKINS = {
+    default: { pet: 'ghostcat', name: 'Классика', rarity: 'common' },
+    sailor: {
+      pet: 'ghostcat', name: 'Моряк', rarity: 'rare',
+      poses: {
+        afk: 'IMG_6732.png',        // спокойная поза
+        waveHello: 'IMG_6685.png',  // машет рукой
+        surprised: 'IMG_6688.png',  // удивлён
+        spin: 'IMG_6689.png',       // крутится
+        flyUp: 'IMG_6690.png'       // летит
+      },
+      preview: 'IMG_6732.png'
+    },
+    bear: {
+      pet: 'ghostcat', name: 'Мишка', rarity: 'epic',
+      poses: {
+        afk: 'IMG_6735.png',        // спокойная поза
+        waveHello: 'IMG_6714.png',  // машет лапкой
+        surprised: 'IMG_6722.png',  // испуган
+        spin: 'IMG_6715.png',       // крутится
+        flyUp: 'IMG_6727.png'       // летит
+      },
+      preview: 'IMG_6735.png'
+    }
+    // новый образ добавляй сюда, через запятую:
+    // , moon: { pet: 'ghostcat', name: 'Лунный', rarity: 'epic', poses: { afk: '...', ... }, preview: '...' }
+  };
+  /* ============================================= */
+
+  // w — «вес»: чем больше, тем чаще выпадает (эпики редкие)
+  const RAR = { common: { t: 'Обычный', c: 'var(--text-muted)', w: 5 }, rare: { t: 'Редкий', c: '#7ab8ff', w: 3 }, epic: { t: 'Эпик', c: '#ffa6cf', w: 1 } };
+  const BASE = { ...ghostCatImages };
+  const BASE_IMG = {}; Object.keys(petsData).forEach(k => BASE_IMG[k] = petsData[k].img);
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+
+  const st = D.createElement('style');
+  st.textContent = '.boxshake{font-size:80px;animation:bshake .45s ease-in-out infinite}@keyframes bshake{0%,100%{transform:rotate(-12deg) scale(1)}50%{transform:rotate(12deg) scale(1.12)}}';
+  D.head.appendChild(st);
+
+  function modal(inner) {
+    const o = D.createElement('div');
+    o.className = 'overlay modal';
+    o.innerHTML = `<div class="daily-card">${inner}</div>`;
+    D.body.appendChild(o);
+    return o;
+  }
+  const busy = () => D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden');
+
+  /* ---------- что у игрока есть ---------- */
+  const owned = () => { try { return ['default', ...JSON.parse(ls.getItem('gothic_skins') || '[]')]; } catch (e) { return ['default']; } };
+  const addOwned = id => { const a = owned().filter(x => x !== 'default'); if (!a.includes(id)) a.push(id); ls.setItem('gothic_skins', JSON.stringify(a)); };
+  const cur = () => { const id = ls.getItem('gothic_skin_' + currentPet) || 'default'; return SKINS[id] && owned().includes(id) ? id : 'default'; };
+  const prev = id => {
+    const s = SKINS[id];
+    return s.preview || s.img || (s.poses && s.poses.afk) || (s.pet === 'ghostcat' ? BASE.afk : BASE_IMG[s.pet]);
+  };
+
+  /* ---------- применение образа ---------- */
+  function applySkin() {
+    if (!currentPet) return;
+    const s = SKINS[cur()];
+    if (currentPet === 'ghostcat') {
+      Object.assign(ghostCatImages, BASE, s.poses || {});
+      poseLocked = false; currentPose = ''; setCatPose('afk');
+    } else {
+      petsData[currentPet].img = s.img || BASE_IMG[currentPet];
+      $('petImg').src = petsData[currentPet].img;
+    }
+  }
+  function equip(id) {
+    ls.setItem('gothic_skin_' + SKINS[id].pet, id);
+    applySkin(); saveData(); renderSkins(); hap('success');
+  }
+
+  /* ---------- выбор образа в настройках ---------- */
+  function renderSkins() {
+    let box = $('xSkins');
+    if (!box) {
+      const t = [...D.querySelectorAll('#selectScreen .section-title')].find(x => x.textContent.includes('Параметры'));
+      if (!t) return;
+      t.insertAdjacentHTML('beforebegin', '<div class="section-title" id="xSkinsT">Образы</div><div id="xSkins" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:20px"></div>');
+      box = $('xSkins');
+    }
+    const ids = Object.keys(SKINS).filter(id => SKINS[id].pet === currentPet);
+    $('xSkinsT').style.display = box.style.display = ids.length > 1 ? '' : 'none';
+    box.innerHTML = '';
+    ids.forEach(id => {
+      const s = SKINS[id], has = owned().includes(id), on = cur() === id, r = RAR[s.rarity] || RAR.common;
+      const d = D.createElement('div');
+      d.className = 'theme-emoji-btn';
+      d.style.cssText = `padding:8px 4px;font-size:12px;${on ? 'border-color:var(--accent2);' : ''}`;
+      d.innerHTML = `<img src="${prev(id)}" style="width:64px;height:64px;object-fit:contain;${has ? '' : 'filter:brightness(0) opacity(.45)'}">
+        <div style="font-size:10px;margin-top:2px">${has ? s.name : '???'}</div><div style="font-size:9px;color:${r.c}">${r.t}</div>`;
+      d.onclick = () => { if (!has) { toast('Выбей в коробке 🎁 (вкладка «Лавка»)'); return; } equip(id); };
+      box.appendChild(d);
+    });
+  }
+
+  /* ---------- коробка ---------- */
+  $('tab-shop').insertAdjacentHTML('afterbegin',
+    `<div class="tier" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:10px">
+       <div><b>🎁 Загадочная коробка</b><div class="muted" id="xBoxInfo" style="font-size:10px;margin-top:2px"></div></div>
+       <div style="display:flex;gap:6px"><button class="btn" id="xBoxFree">Бесплатно</button><button class="btn ghost" id="xBoxBuy">${BOX_PRICE} 🪙</button></div>
+     </div>`);
+  const freeUsed = () => ls.getItem('gothic_box_day') === todayStr();
+  const poolLeft = () => Object.keys(SKINS).filter(id => id !== 'default' && !owned().includes(id));
+  function renderBox() {
+    const pity = parseInt(ls.getItem('gothic_pity')) || 0, n = PITY - pity;
+    $('xBoxInfo').innerText = !poolLeft().length ? 'Все образы собраны ✨ Скоро появятся новые'
+      : n <= 0 ? 'Следующая коробка точно с образом!' : `Шанс на новый образ. До гарантии: ${n}`;
+    $('xBoxFree').disabled = freeUsed();
+    $('xBoxFree').innerText = freeUsed() ? 'Бесплатная — завтра' : 'Бесплатно (раз в день)';
+  }
+  function roll() {
+    const pool = poolLeft(), pity = parseInt(ls.getItem('gothic_pity')) || 0;
+    if (pool.length && (pity >= PITY || Math.random() < SKIN_CHANCE)) {
+      const wt = x => (RAR[SKINS[x].rarity] || RAR.common).w;
+      let r = Math.random() * pool.reduce((a, x) => a + wt(x), 0), id = pool[0];
+      for (const x of pool) { r -= wt(x); if (r <= 0) { id = x; break; } }
+      addOwned(id); ls.setItem('gothic_pity', 0);
+      return { type: 'skin', id };
+    }
+    ls.setItem('gothic_pity', pity + 1);
+    if (Math.random() < 0.5) return { type: 'coins', n: 100 + Math.floor(Math.random() * 150) };
+    return { type: 'item', k: pick(['cookie', 'matcha', 'cake', 'feather', 'ball']) };
+  }
+  function openBox(free) {
+    if (!currentPet || busy()) return;
+    if (free) { if (freeUsed()) return; ls.setItem('gothic_box_day', todayStr()); }
+    else { if (coins < BOX_PRICE) { toast('Недостаточно монет 🪙'); hap('error'); return; } coins -= BOX_PRICE; }
+    const res = roll();
+    if (res.type === 'coins') coins += res.n;
+    if (res.type === 'item') inventory[res.k] = (inventory[res.k] || 0) + 1;
+    saveData(); updateUI(); hap('medium');
+    const o = modal('<div class="boxshake">🎁</div><div class="sub">Открываем…</div>');
+    setTimeout(() => {
+      const card = o.querySelector('.daily-card'), close = '<button class="btn ghost" data-c style="margin-top:8px">Закрыть</button>';
+      if (res.type === 'skin') {
+        const s = SKINS[res.id], r = RAR[s.rarity] || RAR.common, mine = s.pet === currentPet;
+        card.innerHTML = `<img src="${prev(res.id)}" style="width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(0,0,0,.6))">
+          <h3>${s.name}</h3><div class="sub" style="color:${r.c}">Новый образ · ${r.t}${mine ? '' : ' · для: ' + petsData[s.pet].name}</div>
+          ${mine ? '<button class="btn" data-w>Надеть</button>' : ''}${close}`;
+        const w = card.querySelector('[data-w]'); if (w) w.onclick = () => { equip(res.id); o.remove(); };
+        hap('success');
+      } else {
+        const em = res.type === 'coins' ? '🪙' : splitName(itemsMeta[res.k].name)[0];
+        const txt = res.type === 'coins' ? `+${res.n} 🪙` : itemsMeta[res.k].name;
+        card.innerHTML = `<div style="font-size:64px">${em}</div><h3>${txt}</h3><div class="sub">Образа не выпало — повезёт в следующий раз</div>${close}`;
+      }
+      card.querySelector('[data-c]').onclick = () => o.remove();
+      renderBox();
+    }, 1600);
+  }
+  $('xBoxFree').onclick = () => openBox(true);
+  $('xBoxBuy').onclick = () => openBox(false);
+
+  /* ---------- подключение ---------- */
+  const _ui = updateUI;
+  updateUI = function () { _ui(); renderBox(); };
+  const _os = openSelectScreen;
+  openSelectScreen = function () { _os(); renderSkins(); };
+  const _init = initGame;
+  initGame = function (t) { _init(t); applySkin(); renderSkins(); };
+  renderBox();
+  if (currentPet && petsData[currentPet]) { applySkin(); renderSkins(); }
 })();
 
     </script>
