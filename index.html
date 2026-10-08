@@ -2,380 +2,405 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gothic Pet</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-main: #050407;
             --stage-grad: radial-gradient(circle at center, #14101c 0%, #050407 80%);
             --accent: #7a1c24;
+            --accent2: #c0394a;
+            --glow: rgba(192, 57, 74, 0.35);
+            --on-accent: #ffffff;
             --text-main: #e2e1e6;
             --text-muted: #8c8994;
             --sheet-bg: rgba(10, 8, 14, 0.92);
             --badge-bg: rgba(15, 13, 20, 0.7);
             --border-color: rgba(255, 255, 255, 0.06);
+            --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body, button, input {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
         }
+        button { color: inherit; }
+        .serif { font-family: var(--serif); letter-spacing: 0.3px; }
+        .muted { color: var(--text-muted); }
+
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             transition: background 0.3s ease, color 0.3s ease;
         }
+        .hidden { display: none !important; }
+
         .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 100;
-            padding: 24px 20px;
-            overflow-y: auto;
-            transition: opacity 0.3s ease;
+            display: flex; flex-direction: column; align-items: center;
+            z-index: 100; padding: 24px 20px; overflow-y: auto;
         }
-        .hidden {
-            display: none !important;
-        }
+
         .app-container {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            overflow: hidden;
-            background: var(--stage-grad);
+            position: relative; display: flex; flex-direction: column;
+            height: 100%; width: 100%; max-width: 480px; margin: 0 auto;
+            overflow: hidden; background: var(--stage-grad);
             transition: background 0.3s ease;
         }
-        
+        .app-container::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%);
+        }
+
+        /* ЧАСТИЦЫ ФОНА */
+        .motes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+        .mote {
+            position: absolute; bottom: -10px; width: var(--s); height: var(--s);
+            border-radius: 50%; background: var(--accent2); opacity: 0; filter: blur(1px);
+            box-shadow: 0 0 8px var(--glow);
+            animation: moteUp var(--t) linear infinite; animation-delay: var(--dl);
+        }
+        @keyframes moteUp {
+            0% { transform: translate(0, 0); opacity: 0; }
+            15% { opacity: 0.55; }
+            100% { transform: translate(var(--dx), -100vh); opacity: 0; }
+        }
+
         /* ХЕДЕР */
         header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            z-index: 20;
-            pointer-events: none;
+            position: absolute; top: 0; left: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 20px; z-index: 20; pointer-events: none;
         }
-        header > * {
-            pointer-events: auto;
-        }
+        header > * { pointer-events: auto; }
         .stat-badge {
-            background: var(--badge-bg);
-            backdrop-filter: blur(12px);
+            background: var(--badge-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 11px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--text-main);
+            padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px; color: var(--text-main);
+            position: relative; cursor: pointer; transition: transform 0.15s ease;
         }
+        .stat-badge:active { transform: scale(0.94); }
+        .gift-dot {
+            position: absolute; top: -2px; right: -2px; width: 9px; height: 9px;
+            border-radius: 50%; background: var(--accent2); box-shadow: 0 0 8px var(--accent2);
+            animation: lowPulse 1.2s ease-in-out infinite;
+        }
+        #gameTitle { font-family: var(--serif); font-weight: 700; font-size: 20px; letter-spacing: 0.5px; }
 
-        /* ИГРОВАЯ СЦЕНА И АНИМАЦИЯ ЛЕВИТАЦИИ */
+        /* СЦЕНА */
         .stage {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            width: 100%;
-            padding-bottom: 80px;
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative; width: 100%; padding-bottom: 170px; z-index: 5;
         }
+        .pet-area {
+            position: relative; width: min(290px, 42vh); aspect-ratio: 1;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .pet-glow {
+            position: absolute; width: 130%; height: 130%; left: -15%; top: -15%;
+            background: radial-gradient(circle, var(--glow) 0%, transparent 62%);
+            opacity: 0.55; pointer-events: none; animation: glowBreath 4s ease-in-out infinite;
+        }
+        @keyframes glowBreath { 0%,100% { opacity: 0.35; transform: scale(0.95); } 50% { opacity: 0.7; transform: scale(1.05); } }
 
-        @keyframes floatIdle {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-12px); }
-            100% { transform: translateY(0px); }
+        .pet-shadow {
+            position: absolute; bottom: -3%; left: 22%; width: 56%; height: 7%;
+            background: radial-gradient(ellipse, rgba(0,0,0,0.7), transparent 70%);
+            filter: blur(2px); animation: shadowPulse 3s ease-in-out infinite;
         }
+        @keyframes shadowPulse { 0%,100% { transform: scale(1.05); opacity: 0.9; } 50% { transform: scale(0.75); opacity: 0.5; } }
 
         .character-card {
-            width: 300px;
-            height: 300px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: grab;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            user-select: none;
-            z-index: 5;
+            position: relative; width: 100%; height: 100%;
+            cursor: grab; touch-action: none; -webkit-touch-callout: none; user-select: none; z-index: 5;
         }
-        .character-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-            filter: drop-shadow(0 30px 40px rgba(0,0,0,0.85));
+        .pet-body {
+            width: 100%; height: 100%; transform-origin: 50% 92%;
             animation: floatIdle 3s ease-in-out infinite;
+        }
+        .pet-body img {
+            width: 100%; height: 100%; object-fit: contain; pointer-events: none;
+            filter: drop-shadow(0 26px 30px rgba(0,0,0,0.8));
+            transition: filter 0.6s ease;
+        }
+        @keyframes floatIdle {
+            0%   { transform: translateY(0) scale(1.03, 0.97); }
+            50%  { transform: translateY(-14px) scale(0.98, 1.03); }
+            100% { transform: translateY(0) scale(1.03, 0.97); }
+        }
+        .pet-body.tap { animation: squish 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes squish {
+            0%   { transform: scale(1, 1); }
+            30%  { transform: scale(1.22, 0.78); }
+            60%  { transform: scale(0.92, 1.1); }
+            100% { transform: scale(1, 1); }
+        }
+        .pet-body.hop { animation: hop 0.8s ease-out; }
+        @keyframes hop {
+            0%   { transform: translateY(0) scale(1.1, 0.88); }
+            30%  { transform: translateY(-42px) scale(0.92, 1.1); }
+            55%  { transform: translateY(0) scale(1.12, 0.86); }
+            75%  { transform: translateY(-10px) scale(0.98, 1.03); }
+            100% { transform: translateY(0) scale(1, 1); }
+        }
+        .pet-area.sad .pet-body { animation-duration: 5.5s; }
+        .pet-area.sad .pet-body img { filter: grayscale(0.55) brightness(0.82) drop-shadow(0 26px 30px rgba(0,0,0,0.8)); }
+        .pet-area.sad .pet-glow { opacity: 0.15 !important; animation: none; }
+
+        .thought {
+            position: absolute; top: -6%; right: 2%; z-index: 8;
+            background: var(--badge-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color); border-radius: 18px;
+            padding: 6px 10px; font-size: 20px; opacity: 0; transform: scale(0.6);
+            transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none;
+        }
+        .thought.show { opacity: 1; transform: scale(1); animation: thoughtBob 2.4s ease-in-out infinite; }
+        @keyframes thoughtBob { 0%,100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+
+        .particle {
+            position: absolute; pointer-events: none; z-index: 30;
+            animation: burst var(--d, 900ms) ease-out forwards;
+        }
+        @keyframes burst {
+            0%   { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(1.15) rotate(var(--r, 0deg)); opacity: 0; }
         }
 
         /* НИЖНЯЯ ПАНЕЛЬ */
         .bottom-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: var(--sheet-bg);
-            backdrop-filter: blur(24px);
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: var(--sheet-bg); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border-top: 1px solid var(--border-color);
-            border-top-left-radius: 28px;
-            border-top-right-radius: 28px;
-            padding: 16px 20px 20px 20px;
-            z-index: 20;
-            box-shadow: 0 -20px 40px rgba(0,0,0,0.6);
-            display: flex;
-            flex-direction: column;
+            border-top-left-radius: 28px; border-top-right-radius: 28px;
+            padding: 20px 18px calc(16px + env(safe-area-inset-bottom, 0px)) 18px;
+            z-index: 20; box-shadow: 0 -20px 40px rgba(0,0,0,0.6);
+            display: flex; flex-direction: column;
+        }
+        .bottom-sheet::before {
+            content: ''; position: absolute; top: 8px; left: 50%; width: 36px; height: 4px;
+            margin-left: -18px; border-radius: 4px; background: rgba(255,255,255,0.12);
+        }
+        .content-body { max-height: 30vh; overflow-y: auto; margin-bottom: 12px; padding-right: 2px; scrollbar-width: none; }
+        .content-body::-webkit-scrollbar { display: none; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: tabIn 0.3s ease; }
+        @keyframes tabIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .section-title {
+            font-size: 10px; font-weight: 600; margin: 4px 0 8px; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
         }
 
-        .content-body {
-            max-height: 22vh;
-            overflow-y: auto;
-            margin-bottom: 12px;
-            padding-right: 2px;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-
-        /* ПАНЕЛЬ ПОТРЕБНОСТЕЙ */
+        /* ШКАЛЫ */
         .bottom-stats {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            padding: 10px 12px;
-            border-radius: 14px;
+            background: rgba(255,255,255,0.025); border: 1px solid var(--border-color);
+            padding: 12px 14px; border-radius: 16px;
         }
-        .stat-bar-container {
-            margin-bottom: 5px;
-        }
-        .stat-bar-container:last-child {
-            margin-bottom: 0;
-        }
+        .pet-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .pet-head .name { font-family: var(--serif); font-size: 18px; font-weight: 700; }
+        .pet-head .lvl { font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px; }
+        .exp-bar { height: 3px; border-radius: 3px; background: rgba(255,255,255,0.05); overflow: hidden; margin-bottom: 12px; }
+        .exp-bar > div { height: 100%; width: 0; border-radius: 3px; background: linear-gradient(90deg, var(--text-muted), var(--text-main)); transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+        .stat-bar-container { margin-bottom: 9px; }
+        .stat-bar-container:last-child { margin-bottom: 0; }
         .stat-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            margin-bottom: 2px;
-            font-weight: 500;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 10px; margin-bottom: 4px; font-weight: 600;
+            color: var(--text-muted); letter-spacing: 0.6px; text-transform: uppercase;
         }
-        .progress-bar {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 3px;
-            overflow: hidden;
-        }
+        .stat-info b { color: var(--text-main); font-weight: 600; }
+        .progress-bar { width: 100%; height: 7px; background: rgba(255,255,255,0.05); border-radius: 7px; overflow: hidden; }
         .progress-fill {
-            height: 100%;
-            width: 100%;
-            border-radius: 3px;
-            transition: width 0.4s ease;
+            height: 100%; width: 100%; border-radius: 7px;
+            transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+            box-shadow: 0 0 10px var(--glow);
         }
+        .f-hunger { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+        .f-mood   { background: linear-gradient(90deg, var(--text-muted), var(--text-main)); }
+        .f-fun    { background: linear-gradient(90deg, var(--accent2), var(--text-main)); }
+        .progress-fill.low { background: linear-gradient(90deg, #8a1c1c, #e0453a) !important; animation: lowPulse 1.2s ease-in-out infinite; }
+        @keyframes lowPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 
         /* НАВИГАЦИЯ */
         .nav-bar {
-            display: flex;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 4px;
-            gap: 4px;
+            display: flex; background: rgba(255,255,255,0.025); border: 1px solid var(--border-color);
+            border-radius: 18px; padding: 4px; gap: 4px;
         }
         .nav-item {
-            flex: 1;
-            padding: 10px 0;
-            text-align: center;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-radius: 12px;
-            text-transform: uppercase;
+            flex: 1; padding: 8px 0 7px; text-align: center; background: transparent; border: none;
+            color: var(--text-muted); font-size: 9px; font-weight: 600; letter-spacing: 0.6px;
+            cursor: pointer; transition: all 0.25s ease; border-radius: 14px; text-transform: uppercase;
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
         }
-        .nav-item.active {
-            color: var(--text-main);
-            background: rgba(255, 255, 255, 0.08);
-        }
+        .nav-item svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.25s ease; }
+        .nav-item:active svg { transform: scale(0.85); }
+        .nav-item.active { color: var(--text-main); background: rgba(255,255,255,0.08); box-shadow: inset 0 -2px 0 var(--accent2); }
+        .nav-item.active svg { stroke: var(--accent2); filter: drop-shadow(0 0 6px var(--glow)); }
 
+        /* КНОПКИ И КАРТОЧКИ */
         .btn {
-            background: var(--text-main);
-            color: var(--bg-main);
-            border: none;
-            padding: 12px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            width: 100%;
-            transition: opacity 0.2s ease, transform 0.1s ease;
+            background: linear-gradient(135deg, var(--accent), var(--accent2)); color: var(--on-accent);
+            border: none; padding: 13px; border-radius: 14px; font-weight: 600; font-size: 12px;
+            letter-spacing: 0.5px; cursor: pointer; width: 100%;
+            transition: opacity 0.2s ease, transform 0.1s ease; box-shadow: 0 6px 18px -6px var(--glow);
         }
-        .btn:active {
-            transform: scale(0.98);
-            opacity: 0.85;
-        }
-        .shop-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .shop-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            padding: 12px;
-            border-radius: 14px;
-            text-align: center;
-        }
-        .shop-btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 7px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 10px;
-            letter-spacing: 0.5px;
-            margin-top: 8px;
-            cursor: pointer;
-            width: 100%;
-        }
-        .shop-btn.locked {
-            background: rgba(255, 255, 255, 0.03);
-            color: #555;
-            cursor: not-allowed;
-        }
-        .pet-choice-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            padding: 14px;
-            border-radius: 16px;
-            text-align: center;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .pet-choice-card img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            margin-bottom: 4px;
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
-        }
-        .theme-emoji-btn {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            font-size: 24px;
-            padding: 14px 0;
-            border-radius: 16px;
-            cursor: pointer;
-            text-align: center;
-            flex: 1;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .floating-emoji {
-            position: absolute;
-            font-size: 24px;
-            animation: floatUp 1s ease-out forwards;
-            pointer-events: none;
-            z-index: 25;
-        }
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(0.8); opacity: 1; }
-            100% { transform: translateY(-70px) scale(1.2); opacity: 0; }
-        }
-        .inv-item-card {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 10px 14px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-        }
+        .btn:active { transform: scale(0.97); opacity: 0.88; }
+        .btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+        .btn.ghost { background: rgba(255,255,255,0.06); color: var(--text-main); box-shadow: none; }
 
-        /* СТИЛИ ДЛЯ ТУМБЛЕРОВ В НАСТРОЙКАХ */
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .shop-card {
+            background: rgba(255,255,255,0.025); border: 1px solid var(--border-color);
+            padding: 12px 10px; border-radius: 16px; text-align: center;
+        }
+        .shop-card .emoji { font-size: 28px; line-height: 1.1; margin-bottom: 4px; }
+        .shop-card .nm { font-size: 11px; font-weight: 600; }
+        .shop-card .ds { font-size: 9px; color: var(--text-muted); margin: 2px 0 0; }
+        .shop-btn {
+            background: var(--accent); color: var(--on-accent); border: none; padding: 8px; border-radius: 10px;
+            font-weight: 600; font-size: 11px; letter-spacing: 0.4px; margin-top: 8px; cursor: pointer; width: 100%;
+            transition: transform 0.1s ease;
+        }
+        .shop-btn:active { transform: scale(0.95); }
+        .shop-btn.locked { background: rgba(255,255,255,0.04); color: #666; cursor: not-allowed; }
+
+        .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; margin-bottom: 10px; }
+        .inv-item-card {
+            background: rgba(255,255,255,0.025); padding: 8px 4px; border-radius: 14px; text-align: center;
+            border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.12s ease, border-color 0.2s;
+        }
+        .inv-item-card:active { transform: scale(0.92); border-color: var(--accent2); }
+        .inv-item-card .e { font-size: 24px; }
+        .inv-item-card .n { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+
+        .game-card {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(255,255,255,0.025); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
+            transition: transform 0.12s ease, border-color 0.2s;
+        }
+        .game-card:active { transform: scale(0.98); border-color: var(--accent2); }
+        .game-card .ge { font-size: 28px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border-radius: 12px; }
+        .game-card .gt { font-size: 13px; font-weight: 600; }
+        .game-card .gd { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .energy-line {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 11px; font-weight: 600; margin-bottom: 10px; padding: 8px 12px;
+            background: rgba(255,255,255,0.025); border: 1px solid var(--border-color); border-radius: 12px;
+        }
+        .energy-line span:last-child { color: var(--text-muted); font-weight: 500; font-size: 10px; }
+
+        /* НАСТРОЙКИ */
+        .pet-choice-card {
+            background: rgba(255,255,255,0.025); border: 1px solid var(--border-color);
+            padding: 14px; border-radius: 18px; text-align: center; margin-bottom: 8px; cursor: pointer;
+            transition: border-color 0.2s, transform 0.12s;
+        }
+        .pet-choice-card:active { transform: scale(0.98); }
+        .pet-choice-card.active { border-color: var(--accent2); box-shadow: 0 0 18px -6px var(--glow); }
+        .pet-choice-card img { width: 64px; height: 64px; object-fit: contain; margin-bottom: 4px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
+        .theme-emoji-btn {
+            background: rgba(255,255,255,0.025); border: 1px solid var(--border-color); font-size: 24px;
+            padding: 14px 0; border-radius: 16px; cursor: pointer; text-align: center; flex: 1;
+            transition: border-color 0.2s, background 0.2s, transform 0.12s;
+        }
+        .theme-emoji-btn:active { transform: scale(0.92); }
         .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            padding: 12px 14px;
-            border-radius: 14px;
-            margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.025); border: 1px solid var(--border-color);
+            padding: 12px 14px; border-radius: 14px; margin-bottom: 8px;
         }
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-        }
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(255, 255, 255, 0.1);
-            transition: .3s;
-            border-radius: 24px;
-            border: 1px solid var(--border-color);
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.1); transition: .3s; border-radius: 24px; border: 1px solid var(--border-color);
         }
         .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 3px;
-            bottom: 3px;
-            background-color: var(--text-main);
-            transition: .3s;
-            border-radius: 50%;
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: var(--text-main); transition: .3s; border-radius: 50%;
         }
-        input:checked + .toggle-slider {
-            background-color: var(--accent);
-            border-color: var(--accent);
+        input:checked + .toggle-slider { background-color: var(--accent); border-color: var(--accent); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* TOAST */
+        #toast {
+            position: fixed; top: 64px; left: 50%; transform: translate(-50%, -20px); z-index: 500;
+            background: var(--sheet-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color); color: var(--text-main);
+            padding: 10px 16px; border-radius: 16px; font-size: 12px; font-weight: 500; max-width: 86%;
+            text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        input:checked + .toggle-slider:before {
-            transform: translateX(20px);
+        #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        /* ОВЕРЛЕИ: ИГРЫ И ПОДАРКИ */
+        .overlay { position: fixed; inset: 0; z-index: 300; display: flex; justify-content: center; background: var(--bg-main); }
+        .overlay.modal { background: rgba(0,0,0,0.78); align-items: center; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: tabIn 0.25s ease; }
+        .game-wrap { width: 100%; max-width: 480px; display: flex; flex-direction: column; background: var(--stage-grad); }
+        .game-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; gap: 10px; }
+        .game-head .t { font-family: var(--serif); font-size: 20px; font-weight: 700; }
+        .game-info { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; }
+        .icon-btn { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+        .game-body { flex: 1; position: relative; overflow: hidden; }
+        .result { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 10px; }
+        .result .big { font-size: 56px; animation: floatIdle 3s ease-in-out infinite; }
+        .result h3 { font-family: var(--serif); font-size: 26px; }
+        .result p { font-size: 12px; color: var(--text-muted); max-width: 280px; line-height: 1.5; }
+        .result .btn { max-width: 260px; }
+
+        .mem-grid { height: 100%; padding: 18px; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 10px; align-content: center; max-height: 560px; margin: 0 auto; }
+        .mem-card { perspective: 600px; cursor: pointer; min-height: 70px; }
+        .mem-in { position: relative; width: 100%; height: 100%; transition: transform 0.4s; transform-style: preserve-3d; }
+        .mem-card.flip .mem-in, .mem-card.done .mem-in { transform: rotateY(180deg); }
+        .mem-front, .mem-back {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            border-radius: 16px; backface-visibility: hidden; -webkit-backface-visibility: hidden; border: 1px solid var(--border-color);
         }
+        .mem-front { background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 24px; font-family: var(--serif); }
+        .mem-back { background: rgba(255,255,255,0.08); transform: rotateY(180deg); font-size: 34px; }
+        .mem-card.done .mem-back { border-color: var(--accent2); box-shadow: 0 0 16px -4px var(--glow); }
+
+        .whack-grid { height: 100%; padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: center; max-height: 520px; margin: 0 auto; }
+        .hole {
+            aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 50% 70%, #000 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid var(--border-color); position: relative; overflow: hidden; cursor: pointer; touch-action: manipulation;
+        }
+        .mole {
+            position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 44px; transform: translateY(110%); transition: transform 0.14s ease-out; pointer-events: none;
+        }
+        .hole.up .mole { transform: translateY(0); }
+
+        .daily-card {
+            width: min(92%, 380px); background: var(--sheet-bg); border: 1px solid var(--border-color);
+            border-radius: 26px; padding: 22px 18px 18px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .daily-card h3 { font-family: var(--serif); font-size: 26px; }
+        .daily-card .sub { font-size: 11px; color: var(--text-muted); margin: 4px 0 14px; }
+        .daily-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 14px; }
+        .day-cell {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 14px;
+            padding: 8px 2px; font-size: 10px; position: relative;
+        }
+        .day-cell.big { grid-column: span 2; }
+        .day-cell .dn { color: var(--text-muted); font-weight: 600; font-size: 9px; letter-spacing: 0.6px; text-transform: uppercase; }
+        .day-cell .di { font-size: 18px; margin: 4px 0 2px; min-height: 22px; }
+        .day-cell .dc { font-size: 10px; font-weight: 600; }
+        .day-cell.claimed { opacity: 0.45; }
+        .day-cell.claimed::after { content: '✓'; position: absolute; top: 3px; right: 6px; color: var(--accent2); font-weight: 700; }
+        .day-cell.today { border-color: var(--accent2); box-shadow: 0 0 18px -4px var(--glow); background: rgba(255,255,255,0.07); animation: glowBreath 2.4s ease-in-out infinite; }
     </style>
 </head>
 <body>
@@ -384,25 +409,25 @@
     <div id="selectScreen" class="screen hidden">
         <div style="width: 100%; max-width: 360px; padding-bottom: 40px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-main);">Настройки</h2>
-                <button onclick="closeSelectScreen()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">✕</button>
+                <h2 class="serif" style="font-size: 26px; font-weight: 700;">Настройки</h2>
+                <button class="icon-btn" onclick="closeSelectScreen()">✕</button>
             </div>
 
-            <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.8px;">Сущность</h3>
-            <div class="pet-choice-card" onclick="choosePet('cloud')">
+            <div class="section-title">Сущность</div>
+            <div class="pet-choice-card" data-pet="cloud" onclick="choosePet('cloud')">
                 <img src="IMG_6540.png" alt="Облачко">
-                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-main);">Облачко</h3>
+                <h3 style="font-size: 13px; font-weight: 600;">Облачко</h3>
             </div>
-            <div class="pet-choice-card" onclick="choosePet('squish')">
+            <div class="pet-choice-card" data-pet="squish" onclick="choosePet('squish')">
                 <img src="IMG_6541.png" alt="Сквиш">
-                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-main);">Шарик-сквиш</h3>
+                <h3 style="font-size: 13px; font-weight: 600;">Шарик-сквиш</h3>
             </div>
-            <div class="pet-choice-card" onclick="choosePet('ghostcat')">
+            <div class="pet-choice-card" data-pet="ghostcat" onclick="choosePet('ghostcat')">
                 <img src="IMG_6542.PNG" alt="Призрак">
-                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-main);">Котенок-призрак</h3>
+                <h3 style="font-size: 13px; font-weight: 600;">Котенок-призрак</h3>
             </div>
 
-            <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.8px;">Тема оформления</h3>
+            <div class="section-title" style="margin-top: 20px;">Тема оформления</div>
             <div style="display: flex; gap: 8px; margin-bottom: 20px;">
                 <div class="theme-emoji-btn" onclick="setTheme('obsidian')" data-theme="obsidian">🖤</div>
                 <div class="theme-emoji-btn" onclick="setTheme('ghost')" data-theme="ghost">🌫</div>
@@ -411,16 +436,16 @@
                 <div class="theme-emoji-btn" onclick="setTheme('sakura')" data-theme="sakura">🌸</div>
             </div>
 
-            <h3 style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.8px;">Параметры</h3>
+            <div class="section-title">Параметры</div>
             <div class="setting-row">
-                <span style="font-size: 12px; color: var(--text-main);">Звук / Мурчание</span>
+                <span style="font-size: 12px;">Звук / Мурчание</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="soundToggle" onchange="toggleSound(this)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
             <div class="setting-row">
-                <span style="font-size: 12px; color: var(--text-main);">Вибрация (Haptic)</span>
+                <span style="font-size: 12px;">Вибрация (Haptic)</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="hapticToggle" onchange="toggleHaptic(this)">
                     <span class="toggle-slider"></span>
@@ -431,134 +456,205 @@
 
     <!-- ЭКРАН ПОБЕГА -->
     <div id="runawayScreen" class="screen hidden" style="justify-content: center;">
-        <h2 style="margin-bottom: 10px; color: var(--accent); font-size: 18px; font-weight: 500;">Сущность покинула вас</h2>
-        <p style="text-align: center; color: var(--text-muted); font-size: 11px; margin-bottom: 24px;">Слишком долгое отсутствие привело к разрыву связи.</p>
-        <button class="btn" onclick="resetAfterRunaway()">Начать заново</button>
+        <h2 class="serif" style="margin-bottom: 10px; color: var(--accent2); font-size: 28px; font-weight: 700;">Сущность покинула вас</h2>
+        <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 24px;">Слишком долгое отсутствие привело к разрыву связи.</p>
+        <button class="btn" style="max-width: 260px;" onclick="resetAfterRunaway()">Начать заново</button>
     </div>
+
+    <!-- МИНИ-ИГРЫ -->
+    <div id="gameOverlay" class="overlay hidden">
+        <div class="game-wrap">
+            <div class="game-head">
+                <div class="t" id="gameTitleText"></div>
+                <div class="game-info" id="gameInfo"></div>
+                <button class="icon-btn" onclick="closeGame()">✕</button>
+            </div>
+            <div class="game-body" id="gameBody"></div>
+        </div>
+    </div>
+
+    <!-- ЕЖЕДНЕВНЫЕ ПОДАРКИ -->
+    <div id="dailyOverlay" class="overlay modal hidden" onclick="if(event.target===this) closeDaily()">
+        <div class="daily-card">
+            <h3>Ежедневный дар</h3>
+            <div class="sub" id="dailySub"></div>
+            <div class="daily-grid" id="dailyGrid"></div>
+            <button class="btn" id="dailyBtn" onclick="claimDaily()">Забрать</button>
+            <button class="icon-btn" style="margin-top: 6px; font-size: 12px;" onclick="closeDaily()">Закрыть</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
 
     <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
     <div class="app-container">
+        <div class="motes" id="motes"></div>
+
         <header>
-            <div id="gameTitle" style="font-weight: 600; font-size: 13px; color: var(--text-main);">Сущность</div>
+            <div id="gameTitle">Сущность</div>
             <div style="display: flex; gap: 6px;">
+                <div class="stat-badge" onclick="openDaily()">🎁<span class="gift-dot hidden" id="giftDot"></span></div>
                 <div class="stat-badge">🪙 <span id="coins">500</span></div>
-                <div class="stat-badge" onclick="openSelectScreen()" style="cursor: pointer;">⚙️</div>
+                <div class="stat-badge" onclick="openSelectScreen()">⚙️</div>
             </div>
         </header>
 
-        <!-- ИГРОВАЯ СЦЕНА -->
         <div class="stage" id="stage">
-            <div class="character-card" id="characterCard">
-                <img id="petImg" src="IMG_6542.PNG" alt="Питомец">
+            <div class="pet-area" id="petArea">
+                <div class="pet-glow"></div>
+                <div class="pet-shadow"></div>
+                <div class="thought" id="thought"></div>
+                <div class="character-card" id="characterCard">
+                    <div class="pet-body" id="petBody">
+                        <img id="petImg" src="IMG_6542.PNG" alt="Питомец">
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- НИЖНЯЯ ПЛАВАЮЩАЯ ПАНЕЛЬ -->
         <div class="bottom-sheet">
-            
             <div class="content-body">
                 <!-- ДОМ -->
                 <div id="tab-home" class="tab-content active">
                     <div class="bottom-stats">
-                        <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">
-                            <span id="petName">Питомец</span>
-                            <span style="color: var(--text-muted); font-size: 9px;">Ур. <span id="lvl">1</span> (<span id="exp">0</span>/<span id="maxExp">300</span>)</span>
+                        <div class="pet-head">
+                            <span class="name" id="petName">Питомец</span>
+                            <span class="lvl">УР. <span id="lvl">1</span> · <span id="exp">0</span>/<span id="maxExp">300</span></span>
+                        </div>
+                        <div class="exp-bar"><div id="expBar"></div></div>
+                        <div class="stat-bar-container">
+                            <div class="stat-info"><span>🍖 Сытость</span><span><b id="hungerText">100</b>%</span></div>
+                            <div class="progress-bar"><div class="progress-fill f-hunger" id="hungerBar"></div></div>
                         </div>
                         <div class="stat-bar-container">
-                            <div class="stat-info"><span>Сытость</span><span id="hungerText">100</span>%</div>
-                            <div class="progress-bar"><div class="progress-fill" id="hungerBar" style="background: var(--text-main);"></div></div>
+                            <div class="stat-info"><span>🖤 Настроение</span><span><b id="moodText">100</b>%</span></div>
+                            <div class="progress-bar"><div class="progress-fill f-mood" id="moodBar"></div></div>
                         </div>
                         <div class="stat-bar-container">
-                            <div class="stat-info"><span>Настроение</span><span id="moodText">100</span>%</div>
-                            <div class="progress-bar"><div class="progress-fill" id="moodBar" style="background: var(--text-muted);"></div></div>
-                        </div>
-                        <div class="stat-bar-container">
-                            <div class="stat-info"><span>Досуг</span><span id="funText">100</span>%</div>
-                            <div class="progress-bar"><div class="progress-fill" id="funBar" style="background: var(--accent);"></div></div>
+                            <div class="stat-info"><span>🎲 Досуг</span><span><b id="funText">100</b>%</span></div>
+                            <div class="progress-bar"><div class="progress-fill f-fun" id="funBar"></div></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- ЛАВКА -->
                 <div id="tab-shop" class="tab-content">
-                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Лавка</h3>
-                    <div class="shop-grid" id="shopGrid">
-                        <!-- Динамически рендерится в updateUI -->
-                    </div>
+                    <div class="section-title">Лавка</div>
+                    <div class="shop-grid" id="shopGrid"></div>
                 </div>
 
                 <!-- ДОСУГ -->
                 <div id="tab-play" class="tab-content">
-                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Инвентарь (Еда и Игрушки)</h3>
-                    <div id="inventoryRow" style="margin-bottom: 8px;"></div>
-                    <button class="btn" onclick="doFunActivity()">Быстрая активность</button>
+                    <div class="energy-line"><span id="energyText">🔋 5/5</span><span id="energyTimer"></span></div>
+                    <div class="section-title">Мини-игры</div>
+                    <div id="gamesList"></div>
+                    <div class="section-title" style="margin-top: 12px;">Инвентарь (еда и игрушки)</div>
+                    <div class="inv-grid" id="inventoryRow"></div>
+                    <button class="btn ghost" onclick="doFunActivity()">Быстрая активность</button>
                 </div>
 
                 <!-- СВЯЗИ -->
                 <div id="tab-friends" class="tab-content">
-                    <h3 style="font-size: 10px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;">Связи</h3>
-                    <p style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">Приглашено: <span id="friendCount">0</span></p>
-                    <input type="text" id="refLink" value="https://t.me/blobbypet_bot?start=ref123" readonly style="width: 100%; padding: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; margin-bottom: 6px; font-size: 10px; outline: none;">
-                    <button class="btn" onclick="copyRef()" style="margin-bottom: 4px;">Копировать ссылку</button>
-                    <button class="btn" onclick="simulateFriendJoin()" style="background: rgba(255,255,255,0.06); color: var(--text-main);">Тест: Добавить друга</button>
+                    <div class="section-title">Связи</div>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Приглашено: <b style="color: var(--text-main);" id="friendCount">0</b> · +300 🪙 за каждого</p>
+                    <input type="text" id="refLink" value="https://t.me/blobbypet_bot?start=ref123" readonly style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 12px; margin-bottom: 8px; font-size: 11px; outline: none;">
+                    <button class="btn" onclick="copyRef()" style="margin-bottom: 6px;">Копировать ссылку</button>
+                    <button class="btn ghost" onclick="simulateFriendJoin()">Тест: Добавить друга</button>
                 </div>
             </div>
 
-            <!-- НАВИГАЦИЯ -->
             <nav class="nav-bar">
-                <button class="nav-item active" onclick="switchTab('home', this)">Дом</button>
-                <button class="nav-item" onclick="switchTab('shop', this)">Лавка</button>
-                <button class="nav-item" onclick="switchTab('play', this)">Досуг</button>
-                <button class="nav-item" onclick="switchTab('friends', this)">Связи</button>
+                <button class="nav-item active" onclick="switchTab('home', this)">
+                    <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Дом
+                </button>
+                <button class="nav-item" onclick="switchTab('shop', this)">
+                    <svg viewBox="0 0 24 24"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>Лавка
+                </button>
+                <button class="nav-item" onclick="switchTab('play', this)">
+                    <svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>Досуг
+                </button>
+                <button class="nav-item" onclick="switchTab('friends', this)">
+                    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14a5 5 0 0 1 4.5 5"/></svg>Связи
+                </button>
             </nav>
         </div>
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
+        /* ================== НАСТРОЙКИ БАЛАНСА (можно менять) ================== */
+        // Убывание в процентах за ЧАС, пока игра открыта
+        const DECAY = { hunger: 2.5, mood: 1.8, fun: 2.2 };   // ~40 / 55 / 45 часов до нуля
+        const OFFLINE_FACTOR = 0.4;      // пока тебя нет, потребности убывают в 2.5 раза медленнее
+        const RUNAWAY_HOURS = 72;        // питомец уходит, только если не заходили 3+ суток и он голоден
+        const ENERGY_MAX = 5;            // попыток в мини-играх
+        const ENERGY_REGEN_MS = 30 * 60 * 1000;   // +1 попытка раз в 30 минут
+
+        // Награды за ежедневный вход (7 дней по кругу)
+        const DAILY = [
+            { coins: 60 },
+            { coins: 40,  items: { cookie: 2 } },
+            { coins: 100 },
+            { coins: 60,  items: { feather: 1 } },
+            { coins: 150, items: { cake: 1 } },
+            { coins: 100, items: { ball: 2, matcha: 1 } },
+            { coins: 500, items: { elixir: 1 }, exp: 300 }
+        ];
+        /* ====================================================================== */
+
+        const $ = id => document.getElementById(id);
+        const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : {};
+        try { if (tg.ready) tg.ready(); if (tg.expand) tg.expand(); } catch (e) {}
 
         let coins = parseInt(localStorage.getItem('gothic_coins')) || 500;
         let friends = parseInt(localStorage.getItem('gothic_friends')) || 0;
         let currentPet = localStorage.getItem('gothic_pet') || '';
         let currentTheme = localStorage.getItem('gothic_theme') || 'obsidian';
 
-        // Настройки тумблеров
         let soundEnabled = localStorage.getItem('gothic_sound') !== 'false';
         let hapticEnabled = localStorage.getItem('gothic_haptic') !== 'false';
+        $('soundToggle').checked = soundEnabled;
+        $('hapticToggle').checked = hapticEnabled;
 
-        document.getElementById('soundToggle').checked = soundEnabled;
-        document.getElementById('hapticToggle').checked = hapticEnabled;
+        // Общие данные (не зависят от питомца)
+        let energy = parseInt(localStorage.getItem('gothic_energy'));
+        if (isNaN(energy)) energy = ENERGY_MAX;
+        let energyT = parseInt(localStorage.getItem('gothic_energy_t')) || Date.now();
+        let streak = parseInt(localStorage.getItem('gothic_streak')) || 0;
+        let lastClaim = localStorage.getItem('gothic_last_claim') || '';
+        let best = { catch: 0, memory: 0, whack: 0 };
+        try { best = Object.assign(best, JSON.parse(localStorage.getItem('gothic_best') || '{}')); } catch (e) {}
+
+        function hap(kind) {
+            if (!hapticEnabled || !tg.HapticFeedback) return;
+            try {
+                if (kind === 'light' || kind === 'medium') tg.HapticFeedback.impactOccurred(kind);
+                else if (kind === 'select') tg.HapticFeedback.selectionChanged();
+                else tg.HapticFeedback.notificationOccurred(kind);
+            } catch (e) {}
+        }
 
         function toggleSound(el) {
             soundEnabled = el.checked;
             localStorage.setItem('gothic_sound', soundEnabled);
             if (soundEnabled) initAudio();
         }
-
         function toggleHaptic(el) {
             hapticEnabled = el.checked;
             localStorage.setItem('gothic_haptic', hapticEnabled);
         }
 
-        let lvl = 1;
-        let exp = 0;
-        let maxExp = 300;
-        let hunger = 100;
-        let mood = 100;
-        let fun = 100;
+        let lvl = 1, exp = 0, maxExp = 300;
+        let hunger = 100, mood = 100, fun = 100;
         let lastFunTime = 0;
-        
-        let catPoseTimeout = null;
-        let poseLocked = false;
-        let currentPose = 'afk';
-        let rightHoldTimer = null;
+        let lastTick = Date.now();
+        let runaway = false;
 
-        let rapidClickCount = 0;
-        let rapidClickTimer = null;
+        let catPoseTimeout = null, poseLocked = false, currentPose = 'afk', rightHoldTimer = null;
+        let rapidClickCount = 0, rapidClickTimer = null;
         let audioCtx = null;
 
-        let inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
+        const DEFAULT_INV = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
+        let inventory = { ...DEFAULT_INV };
 
         const tabsOrder = ['home', 'shop', 'play', 'friends'];
 
@@ -573,67 +669,25 @@
         ];
 
         const themes = {
-            obsidian: {
-                bg: '#050407',
-                stageGrad: 'radial-gradient(circle at center, #14101c 0%, #050407 80%)',
-                accent: '#7a1c24',
-                textMain: '#e2e1e6',
-                textMuted: '#8c8994',
-                sheetBg: 'rgba(10, 8, 14, 0.92)',
-                badgeBg: 'rgba(15, 13, 20, 0.7)',
-                border: 'rgba(255, 255, 255, 0.06)'
-            },
-            ghost: {
-                bg: '#0a0b0e',
-                stageGrad: 'radial-gradient(circle at center, #161b22 0%, #0a0b0e 80%)',
-                accent: '#58a6ff',
-                textMain: '#c9d1d9',
-                textMuted: '#8b949e',
-                sheetBg: 'rgba(13, 17, 23, 0.92)',
-                badgeBg: 'rgba(22, 27, 34, 0.7)',
-                border: 'rgba(255, 255, 255, 0.08)'
-            },
-            cyber: {
-                bg: '#030706',
-                stageGrad: 'radial-gradient(circle at center, #0b1f1a 0%, #030706 80%)',
-                accent: '#00ffcc',
-                textMain: '#e0fbfc',
-                textMuted: '#669988',
-                sheetBg: 'rgba(4, 12, 10, 0.92)',
-                badgeBg: 'rgba(8, 24, 20, 0.7)',
-                border: 'rgba(0, 255, 204, 0.15)'
-            },
-            vampire: {
-                bg: '#0a0304',
-                stageGrad: 'radial-gradient(circle at center, #240c0f 0%, #0a0304 80%)',
-                accent: '#b31924',
-                textMain: '#f5e1e2',
-                textMuted: '#9e7a7c',
-                sheetBg: 'rgba(15, 5, 6, 0.92)',
-                badgeBg: 'rgba(25, 8, 10, 0.7)',
-                border: 'rgba(179, 25, 36, 0.2)'
-            },
-            sakura: {
-                bg: '#06060c',
-                stageGrad: 'radial-gradient(circle at center, #15142b 0%, #06060c 80%)',
-                accent: '#ff75b5',
-                textMain: '#f0eff5',
-                textMuted: '#8f8da8',
-                sheetBg: 'rgba(10, 10, 18, 0.92)',
-                badgeBg: 'rgba(18, 18, 30, 0.7)',
-                border: 'rgba(255, 117, 181, 0.15)'
-            }
+            obsidian: { bg: '#050407', stageGrad: 'radial-gradient(circle at center, #14101c 0%, #050407 80%)', accent: '#7a1c24', accent2: '#c0394a', glow: 'rgba(192,57,74,0.35)', onAccent: '#ffffff', textMain: '#e2e1e6', textMuted: '#8c8994', sheetBg: 'rgba(10,8,14,0.92)', badgeBg: 'rgba(15,13,20,0.7)', border: 'rgba(255,255,255,0.06)' },
+            ghost:    { bg: '#0a0b0e', stageGrad: 'radial-gradient(circle at center, #161b22 0%, #0a0b0e 80%)', accent: '#2f6fbf', accent2: '#7ab8ff', glow: 'rgba(88,166,255,0.3)', onAccent: '#ffffff', textMain: '#c9d1d9', textMuted: '#8b949e', sheetBg: 'rgba(13,17,23,0.92)', badgeBg: 'rgba(22,27,34,0.7)', border: 'rgba(255,255,255,0.08)' },
+            cyber:    { bg: '#030706', stageGrad: 'radial-gradient(circle at center, #0b1f1a 0%, #030706 80%)', accent: '#00b894', accent2: '#00ffcc', glow: 'rgba(0,255,204,0.28)', onAccent: '#03120e', textMain: '#e0fbfc', textMuted: '#669988', sheetBg: 'rgba(4,12,10,0.92)', badgeBg: 'rgba(8,24,20,0.7)', border: 'rgba(0,255,204,0.15)' },
+            vampire:  { bg: '#0a0304', stageGrad: 'radial-gradient(circle at center, #240c0f 0%, #0a0304 80%)', accent: '#8f1019', accent2: '#ff4a58', glow: 'rgba(255,74,88,0.32)', onAccent: '#ffffff', textMain: '#f5e1e2', textMuted: '#9e7a7c', sheetBg: 'rgba(15,5,6,0.92)', badgeBg: 'rgba(25,8,10,0.7)', border: 'rgba(179,25,36,0.2)' },
+            sakura:   { bg: '#06060c', stageGrad: 'radial-gradient(circle at center, #15142b 0%, #06060c 80%)', accent: '#d94b8c', accent2: '#ffa6cf', glow: 'rgba(255,117,181,0.3)', onAccent: '#2a0a1a', textMain: '#f0eff5', textMuted: '#8f8da8', sheetBg: 'rgba(10,10,18,0.92)', badgeBg: 'rgba(18,18,30,0.7)', border: 'rgba(255,117,181,0.15)' }
         };
 
-        function setTheme(themeKey) {
+        function setTheme(themeKey, silent) {
             if (!themes[themeKey]) themeKey = 'obsidian';
             currentTheme = themeKey;
             localStorage.setItem('gothic_theme', themeKey);
-            let t = themes[themeKey];
-            let root = document.documentElement;
+            const t = themes[themeKey];
+            const root = document.documentElement;
             root.style.setProperty('--bg-main', t.bg);
             root.style.setProperty('--stage-grad', t.stageGrad);
             root.style.setProperty('--accent', t.accent);
+            root.style.setProperty('--accent2', t.accent2);
+            root.style.setProperty('--glow', t.glow);
+            root.style.setProperty('--on-accent', t.onAccent);
             root.style.setProperty('--text-main', t.textMain);
             root.style.setProperty('--text-muted', t.textMuted);
             root.style.setProperty('--sheet-bg', t.sheetBg);
@@ -641,13 +695,14 @@
             root.style.setProperty('--border-color', t.border);
 
             document.querySelectorAll('.theme-emoji-btn').forEach(btn => {
-                btn.style.borderColor = btn.dataset.theme === themeKey ? t.accent : 'var(--border-color)';
-                btn.style.background = btn.dataset.theme === themeKey ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.02)';
+                const on = btn.dataset.theme === themeKey;
+                btn.style.borderColor = on ? t.accent2 : '';
+                btn.style.background = on ? 'rgba(255,255,255,0.08)' : '';
             });
-            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+            try { if (tg.setHeaderColor) tg.setHeaderColor(t.bg); if (tg.setBackgroundColor) tg.setBackgroundColor(t.bg); } catch (e) {}
+            if (!silent) hap('select');
         }
-
-        setTheme(currentTheme);
+        setTheme(currentTheme, true);
 
         const petsData = {
             cloud: { name: 'Облачко', img: 'IMG_6540.png' },
@@ -676,113 +731,168 @@
             flyUp: "IMG_6571.png"
         };
 
+        function splitName(n) { const i = n.indexOf(' '); return [n.slice(0, i), n.slice(i + 1)]; }
+
+        /* ---------- ТОСТ ---------- */
+        let toastTimer = null;
+        function toast(msg) {
+            const el = $('toast');
+            el.innerText = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+        }
+
+        /* ---------- ЗВУК ---------- */
         function initAudio() {
             if (!soundEnabled) return;
             if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) audioCtx = new AudioContext();
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC) audioCtx = new AC();
             }
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         }
-
         function playSoftPurr() {
             if (!soundEnabled || currentPet !== 'ghostcat') return;
             try {
                 initAudio();
                 if (!audioCtx) return;
-                let now = audioCtx.currentTime;
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(26, now);
                 osc.frequency.linearRampToValueAtTime(32, now + 0.4);
-                
                 gain.gain.setValueAtTime(0.001, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
                 gain.gain.linearRampToValueAtTime(0.001, now + 0.8);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now);
-                osc.stop(now + 0.8);
-            } catch(e) {}
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + 0.8);
+            } catch (e) {}
+        }
+        function blip(freq, dur) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (dur || 0.12));
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now); osc.stop(now + (dur || 0.12));
+            } catch (e) {}
         }
 
+        /* ---------- ПОЗЫ КОТЕНКА ---------- */
         function setCatPose(poseKey, lockDuration = 0) {
             if (currentPet !== 'ghostcat') return;
             if (poseLocked && lockDuration === 0) return;
-
-            if (catPoseTimeout) {
-                clearTimeout(catPoseTimeout);
-                catPoseTimeout = null;
-            }
-
+            if (catPoseTimeout) { clearTimeout(catPoseTimeout); catPoseTimeout = null; }
             if (currentPose !== poseKey) {
                 currentPose = poseKey;
-                let imgEl = document.getElementById('petImg');
-                if (imgEl && ghostCatImages[poseKey]) {
-                    imgEl.src = ghostCatImages[poseKey];
-                }
+                const imgEl = $('petImg');
+                if (imgEl && ghostCatImages[poseKey]) imgEl.src = ghostCatImages[poseKey];
             }
-
             if (lockDuration > 0) {
                 poseLocked = true;
                 catPoseTimeout = setTimeout(() => {
                     poseLocked = false;
-                    if (currentPet === 'ghostcat') {
-                        setCatPose('afk');
-                    }
+                    if (currentPet === 'ghostcat') setCatPose('afk');
                 }, lockDuration);
             }
         }
 
+        /* ---------- ВРЕМЯ И УБЫВАНИЕ ---------- */
+        function applyDecay(hours, factor) {
+            const moodMul = hunger < 20 ? 1.4 : 1;
+            hunger = Math.max(0, hunger - DECAY.hunger * hours * factor);
+            mood = Math.max(0, mood - DECAY.mood * hours * factor * moodMul);
+            fun = Math.max(0, fun - DECAY.fun * hours * factor);
+        }
+
+        function catchUp() {
+            const now = Date.now();
+            const gap = Math.max(0, now - lastTick);
+            lastTick = now;
+            if (gap <= 0) return;
+            const hours = gap / 3600000;
+            const offline = gap > 120000;
+            applyDecay(hours, offline ? OFFLINE_FACTOR : 1);
+            if (offline && hours >= RUNAWAY_HOURS && hunger <= 0) showRunaway();
+        }
+
+        function showRunaway() {
+            runaway = true;
+            $('runawayScreen').classList.remove('hidden');
+        }
+
+        function energyRefresh() {
+            const now = Date.now();
+            if (energy >= ENERGY_MAX) { energy = ENERGY_MAX; energyT = now; return; }
+            const gained = Math.floor((now - energyT) / ENERGY_REGEN_MS);
+            if (gained > 0) {
+                energy = Math.min(ENERGY_MAX, energy + gained);
+                energyT = energy >= ENERGY_MAX ? now : energyT + gained * ENERGY_REGEN_MS;
+            }
+        }
+
+        setInterval(() => {
+            if (!currentPet || runaway) return;
+            catchUp();
+            energyRefresh();
+            saveData();
+            updateStats();
+        }, 20000);
+
+        document.addEventListener('visibilitychange', () => {
+            if (!currentPet || runaway) return;
+            if (document.hidden) { saveData(); }
+            else { catchUp(); energyRefresh(); updateUI(); }
+        });
+
+        /* ---------- ДАННЫЕ ---------- */
         function loadPetData(type) {
             lvl = parseInt(localStorage.getItem(`gothic_${type}_lvl`)) || 1;
             exp = parseInt(localStorage.getItem(`gothic_${type}_exp`)) || 0;
             maxExp = 300 + (lvl - 1) * 250;
-            
-            let h = parseFloat(localStorage.getItem(`gothic_${type}_hunger`));
+
+            const h = parseFloat(localStorage.getItem(`gothic_${type}_hunger`));
             hunger = (isNaN(h) || h < 0 || h > 100) ? 100 : h;
-
-            let m = parseFloat(localStorage.getItem(`gothic_${type}_mood`));
+            const m = parseFloat(localStorage.getItem(`gothic_${type}_mood`));
             mood = (isNaN(m) || m < 0 || m > 100) ? 100 : m;
-
-            let f = parseFloat(localStorage.getItem(`gothic_${type}_fun`));
+            const f = parseFloat(localStorage.getItem(`gothic_${type}_fun`));
             fun = (isNaN(f) || f < 0 || f > 100) ? 100 : f;
 
             lastFunTime = parseInt(localStorage.getItem(`gothic_${type}_last_fun`)) || 0;
+            lastTick = parseInt(localStorage.getItem(`gothic_${type}_last_active`)) || Date.now();
 
-            let lastActive = parseInt(localStorage.getItem(`gothic_${type}_last_active`)) || Date.now();
-            let hoursPassed = (Date.now() - lastActive) / (1000 * 60 * 60);
-            if (hoursPassed > 0.5) {
-                hunger = Math.max(0, hunger - Math.floor(hoursPassed * 3));
-                mood = Math.max(0, mood - Math.floor(hoursPassed * 2));
-                fun = Math.max(0, fun - Math.floor(hoursPassed * 4));
-
-                if (hunger <= 0 || mood <= 0 || fun <= 0) {
-                    document.getElementById('runawayScreen').classList.remove('hidden');
-                }
-            }
-
-            let defaultInv = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
-            let savedInv = localStorage.getItem(`gothic_${type}_inv`);
+            const savedInv = localStorage.getItem(`gothic_${type}_inv`);
             if (savedInv) {
-                try { 
-                    inventory = JSON.parse(savedInv); 
-                    for (let key in defaultInv) {
-                        if (inventory[key] === undefined) inventory[key] = defaultInv[key];
-                    }
-                } catch(e) { inventory = { ...defaultInv }; }
+                try {
+                    inventory = JSON.parse(savedInv);
+                    for (const key in DEFAULT_INV) if (inventory[key] === undefined) inventory[key] = DEFAULT_INV[key];
+                } catch (e) { inventory = { ...DEFAULT_INV }; }
             } else {
-                inventory = { ...defaultInv };
+                inventory = { ...DEFAULT_INV };
             }
+
+            runaway = false;
+            catchUp();
         }
 
         function saveData() {
             localStorage.setItem('gothic_coins', coins);
             localStorage.setItem('gothic_friends', friends);
-            if (!currentPet) return;
+            localStorage.setItem('gothic_energy', energy);
+            localStorage.setItem('gothic_energy_t', energyT);
+            localStorage.setItem('gothic_streak', streak);
+            localStorage.setItem('gothic_last_claim', lastClaim);
+            localStorage.setItem('gothic_best', JSON.stringify(best));
+            if (!currentPet || runaway) return;
 
             localStorage.setItem(`gothic_${currentPet}_lvl`, lvl);
             localStorage.setItem(`gothic_${currentPet}_exp`, exp);
@@ -794,191 +904,247 @@
             localStorage.setItem(`gothic_${currentPet}_last_active`, Date.now());
         }
 
+        function clearPetData(type) {
+            Object.keys(localStorage).forEach(k => { if (k.startsWith(`gothic_${type}_`)) localStorage.removeItem(k); });
+        }
+
+        /* ---------- ЗАПУСК ---------- */
+        energyRefresh();
         if (!currentPet || !petsData[currentPet]) {
-            document.getElementById('selectScreen').classList.remove('hidden');
+            $('selectScreen').classList.remove('hidden');
         } else {
             loadPetData(currentPet);
             initGame(currentPet);
         }
 
         function openSelectScreen() {
-            document.getElementById('selectScreen').classList.remove('hidden');
+            document.querySelectorAll('.pet-choice-card').forEach(c => c.classList.toggle('active', c.dataset.pet === currentPet));
+            $('selectScreen').classList.remove('hidden');
         }
-
         function closeSelectScreen() {
             if (!currentPet) return;
-            document.getElementById('selectScreen').classList.add('hidden');
+            $('selectScreen').classList.add('hidden');
         }
 
         function choosePet(type) {
             initAudio();
             currentPet = type;
             localStorage.setItem('gothic_pet', type);
-            inventory = { cookie: 3, matcha: 1, cake: 1, sushi: 0, ramen: 0, bento: 0, elixir: 0, ball: 2, feather: 1, laser: 1 };
             loadPetData(type);
-            document.getElementById('selectScreen').classList.add('hidden');
-            document.getElementById('runawayScreen').classList.add('hidden');
+            $('selectScreen').classList.add('hidden');
+            if (!runaway) $('runawayScreen').classList.add('hidden');
             initGame(type);
             saveData();
-            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            hap('success');
         }
 
         function resetAfterRunaway() {
+            clearPetData(currentPet);
             localStorage.removeItem('gothic_pet');
-            document.getElementById('runawayScreen').classList.add('hidden');
-            document.getElementById('selectScreen').classList.remove('hidden');
+            currentPet = '';
+            runaway = false;
+            $('runawayScreen').classList.add('hidden');
+            $('selectScreen').classList.remove('hidden');
         }
 
         function initGame(type) {
-            let p = petsData[type];
-            let imgEl = document.getElementById('petImg');
-            if (type === 'ghostcat') {
-                poseLocked = false;
-                setCatPose('afk');
-            } else {
-                imgEl.src = p.img;
-            }
-            document.getElementById('petName').innerText = p.name;
-            document.getElementById('gameTitle').innerText = p.name;
+            const p = petsData[type];
+            if (type === 'ghostcat') { poseLocked = false; currentPose = ''; setCatPose('afk'); }
+            else { $('petImg').src = p.img; }
+            $('petName').innerText = p.name;
+            $('gameTitle').innerText = p.name;
             updateUI();
+            setTimeout(() => { if (dailyAvailable().can && !runaway) openDaily(); }, 700);
         }
 
         function switchTab(tabName, btnEl) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
+            $('tab-' + tabName).classList.add('active');
             if (btnEl) btnEl.classList.add('active');
-
-            if (tabName === 'home' && currentPet === 'ghostcat') {
-                setCatPose('waveHello', 1200);
-            }
+            $('tab-' + tabName).parentElement.scrollTop = 0;
+            hap('select');
+            if (tabName === 'home' && currentPet === 'ghostcat') setCatPose('waveHello', 1200);
         }
 
         function switchToNextTab() {
-            let activeTabEl = document.querySelector('.tab-content.active');
-            let currentTabId = activeTabEl ? activeTabEl.id.replace('tab-', '') : 'home';
-            let currentIndex = tabsOrder.indexOf(currentTabId);
-            let nextIndex = (currentIndex + 1) % tabsOrder.length;
-            let nextTabName = tabsOrder[nextIndex];
-            
-            let navButtons = document.querySelectorAll('.nav-item');
-            let targetNavBtn = navButtons[nextIndex];
-            
-            switchTab(nextTabName, targetNavBtn);
-            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            const activeTabEl = document.querySelector('.tab-content.active');
+            const currentTabId = activeTabEl ? activeTabEl.id.replace('tab-', '') : 'home';
+            const nextIndex = (tabsOrder.indexOf(currentTabId) + 1) % tabsOrder.length;
+            switchTab(tabsOrder[nextIndex], document.querySelectorAll('.nav-item')[nextIndex]);
+            hap('success');
         }
 
+        /* ---------- ЧАСТИЦЫ ---------- */
+        const stage = $('stage');
+        const petArea = $('petArea');
+        const petBody = $('petBody');
+
+        function burst(x, y, list, n = 8, spread = 90) {
+            const rect = stage.getBoundingClientRect();
+            for (let i = 0; i < n; i++) {
+                const p = document.createElement('span');
+                p.className = 'particle';
+                p.textContent = list[Math.floor(Math.random() * list.length)];
+                const a = Math.random() * Math.PI * 2;
+                const d = spread * (0.4 + Math.random() * 0.6);
+                p.style.cssText = `left:${x - rect.left}px;top:${y - rect.top}px;--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d - 40}px;--r:${Math.random() * 80 - 40}deg;--d:${700 + Math.random() * 500}ms;font-size:${14 + Math.random() * 10}px`;
+                stage.appendChild(p);
+                setTimeout(() => p.remove(), 1300);
+            }
+        }
+        function burstAtPet(list, n, spread) {
+            const r = petArea.getBoundingClientRect();
+            burst(r.left + r.width / 2, r.top + r.height / 2, list, n, spread);
+        }
+
+        function playBodyAnim(cls) {
+            petBody.classList.remove('tap', 'hop');
+            void petBody.offsetWidth;
+            petBody.classList.add(cls);
+        }
+        petBody.addEventListener('animationend', () => petBody.classList.remove('tap', 'hop'));
+
+        setInterval(() => {
+            if (!currentPet || isDragging || runaway) return;
+            if (Math.min(hunger, mood, fun) >= 30 && mood > 60) playBodyAnim('hop');
+        }, 9000);
+
+        (function createMotes() {
+            const m = $('motes');
+            for (let i = 0; i < 16; i++) {
+                const e = document.createElement('i');
+                e.className = 'mote';
+                e.style.cssText = `left:${Math.random() * 100}%;--s:${2 + Math.random() * 3}px;--t:${9 + Math.random() * 10}s;--dl:${-Math.random() * 15}s;--dx:${Math.random() * 80 - 40}px`;
+                m.appendChild(e);
+            }
+        })();
+
+        /* ---------- ОПЫТ И ИНТЕРФЕЙС ---------- */
         function addExp(amount) {
             exp += amount;
             maxExp = 300 + (lvl - 1) * 250;
-            if (exp >= maxExp) {
+            while (exp >= maxExp) {
                 exp -= maxExp;
                 lvl++;
                 coins += 200;
                 maxExp = 300 + (lvl - 1) * 250;
-                if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                hap('success');
+                toast(`✨ Уровень ${lvl}! +200 🪙`);
+                burstAtPet(['✨', '⭐', '🖤'], 16, 140);
             }
             saveData();
             updateUI();
         }
 
-        function updateUI() {
-            document.getElementById('coins').innerText = coins;
-            document.getElementById('lvl').innerText = lvl;
-            document.getElementById('exp').innerText = exp;
-            document.getElementById('maxExp').innerText = maxExp;
-            document.getElementById('friendCount').innerText = friends;
-
-            let hInt = Math.round(isNaN(hunger) ? 100 : hunger);
-            let mInt = Math.round(isNaN(mood) ? 100 : mood);
-            let fInt = Math.round(isNaN(fun) ? 100 : fun);
-
-            document.getElementById('hungerText').innerText = hInt;
-            document.getElementById('moodText').innerText = mInt;
-            document.getElementById('funText').innerText = fInt;
-
-            document.getElementById('hungerBar').style.width = hInt + '%';
-            document.getElementById('moodBar').style.width = mInt + '%';
-            document.getElementById('funBar').style.width = fInt + '%';
-
-            let shopGrid = document.getElementById('shopGrid');
-            shopGrid.innerHTML = '';
-            shopItems.forEach(item => {
-                let isUnlocked = lvl >= item.reqLvl;
-                let card = document.createElement('div');
-                card.className = 'shop-card';
-                card.innerHTML = `
-                    <p style="font-size: 11px; font-weight: 600; color: var(--text-main);">${item.name}</p>
-                    <p style="font-size: 9px; color: var(--text-muted); margin: 2px 0;">${isUnlocked ? `+${item.boost} Сытости` : `Требует Ур. ${item.reqLvl}`}</p>
-                    <button class="shop-btn ${isUnlocked ? '' : 'locked'}" onclick="buyFood('${item.key}', ${item.cost}, ${item.reqLvl})">${item.cost} 🪙</button>
-                `;
-                shopGrid.appendChild(card);
-            });
-
-            let invRow = document.getElementById('inventoryRow');
-            invRow.innerHTML = '';
-            let hasAnyItem = false;
-            for (let key in inventory) {
-                if (inventory[key] > 0 && itemsMeta[key]) {
-                    hasAnyItem = true;
-                    let meta = itemsMeta[key];
-                    let cardEl = document.createElement('div');
-                    cardEl.className = 'inv-item-card';
-                    cardEl.innerHTML = `<span style="font-size:11px; color:var(--text-main);">${meta.name}</span> <span style="color:var(--text-muted); font-weight:600; font-size:11px;">x${inventory[key]}</span>`;
-                    cardEl.onclick = () => useInventoryItem(key);
-                    invRow.appendChild(cardEl);
-                }
-            }
-            if (!hasAnyItem) {
-                invRow.innerHTML = `<span style="font-size:10px; color:#555;">Инвентарь пуст.</span>`;
+        function energyLabels() {
+            $('energyText').innerText = `🔋 Энергия ${energy}/${ENERGY_MAX}`;
+            if (energy >= ENERGY_MAX) { $('energyTimer').innerText = 'полная'; }
+            else {
+                const mins = Math.max(1, Math.ceil((ENERGY_REGEN_MS - (Date.now() - energyT)) / 60000));
+                $('energyTimer').innerText = `+1 через ${mins} мин`;
             }
         }
 
-        // ЖЕСТЫ И ПЕРЕТАСКИВАНИЕ
-        let stage = document.getElementById('stage');
-        let card = document.getElementById('characterCard');
-        let isDragging = false;
-        let startX, startY;
-        let currentDeltaX = 0;
-        let currentDeltaY = 0;
+        function updateStats() {
+            $('coins').innerText = coins;
+            $('lvl').innerText = lvl;
+            $('exp').innerText = exp;
+            $('maxExp').innerText = maxExp;
+            $('friendCount').innerText = friends;
+            $('expBar').style.width = Math.min(100, (exp / maxExp) * 100) + '%';
+
+            const set = (k, v) => {
+                const i = Math.round(isNaN(v) ? 100 : v);
+                $(k + 'Text').innerText = i;
+                const b = $(k + 'Bar');
+                b.style.width = i + '%';
+                b.classList.toggle('low', i < 25);
+            };
+            set('hunger', hunger); set('mood', mood); set('fun', fun);
+
+            petArea.classList.toggle('sad', Math.min(hunger, mood, fun) < 30);
+            let th = '';
+            if (hunger < 35) th = '🍽️'; else if (fun < 35) th = '🎲'; else if (mood < 35) th = '💔';
+            const tEl = $('thought');
+            if (th) { tEl.innerText = th; tEl.classList.add('show'); } else { tEl.classList.remove('show'); }
+
+            energyLabels();
+            $('giftDot').classList.toggle('hidden', !dailyAvailable().can);
+        }
+
+        function updateUI() {
+            updateStats();
+
+            const shopGrid = $('shopGrid');
+            shopGrid.innerHTML = '';
+            shopItems.forEach(item => {
+                const unlocked = lvl >= item.reqLvl;
+                const [em, nm] = splitName(item.name);
+                const card = document.createElement('div');
+                card.className = 'shop-card';
+                card.innerHTML = `
+                    <div class="emoji">${em}</div>
+                    <div class="nm">${nm}</div>
+                    <div class="ds">${unlocked ? `+${item.boost} сытости` : `Нужен ур. ${item.reqLvl}`}</div>
+                    <button class="shop-btn ${unlocked ? '' : 'locked'}" onclick="buyFood('${item.key}', ${item.cost}, ${item.reqLvl})">${item.cost} 🪙</button>`;
+                shopGrid.appendChild(card);
+            });
+
+            const invRow = $('inventoryRow');
+            invRow.innerHTML = '';
+            let has = false;
+            for (const key in inventory) {
+                if (inventory[key] > 0 && itemsMeta[key]) {
+                    has = true;
+                    const [em, nm] = splitName(itemsMeta[key].name);
+                    const c = document.createElement('div');
+                    c.className = 'inv-item-card';
+                    c.innerHTML = `<div class="e">${em}</div><div class="n">${nm} ×${inventory[key]}</div>`;
+                    c.onclick = () => useInventoryItem(key);
+                    invRow.appendChild(c);
+                }
+            }
+            if (!has) invRow.innerHTML = `<span style="font-size:11px; color:var(--text-muted); grid-column: 1 / -1;">Инвентарь пуст. Загляни в лавку 🛍️</span>`;
+
+            const gl = $('gamesList');
+            gl.innerHTML = '';
+            for (const id in GAMES) {
+                const g = GAMES[id];
+                const c = document.createElement('div');
+                c.className = 'game-card';
+                c.innerHTML = `<div class="ge">${g.emoji}</div><div style="flex:1"><div class="gt">${g.title}</div><div class="gd">${g.desc}</div></div><div class="gd" style="text-align:right">🏆<br>${best[id] || 0}</div>`;
+                c.onclick = () => openGame(id);
+                gl.appendChild(c);
+            }
+        }
+
+        /* ---------- ЖЕСТЫ ---------- */
+        const card = $('characterCard');
+        let isDragging = false, startX, startY, currentDeltaX = 0, currentDeltaY = 0;
 
         card.addEventListener('pointerdown', (e) => {
+            if (runaway) return;
             initAudio();
             isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            currentDeltaX = 0;
-            currentDeltaY = 0;
-            
+            startX = e.clientX; startY = e.clientY;
+            currentDeltaX = 0; currentDeltaY = 0;
             card.style.transition = 'none';
             card.setPointerCapture(e.pointerId);
 
             mood = Math.min(100, mood + 1);
             saveData();
-            updateUI();
+            updateStats();
+            playBodyAnim('tap');
+            burst(e.clientX, e.clientY, ['✨', '🖤', '✨'], 3, 60);
 
             if (currentPet === 'ghostcat') {
                 playSoftPurr();
-                
                 rapidClickCount++;
                 if (rapidClickTimer) clearTimeout(rapidClickTimer);
-
-                if (rapidClickCount >= 3) {
-                    setCatPose('surprised', 3000);
-                    rapidClickCount = 0;
-                }
-
+                if (rapidClickCount >= 3) { setCatPose('surprised', 3000); rapidClickCount = 0; }
                 rapidClickTimer = setTimeout(() => { rapidClickCount = 0; }, 600);
             }
-
-            let emoji = document.createElement('div');
-            emoji.className = 'floating-emoji';
-            emoji.innerText = '✨';
-            let rect = stage.getBoundingClientRect();
-            emoji.style.left = (e.clientX - rect.left - 10) + 'px';
-            emoji.style.top = (e.clientY - rect.top - 20) + 'px';
-            stage.appendChild(emoji);
-            setTimeout(() => emoji.remove(), 1000);
         });
 
         window.addEventListener('pointermove', (e) => {
@@ -987,13 +1153,10 @@
             currentDeltaY = e.clientY - startY;
 
             if (currentPet === 'ghostcat' && !poseLocked) {
-                let distance = Math.hypot(currentDeltaX, currentDeltaY);
-                
+                const distance = Math.hypot(currentDeltaX, currentDeltaY);
                 if (distance > 12) {
                     if (e.clientX >= window.innerWidth - 70) {
-                        if (currentPose !== 'flyUp') {
-                            setCatPose('flyUp');
-                        }
+                        if (currentPose !== 'flyUp') setCatPose('flyUp');
                         if (!rightHoldTimer) {
                             rightHoldTimer = setTimeout(() => {
                                 switchToNextTab();
@@ -1003,21 +1166,16 @@
                             }, 1500);
                         }
                     } else {
-                        if (rightHoldTimer) {
-                            clearTimeout(rightHoldTimer);
-                            rightHoldTimer = null;
-                        }
-                        if (currentPose !== 'spin') {
-                            setCatPose('spin');
-                        }
+                        if (rightHoldTimer) { clearTimeout(rightHoldTimer); rightHoldTimer = null; }
+                        if (currentPose !== 'spin') setCatPose('spin');
                     }
                 }
             }
 
             if (currentPet === 'squish') {
-                let stretchX = Math.min(0.6, Math.abs(currentDeltaX) / 35);
-                let stretchY = Math.min(0.6, Math.abs(currentDeltaY) / 35);
-                card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) scale(${1 + stretchX}, ${Math.max(0.7, 1 - stretchY/1.5)})`;
+                const sx = Math.min(0.6, Math.abs(currentDeltaX) / 35);
+                const sy = Math.min(0.6, Math.abs(currentDeltaY) / 35);
+                card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) scale(${1 + sx}, ${Math.max(0.7, 1 - sy / 1.5)})`;
             } else {
                 card.style.transform = `translate(${currentDeltaX}px, ${currentDeltaY}px) rotate(${currentDeltaX / 12}deg)`;
             }
@@ -1026,102 +1184,360 @@
         window.addEventListener('pointerup', (e) => {
             if (!isDragging) return;
             isDragging = false;
-
-            if (rightHoldTimer) {
-                clearTimeout(rightHoldTimer);
-                rightHoldTimer = null;
-            }
-
-            if (currentPet === 'ghostcat' && !poseLocked) {
-                setCatPose('afk');
-            }
-
-            card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25)';
+            if (rightHoldTimer) { clearTimeout(rightHoldTimer); rightHoldTimer = null; }
+            if (currentPet === 'ghostcat' && !poseLocked) setCatPose('afk');
+            card.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.35)';
             card.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
-
-            try { card.releasePointerCapture(e.pointerId); } catch(err) {}
-            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            try { card.releasePointerCapture(e.pointerId); } catch (err) {}
+            hap('light');
         });
 
+        /* ---------- ЛАВКА И ИНВЕНТАРЬ ---------- */
         function buyFood(foodKey, cost, reqLvl) {
-            if (lvl < reqLvl) {
-                alert(`Этот предмет доступен только с ${reqLvl} уровня!`);
-                return;
-            }
-            if (coins < cost) {
-                alert('Недостаточно средств');
-                return;
-            }
+            if (lvl < reqLvl) { toast(`Доступно с ${reqLvl} уровня`); hap('warning'); return; }
+            if (coins < cost) { toast('Недостаточно монет 🪙'); hap('error'); return; }
             coins -= cost;
             inventory[foodKey] = (inventory[foodKey] || 0) + 1;
-            saveData();
-            updateUI();
-            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            saveData(); updateUI();
+            toast(`Куплено: ${itemsMeta[foodKey].name}`);
+            hap('success');
         }
 
         function useInventoryItem(itemKey) {
-            let meta = itemsMeta[itemKey];
+            const meta = itemsMeta[itemKey];
             if (!meta || !inventory[itemKey] || inventory[itemKey] <= 0) return;
-
-            if (meta.stat === 'hunger' && hunger >= 95) {
-                alert('Сущность сыта');
-                return;
-            }
-            if (meta.stat === 'fun' && fun >= 95) {
-                alert('Сущность уже наигралась');
-                return;
-            }
+            if (meta.stat === 'hunger' && hunger >= 95) { toast('Сущность сыта'); return; }
+            if (meta.stat === 'fun' && fun >= 95) { toast('Сущность уже наигралась'); return; }
 
             inventory[itemKey]--;
+            if (meta.stat === 'hunger') { hunger = Math.min(100, hunger + meta.boost); mood = Math.min(100, mood + 15); }
+            else { fun = Math.min(100, fun + meta.boost); mood = Math.min(100, mood + 20); }
 
-            if (meta.stat === 'hunger') {
-                hunger = Math.min(100, hunger + meta.boost);
-                mood = Math.min(100, mood + 15);
-            } else if (meta.stat === 'fun') {
-                fun = Math.min(100, fun + meta.boost);
-                mood = Math.min(100, mood + 20);
-            }
-
-            addExp(itemsMeta[itemKey].exp || 100);
-
-            if (currentPet === 'ghostcat') {
-                setCatPose('spin', 1200);
-            }
-            saveData();
-            updateUI();
-            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            const em = splitName(meta.name)[0];
+            burstAtPet(meta.type === 'food' ? [em, em, '✨'] : [em, '💫', '✨'], 9, 110);
+            playBodyAnim('hop');
+            if (currentPet === 'ghostcat') setCatPose('spin', 1200);
+            addExp(meta.exp || 100);
+            hap('success');
         }
 
         function doFunActivity() {
-            let now = Date.now();
-            let cooldown = 3600000;
+            const now = Date.now();
+            const cooldown = 3600000;
             if (now - lastFunTime < cooldown) {
-                let remainingMins = Math.ceil((cooldown - (now - lastFunTime)) / 60000);
-                alert(`Требуется восстановление! Осталось ждать: ${remainingMins} мин.`);
+                const mins = Math.ceil((cooldown - (now - lastFunTime)) / 60000);
+                toast(`Нужно отдохнуть. Ещё ${mins} мин.`);
                 return;
             }
             lastFunTime = now;
             fun = Math.min(100, fun + 30);
             mood = Math.min(100, mood + 20);
-            addExp(150);
-            saveData();
-            updateUI();
-
+            burstAtPet(['💫', '✨', '🎲'], 10, 120);
+            playBodyAnim('hop');
             if (currentPet === 'ghostcat') setCatPose('spin', 2000);
-            if (hapticEnabled && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            addExp(150);
+            hap('success');
         }
 
         function copyRef() {
-            navigator.clipboard.writeText(document.getElementById("refLink").value);
-            alert("Ссылка скопирована");
+            try { navigator.clipboard.writeText($('refLink').value); } catch (e) {}
+            toast('Ссылка скопирована');
+            hap('success');
+        }
+        function simulateFriendJoin() {
+            friends++; coins += 300;
+            addExp(200);
+            toast('Новая связь! +300 🪙');
         }
 
-        function simulateFriendJoin() {
-            friends++;
-            coins += 300;
-            addExp(200);
+        /* ================= ЕЖЕДНЕВНЫЕ ПОДАРКИ ================= */
+        function todayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function dayDiff(a, b) {
+            return Math.round((new Date(a + 'T12:00:00') - new Date(b + 'T12:00:00')) / 86400000);
+        }
+        function dailyAvailable() {
+            const t = todayStr();
+            if (!lastClaim) return { can: true, next: 1 };
+            const diff = dayDiff(t, lastClaim);
+            if (diff < 1) return { can: false, next: streak };
+            // один пропущенный день прощается, дальше серия начинается заново
+            return { can: true, next: diff <= 2 ? streak + 1 : 1 };
+        }
+        function rewardIcons(r) {
+            let s = `🪙${r.coins}`;
+            const parts = [];
+            if (r.items) for (const k in r.items) parts.push(splitName(itemsMeta[k].name)[0] + (r.items[k] > 1 ? '×' + r.items[k] : ''));
+            if (r.exp) parts.push('⭐');
+            return { top: parts.join(' ') || '🪙', bottom: s };
+        }
+        function openDaily() {
+            if (!currentPet || runaway) return;
+            const st = dailyAvailable();
+            const idx = st.can ? (st.next - 1) % 7 : (streak - 1) % 7;
+            const grid = $('dailyGrid');
+            grid.innerHTML = '';
+            DAILY.forEach((r, i) => {
+                const ic = rewardIcons(r);
+                const cell = document.createElement('div');
+                const claimed = st.can ? i < idx : i <= idx;
+                cell.className = 'day-cell' + (i === 6 ? ' big' : '') + (claimed ? ' claimed' : '') + (st.can && i === idx ? ' today' : '');
+                cell.innerHTML = `<div class="dn">День ${i + 1}</div><div class="di">${ic.top}</div><div class="dc">${ic.bottom}</div>`;
+                grid.appendChild(cell);
+            });
+            $('dailySub').innerText = st.can
+                ? (st.next > 1 ? `Серия: ${st.next - 1} дн. — не прерывай её!` : 'Заходи каждый день — награды растут')
+                : `Сегодняшний дар получен. Серия: ${streak} дн. Возвращайся завтра`;
+            const btn = $('dailyBtn');
+            btn.disabled = !st.can;
+            btn.innerText = st.can ? 'Забрать дар' : 'Приходи завтра';
+            $('dailyOverlay').classList.remove('hidden');
+        }
+        function closeDaily() { $('dailyOverlay').classList.add('hidden'); }
+
+        function claimDaily() {
+            const st = dailyAvailable();
+            if (!st.can) return;
+            const r = DAILY[(st.next - 1) % 7];
+            streak = st.next;
+            lastClaim = todayStr();
+            coins += r.coins;
+            if (r.items) for (const k in r.items) inventory[k] = (inventory[k] || 0) + r.items[k];
             saveData();
+            const ic = rewardIcons(r);
+            toast(`🎁 Получено: ${ic.bottom} ${r.items ? ic.top : ''}`);
+            hap('success'); blip(660, 0.2);
+            closeDaily();
+            burstAtPet(['🪙', '✨', '🎁'], 16, 150);
+            if (r.exp) addExp(r.exp); else updateUI();
+        }
+
+        /* ================= МИНИ-ИГРЫ ================= */
+        const GAMES = {
+            catch:  { emoji: '🧺', title: 'Лови лакомства', desc: 'Двигай питомца и лови еду. Бойся пауков и черепов!', start: startCatch },
+            memory: { emoji: '🔮', title: 'Пары теней',     desc: 'Найди все парные символы за минимум ходов.',     start: startMemory },
+            whack:  { emoji: '👻', title: 'Охота на призраков', desc: 'Тапай призраков, но не трогай чеснок!',         start: startWhack }
+        };
+        let gameCleanup = null;
+
+        function runCleanup() { if (gameCleanup) { try { gameCleanup(); } catch (e) {} gameCleanup = null; } }
+        function petImgSrc() { return currentPet === 'ghostcat' ? ghostCatImages.afk : petsData[currentPet].img; }
+
+        function openGame(id) {
+            if (!currentPet || runaway) return;
+            energyRefresh();
+            runCleanup();
+            const g = GAMES[id];
+            $('gameTitleText').innerText = g.title;
+            $('gameInfo').innerText = '';
+            $('gameBody').innerHTML = `
+                <div class="result">
+                    <div class="big">${g.emoji}</div>
+                    <h3>${g.title}</h3>
+                    <p>${g.desc}</p>
+                    <p>Рекорд: ${best[id] || 0} · Энергия: 🔋 ${energy}/${ENERGY_MAX}</p>
+                    <button class="btn" ${energy <= 0 ? 'disabled' : ''} onclick="beginGame('${id}')">Начать (−1 🔋)</button>
+                    <button class="btn ghost" onclick="closeGame()">Назад</button>
+                </div>`;
+            $('gameOverlay').classList.remove('hidden');
+        }
+
+        function beginGame(id) {
+            energyRefresh();
+            if (energy <= 0) { toast('Нет энергии 🔋 Подожди немного'); return; }
+            energy--;
+            saveData(); updateStats();
+            runCleanup();
+            const body = $('gameBody');
+            body.innerHTML = '';
+            gameCleanup = GAMES[id].start(body, res => finishGame(id, res), txt => { $('gameInfo').innerText = txt; }) || null;
+        }
+
+        function closeGame() {
+            runCleanup();
+            $('gameOverlay').classList.add('hidden');
             updateUI();
+        }
+
+        function finishGame(id, res) {
+            runCleanup();
+            coins += res.coins;
+            fun = Math.min(100, fun + res.fun);
+            mood = Math.min(100, mood + 12);
+            const isBest = res.score > (best[id] || 0);
+            if (isBest) best[id] = res.score;
+            energyRefresh();
+            const g = GAMES[id];
+            $('gameInfo').innerText = '';
+            $('gameBody').innerHTML = `
+                <div class="result">
+                    <div class="big">${isBest ? '🏆' : g.emoji}</div>
+                    <h3>${res.summary || 'Очки: ' + res.score}</h3>
+                    ${isBest ? '<p style="color:var(--accent2); font-weight:600;">Новый рекорд!</p>' : ''}
+                    <p>+${res.coins} 🪙 · +${res.fun} досуга · +${res.exp} опыта</p>
+                    <button class="btn" ${energy <= 0 ? 'disabled' : ''} onclick="beginGame('${id}')">Ещё раз (🔋 ${energy})</button>
+                    <button class="btn ghost" onclick="closeGame()">Закрыть</button>
+                </div>`;
+            hap('success');
+            addExp(res.exp);
+        }
+
+        /* --- Игра 1: ловля --- */
+        function startCatch(body, finish, info) {
+            const cv = document.createElement('canvas');
+            body.appendChild(cv);
+            const ctx = cv.getContext('2d');
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            let W = 0, H = 0;
+            const r = body.getBoundingClientRect();
+            W = r.width; H = r.height;
+            cv.width = W * dpr; cv.height = H * dpr;
+            cv.style.cssText = `width:${W}px;height:${H}px;touch-action:none;display:block`;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const img = new Image(); img.src = petImgSrc();
+            const GOOD = ['🍪', '🍰', '🍣', '🍜', '🍷'];
+            const BAD = ['🕷️', '💀'];
+            let bx = W / 2, targetX = W / 2, items = [], score = 0, left = 30;
+            let last = performance.now(), spawn = 0, raf = 0, over = false, flash = 0, lastInfo = '';
+
+            const move = e => {
+                const b = cv.getBoundingClientRect();
+                targetX = Math.max(42, Math.min(W - 42, e.clientX - b.left));
+            };
+            cv.addEventListener('pointerdown', move);
+            cv.addEventListener('pointermove', move);
+
+            function frame(t) {
+                if (over) return;
+                const dt = Math.min(0.05, (t - last) / 1000); last = t;
+                left -= dt; spawn -= dt; flash = Math.max(0, flash - dt);
+                const elapsed = 30 - left;
+                if (spawn <= 0) {
+                    spawn = Math.max(0.33, 0.75 - elapsed * 0.012);
+                    const bad = Math.random() < 0.25;
+                    const list = bad ? BAD : GOOD;
+                    items.push({ x: 30 + Math.random() * (W - 60), y: -30, v: 150 + Math.random() * 90 + elapsed * 5, e: list[Math.floor(Math.random() * list.length)], bad });
+                }
+                bx += (targetX - bx) * Math.min(1, dt * 14);
+                const by = H - 76;
+
+                ctx.clearRect(0, 0, W, H);
+                // тень под питомцем
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
+                ctx.beginPath(); ctx.ellipse(bx, by + 44, 34, 7, 0, 0, Math.PI * 2); ctx.fill();
+                if (img.complete && img.naturalWidth) ctx.drawImage(img, bx - 44, by - 44, 88, 88);
+                if (flash > 0) { ctx.fillStyle = `rgba(224,69,58,${flash})`; ctx.fillRect(0, 0, W, H); }
+
+                ctx.font = '32px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                for (let i = items.length - 1; i >= 0; i--) {
+                    const it = items[i];
+                    it.y += it.v * dt;
+                    ctx.fillText(it.e, it.x, it.y);
+                    if (it.y > by - 30 && it.y < by + 34 && Math.abs(it.x - bx) < 50) {
+                        if (it.bad) { score = Math.max(0, score - 2); flash = 0.35; hap('error'); blip(140, 0.2); }
+                        else { score++; hap('light'); blip(520 + Math.random() * 200, 0.08); }
+                        items.splice(i, 1);
+                    } else if (it.y > H + 40) items.splice(i, 1);
+                }
+
+                const txt = `⏱ ${Math.max(0, Math.ceil(left))}  ⭐ ${score}`;
+                if (txt !== lastInfo) { info(txt); lastInfo = txt; }
+                if (left <= 0) {
+                    over = true;
+                    finish({ score, coins: score * 4, fun: Math.min(40, 8 + score), exp: 40 + score * 3 });
+                    return;
+                }
+                raf = requestAnimationFrame(frame);
+            }
+            raf = requestAnimationFrame(frame);
+            return () => { over = true; cancelAnimationFrame(raf); };
+        }
+
+        /* --- Игра 2: пары --- */
+        function startMemory(body, finish, info) {
+            const sym = ['🦇', '🕯️', '🗝️', '🔮', '💀', '🌙'];
+            const deck = [...sym, ...sym].sort(() => Math.random() - 0.5);
+            body.innerHTML = '<div class="mem-grid">' + deck.map((s, i) =>
+                `<div class="mem-card" data-i="${i}"><div class="mem-in"><div class="mem-front">?</div><div class="mem-back">${s}</div></div></div>`).join('') + '</div>';
+            const cards = [...body.querySelectorAll('.mem-card')];
+            let first = null, lock = false, moves = 0, matched = 0;
+            const timers = [];
+            info('Ходы: 0');
+
+            cards.forEach(c => c.addEventListener('pointerdown', () => {
+                if (lock || c.classList.contains('flip') || c.classList.contains('done')) return;
+                c.classList.add('flip'); hap('select'); blip(400, 0.05);
+                if (!first) { first = c; return; }
+                moves++; info('Ходы: ' + moves);
+                const a = first, b = c; first = null;
+                if (deck[+a.dataset.i] === deck[+b.dataset.i]) {
+                    a.classList.add('done'); b.classList.add('done'); matched++;
+                    hap('success'); blip(700, 0.15);
+                    if (matched === sym.length) {
+                        timers.push(setTimeout(() => finish({
+                            score: Math.max(1, 24 - moves),
+                            summary: `Ходов: ${moves}`,
+                            coins: Math.max(30, 160 - (moves - 6) * 10),
+                            fun: 30,
+                            exp: 120
+                        }), 700));
+                    }
+                } else {
+                    lock = true;
+                    timers.push(setTimeout(() => { a.classList.remove('flip'); b.classList.remove('flip'); lock = false; }, 750));
+                }
+            }));
+            return () => timers.forEach(clearTimeout);
+        }
+
+        /* --- Игра 3: призраки --- */
+        function startWhack(body, finish, info) {
+            body.innerHTML = '<div class="whack-grid">' +
+                Array.from({ length: 9 }, (_, i) => `<div class="hole" data-i="${i}"><span class="mole"></span></div>`).join('') + '</div>';
+            const holes = [...body.querySelectorAll('.hole')];
+            let score = 0, left = 25, over = false, tok = 0;
+            const timers = [];
+            const t = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
+            const refresh = () => info(`⏱ ${left}  ⭐ ${score}`);
+
+            const clock = setInterval(() => { left--; refresh(); if (left <= 0) end(); }, 1000);
+
+            function pop() {
+                if (over) return;
+                const free = holes.filter(h => !h.classList.contains('up'));
+                if (free.length) {
+                    const h = free[Math.floor(Math.random() * free.length)];
+                    const bad = Math.random() < 0.22;
+                    const my = ++tok;
+                    h._tok = my;
+                    h.dataset.bad = bad ? '1' : '';
+                    h.querySelector('.mole').textContent = bad ? '🧄' : '👻';
+                    h.classList.add('up');
+                    const elapsed = 25 - left;
+                    t(() => { if (h._tok === my) h.classList.remove('up'); }, Math.max(520, 950 - elapsed * 14));
+                }
+                t(pop, Math.max(280, 700 - (25 - left) * 10));
+            }
+
+            holes.forEach(h => h.addEventListener('pointerdown', () => {
+                if (over || !h.classList.contains('up')) return;
+                h.classList.remove('up');
+                if (h.dataset.bad) { score = Math.max(0, score - 2); hap('error'); blip(140, 0.2); }
+                else { score++; hap('light'); blip(560 + Math.random() * 200, 0.08); }
+                refresh();
+            }));
+
+            function cleanup() { clearInterval(clock); timers.forEach(clearTimeout); }
+            function end() {
+                if (over) return;
+                over = true; cleanup();
+                finish({ score, coins: score * 5, fun: Math.min(40, 10 + score), exp: 40 + score * 3 });
+            }
+            refresh(); pop();
+            return () => { over = true; cleanup(); };
         }
     </script>
 </body>
