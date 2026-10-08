@@ -1670,6 +1670,7 @@
             $('selectScreen').classList.remove('hidden');
         }
     </script>
+
     <script>
 /* Gothic Pet — аддон: имя, эволюция, аксессуары, реплики, сон, события,
    награды за друзей, облачное сохранение, приветствие. Подключать ПОСЛЕ основного <script>. */
@@ -1681,7 +1682,7 @@
   const st = D.createElement('style');
   st.textContent = `
   .pet-body{position:relative}
-  .acc{position:absolute;font-size:calc(min(290px,42vh)*.26);pointer-events:none;z-index:7;line-height:1}
+  .acc{position:absolute;height:auto;pointer-events:none;z-index:7}
   .pet-area.evo1:not(.sad) .pet-body img{filter:drop-shadow(0 0 14px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
   .pet-area.evo2:not(.sad) .pet-body img{filter:hue-rotate(35deg) saturate(1.3) drop-shadow(0 0 22px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
   .pet-area.evo3:not(.sad) .pet-body img{filter:hue-rotate(-40deg) saturate(1.4) brightness(1.12) drop-shadow(0 0 34px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
@@ -1734,10 +1735,8 @@
   function welcome() {
     coins += 100; inventory.cookie = (inventory.cookie || 0) + 2;
     saveData(); updateUI();
-    toast('🎁 Подарок новичку: 100 🪙 и 2 🍪');
-    setTimeout(() => toast('Тапни по сущности — она откликнется'), 3000);
-    setTimeout(() => toast('Корми в «Лавке», играй в «Досуге»'), 6000);
-    setTimeout(() => { toast('Зови друзей — награда вам обоим'); openDaily(); }, 9000);
+    toast('🎁 Подарок: 100 🪙 и 2 🍪');
+    setTimeout(openDaily, 2500);
   }
   $('petName').addEventListener('click', () => { if (currentPet && !busy()) askName(false); });
 
@@ -1756,20 +1755,24 @@
   }
 
   /* ---------- 3. аксессуары ---------- */
+  // Рисунки лежат рядом с index.html (PNG с прозрачным фоном): acc_hat.png и т.д.
+  // w — ширина в % от питомца, x — центр по горизонтали в %, y — верхний край в %
   const ACC = [
-    { k: 'hat', e: '🎩', n: 'Цилиндр', s: 'top:-8%;left:50%;transform:translateX(-50%)', ok: () => lvl >= 3, req: 'ур. 3' },
-    { k: 'candle', e: '🕯️', n: 'Свеча', s: 'right:-2%;top:38%', ok: () => streak >= 3, req: 'серия 3 дн.' },
-    { k: 'bat', e: '🦇', n: 'Летучая мышь', s: 'left:0;top:14%', ok: () => lvl >= 8, req: 'ур. 8' },
-    { k: 'ghost', e: '👻', n: 'Призрак', s: 'left:-4%;top:42%', ok: () => friends >= 3, req: '3 друга' },
-    { k: 'crown', e: '👑', n: 'Корона', s: 'top:-10%;left:50%;transform:translateX(-50%)', ok: () => lvl >= 15, req: 'ур. 15' },
-    { k: 'star', e: '🌟', n: 'Звезда', s: 'right:2%;top:2%', ok: () => friends >= 10, req: '10 друзей' }
+    { k: 'hat', img: 'acc_hat.png', n: 'Цилиндр', w: 50, x: 50, y: -6, ok: () => lvl >= 3, req: 'ур. 3' },
+    { k: 'candle', img: 'acc_candle.png', n: 'Свеча', w: 24, x: 88, y: 30, ok: () => streak >= 3, req: 'серия 3 дн.' },
+    { k: 'bat', img: 'acc_bat.png', n: 'Летучая мышь', w: 30, x: 14, y: 8, ok: () => lvl >= 8, req: 'ур. 8' },
+    { k: 'ghost', img: 'acc_ghost.png', n: 'Призрак', w: 26, x: 10, y: 40, ok: () => friends >= 3, req: '3 друга' },
+    { k: 'crown', img: 'acc_crown.png', n: 'Корона', w: 46, x: 50, y: -8, ok: () => lvl >= 15, req: 'ур. 15' },
+    { k: 'star', img: 'acc_star.png', n: 'Звезда', w: 22, x: 86, y: 2, ok: () => friends >= 10, req: '10 друзей' }
   ];
   function applyAcc() {
     const b = $('petBody'); let a = b.querySelector('.acc');
     const it = ACC.find(x => x.k === ls.getItem('gothic_acc') && x.ok());
     if (!it) { if (a) a.remove(); return; }
-    if (!a) { a = D.createElement('span'); a.className = 'acc'; b.appendChild(a); }
-    a.textContent = it.e; a.style.cssText = it.s;
+    if (!a) { a = D.createElement('img'); a.className = 'acc'; b.appendChild(a); }
+    a.onerror = () => a.remove();
+    if (a.getAttribute('src') !== it.img) a.src = it.img;
+    a.style.cssText = `left:${it.x}%;top:${it.y}%;width:${it.w}%;transform:translateX(-50%)`;
   }
   function renderAcc() {
     let box = $('xAcc');
@@ -1785,7 +1788,10 @@
       const d = D.createElement('div');
       d.className = 'theme-emoji-btn';
       d.style.cssText = `flex:0 0 calc(33.3% - 4px);padding:10px 0;${ok ? '' : 'opacity:.35;'}${on ? 'border-color:var(--accent2);' : ''}`;
-      d.innerHTML = `${ok ? it.e : '🔒'}<div style="font-size:9px;color:var(--text-muted);margin-top:2px">${ok ? it.n : it.req}</div>`;
+      const cap = t => `<div style="font-size:9px;color:var(--text-muted);margin-top:2px">${t}</div>`;
+      d.innerHTML = ok
+        ? `<img src="${it.img}" style="width:40px;height:40px;object-fit:contain" onerror="this.outerHTML='✨'">${cap(it.n)}`
+        : `🔒${cap(it.req)}`;
       d.onclick = () => {
         if (!ok) { toast('Откроется: ' + it.req); return; }
         ls.setItem('gothic_acc', on ? '' : it.k); applyAcc(); renderAcc(); cloudSave(); hap('select');
@@ -2172,7 +2178,7 @@
     }, 1500);
   }
 })();
-</script>
 
+    </script>
 </body>
 </html>
