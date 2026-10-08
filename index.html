@@ -2369,5 +2369,119 @@
 })();
 
     </script>
+    /* Gothic Pet — аддон 4: новые траты (улучшения, платные темы, буст опыта) */
+(function () {
+  const D = document, ls = localStorage;
+
+  /* ============ НАСТРОЙКИ ЦЕН ============ */
+  const THEME_PRICE = 400;                 // цена платной темы (obsidian и ghost бесплатные)
+  const FREE_THEMES = ['obsidian', 'ghost'];
+  const BOOST_PRICE = 400, BOOST_MIN = 60; // буст опыта ×2: цена и длительность в минутах
+  const STEP = 0.1;                        // каждое улучшение замедляет убывание на 10%
+  const UPS = [
+    { k: 'feed',  e: '🍽️', n: 'Автокормушка',  d: 'Сытость падает на 10% медленнее за уровень',      stat: 'hunger', prices: [600, 1200, 2400] },
+    { k: 'plaid', e: '🧣', n: 'Уютный плед',   d: 'Настроение падает на 10% медленнее за уровень',   stat: 'mood',   prices: [600, 1200, 2400] },
+    { k: 'game',  e: '🎮', n: 'Игровой уголок', d: 'Досуг падает на 10% медленнее за уровень',        stat: 'fun',    prices: [600, 1200, 2400] }
+  ];
+  /* ======================================= */
+
+  function modal(inner) {
+    const o = D.createElement('div');
+    o.className = 'overlay modal';
+    o.innerHTML = `<div class="daily-card">${inner}</div>`;
+    D.body.appendChild(o);
+    return o;
+  }
+  const btnCss = 'width:auto;padding:7px 12px;font-size:11px;white-space:nowrap';
+
+  /* ---------- улучшения: питомец дольше остаётся сытым и довольным ---------- */
+  const BASE_DECAY = { ...DECAY };
+  const upLvl = k => parseInt(ls.getItem('gothic_up_' + k)) || 0;
+  function applyUps() { UPS.forEach(u => { DECAY[u.stat] = BASE_DECAY[u.stat] * (1 - STEP * upLvl(u.k)); }); }
+  applyUps();
+
+  /* ---------- буст опыта ---------- */
+  const boostLeft = () => Math.max(0, (parseInt(ls.getItem('gothic_boost_until')) || 0) - Date.now());
+  const _ae = addExp;
+  addExp = function (a) { _ae(boostLeft() > 0 ? a * 2 : a); };
+
+  /* ---------- блок в «Лавке» ---------- */
+  $('shopGrid').insertAdjacentHTML('afterend', '<div class="section-title" style="margin-top:14px">Улучшения</div><div id="xUps"></div>');
+  function row(html, price, disabled, onBuy) {
+    const d = D.createElement('div'); d.className = 'tier';
+    d.innerHTML = `<div>${html}</div>` + (price === null ? '<span class="muted">MAX</span>'
+      : `<button class="btn" style="${btnCss}" ${disabled ? 'disabled' : ''}>${price} 🪙</button>`);
+    const b = d.querySelector('button'); if (b) b.onclick = onBuy;
+    return d;
+  }
+  function spend(n) {
+    if (coins < n) { toast('Недостаточно монет 🪙'); hap('error'); return false; }
+    coins -= n; return true;
+  }
+  function renderUps() {
+    const box = $('xUps'); box.innerHTML = '';
+    UPS.forEach(u => {
+      const l = upLvl(u.k), max = l >= u.prices.length;
+      box.appendChild(row(
+        `<b>${u.e} ${u.n}</b> <span class="muted">${'●'.repeat(l)}${'○'.repeat(u.prices.length - l)}</span><div class="muted" style="font-size:10px">${u.d}</div>`,
+        max ? null : u.prices[l], false,
+        () => {
+          if (!spend(u.prices[l])) return;
+          ls.setItem('gothic_up_' + u.k, l + 1); applyUps(); saveData(); updateUI();
+          toast(`${u.e} ${u.n}: уровень ${l + 1}`); hap('success');
+        }));
+    });
+    const left = boostLeft(), on = left > 0;
+    box.appendChild(row(
+      `<b>⚡ Двойной опыт</b><div class="muted" style="font-size:10px">${on ? `Активен ещё ${Math.ceil(left / 60000)} мин` : `Весь опыт ×2 на ${BOOST_MIN} мин`}</div>`,
+      BOOST_PRICE, on,
+      () => {
+        if (!spend(BOOST_PRICE)) return;
+        ls.setItem('gothic_boost_until', Date.now() + BOOST_MIN * 60000); saveData(); updateUI();
+        toast('⚡ Опыт ×2 включён'); hap('success');
+      }));
+  }
+
+  /* ---------- платные темы ---------- */
+  const TN = { obsidian: 'Обсидиан', ghost: 'Призрак', cyber: 'Киберпанк', vampire: 'Вампир', sakura: 'Сакура' };
+  const ownedTh = () => { try { return JSON.parse(ls.getItem('gothic_themes') || '[]'); } catch (e) { return []; } };
+  const ownsTheme = k => FREE_THEMES.includes(k) || ownedTh().includes(k);
+  if (!ownsTheme(currentTheme)) ls.setItem('gothic_themes', JSON.stringify([...ownedTh(), currentTheme])); // текущая тема остаётся у тех, кто уже ею пользуется
+
+  function renderThemes() {
+    D.querySelectorAll('.theme-emoji-btn[data-theme]').forEach(b => {
+      let c = b.querySelector('.xcap');
+      if (!c) {
+        c = D.createElement('div'); c.className = 'xcap';
+        c.style.cssText = 'font-size:9px;color:var(--text-muted);margin-top:2px'; b.appendChild(c);
+      }
+      c.textContent = ownsTheme(b.dataset.theme) ? '' : '🔒 ' + THEME_PRICE;
+    });
+  }
+  function askTheme(k) {
+    const o = modal(`<h3>Тема «${TN[k]}»</h3><div class="sub">Открыть навсегда за ${THEME_PRICE} 🪙?</div>
+      <button class="btn" data-y>Купить</button><button class="btn ghost" data-n style="margin-top:8px">Не сейчас</button>`);
+    o.querySelector('[data-n]').onclick = () => o.remove();
+    o.querySelector('[data-y]').onclick = () => {
+      if (!spend(THEME_PRICE)) return;
+      ls.setItem('gothic_themes', JSON.stringify([...ownedTh(), k]));
+      saveData(); updateUI(); o.remove(); setTheme(k);
+    };
+  }
+  const _st = setTheme;
+  setTheme = function (k, silent) {
+    if (!silent && themes[k] && !ownsTheme(k)) { askTheme(k); return; }
+    _st(k, silent); renderThemes();
+  };
+
+  /* ---------- подключение ---------- */
+  const _ui = updateUI;
+  updateUI = function () { _ui(); renderUps(); };
+  const _os = openSelectScreen;
+  openSelectScreen = function () { _os(); renderThemes(); };
+  setInterval(renderUps, 30000);
+  renderUps(); renderThemes();
+})();
+
 </body>
 </html>
