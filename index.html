@@ -1670,5 +1670,509 @@
             $('selectScreen').classList.remove('hidden');
         }
     </script>
+    <script>
+/* Gothic Pet — аддон: имя, эволюция, аксессуары, реплики, сон, события,
+   награды за друзей, облачное сохранение, приветствие. Подключать ПОСЛЕ основного <script>. */
+(function () {
+  const D = document, ls = localStorage;
+  const enc = encodeURIComponent;
+
+  /* ---------- стили ---------- */
+  const st = D.createElement('style');
+  st.textContent = `
+  .pet-body{position:relative}
+  .acc{position:absolute;font-size:calc(min(290px,42vh)*.26);pointer-events:none;z-index:7;line-height:1}
+  .pet-area.evo1:not(.sad) .pet-body img{filter:drop-shadow(0 0 14px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
+  .pet-area.evo2:not(.sad) .pet-body img{filter:hue-rotate(35deg) saturate(1.3) drop-shadow(0 0 22px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
+  .pet-area.evo3:not(.sad) .pet-body img{filter:hue-rotate(-40deg) saturate(1.4) brightness(1.12) drop-shadow(0 0 34px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
+  .pet-area.evo3 .pet-glow{opacity:.85}
+  .pet-area.sleep .pet-body img{filter:brightness(.55) drop-shadow(0 26px 30px rgba(0,0,0,.8))!important}
+  .say{position:absolute;top:-16%;left:-6%;max-width:62%;z-index:9;background:var(--badge-bg);backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);border:1px solid var(--border-color);border-radius:16px;padding:7px 11px;font-size:12px;
+    opacity:0;transform:translateY(6px);transition:.3s;pointer-events:none}
+  .say.show{opacity:1;transform:none}
+  #petName{cursor:pointer}
+  .tier{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.025);
+    border:1px solid var(--border-color);border-radius:14px;padding:9px 12px;margin-bottom:6px;font-size:11px}
+  .tier .btn{width:auto;padding:7px 12px;font-size:11px}`;
+  D.head.appendChild(st);
+
+  /* ---------- вспомогательное ---------- */
+  const nameKey = () => `gothic_${currentPet}_name`;
+  const sleeping = () => { const h = new Date().getHours(); return h >= 23 || h < 7; };
+  function modal(inner) {
+    const o = D.createElement('div');
+    o.className = 'overlay modal';
+    o.innerHTML = `<div class="daily-card">${inner}</div>`;
+    D.body.appendChild(o);
+    return o;
+  }
+  const busy = () => D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden');
+
+  /* ---------- 1. имя + первая минута ---------- */
+  function applyName() {
+    if (!currentPet) return;
+    const n = ls.getItem(nameKey()) || petsData[currentPet].name;
+    const s = ['Птенец', 'Пробуждённый', 'Тёмный', 'Древний'][evoStage()];
+    $('petName').innerText = `${n} · ${s}`;
+    $('gameTitle').innerText = n;
+  }
+  function askName(first) {
+    const o = modal(`<h3>${first ? 'Как назовёшь сущность?' : 'Новое имя'}</h3><div class="sub">До 14 символов</div>
+      <input maxlength="14" style="width:100%;padding:12px;margin-bottom:12px;background:rgba(255,255,255,.04);border:1px solid var(--border-color);color:var(--text-main);border-radius:12px;font-size:14px;text-align:center;outline:none">
+      <button class="btn">Готово</button>`);
+    const i = o.querySelector('input');
+    i.value = ls.getItem(nameKey()) || '';
+    o.querySelector('button').onclick = () => {
+      const v = i.value.trim().slice(0, 14);
+      if (!v && first) return;
+      if (v) ls.setItem(nameKey(), v);
+      o.remove(); applyName(); saveData();
+      if (first) welcome();
+    };
+  }
+  function welcome() {
+    coins += 100; inventory.cookie = (inventory.cookie || 0) + 2;
+    saveData(); updateUI();
+    toast('🎁 Подарок новичку: 100 🪙 и 2 🍪');
+    setTimeout(() => toast('Тапни по сущности — она откликнется'), 3000);
+    setTimeout(() => toast('Корми в «Лавке», играй в «Досуге»'), 6000);
+    setTimeout(() => { toast('Зови друзей — награда вам обоим'); openDaily(); }, 9000);
+  }
+  $('petName').addEventListener('click', () => { if (currentPet && !busy()) askName(false); });
+
+  /* ---------- 2. эволюция ---------- */
+  const evoStage = () => (lvl >= 20 ? 3 : lvl >= 10 ? 2 : lvl >= 5 ? 1 : 0);
+  function applyEvo() {
+    const s = evoStage(), k = `gothic_${currentPet}_evo`;
+    petArea.classList.remove('evo1', 'evo2', 'evo3');
+    if (s) petArea.classList.add('evo' + s);
+    const prev = parseInt(ls.getItem(k)) || 0;
+    if (s > prev) {
+      toast(`🌑 Эволюция! Теперь: ${['', 'Пробуждённый', 'Тёмный', 'Древний'][s]}`);
+      burstAtPet(['✨', '🌑', '⭐'], 20, 160); ringAtPet(); hap('success');
+    }
+    ls.setItem(k, s);
+  }
+
+  /* ---------- 3. аксессуары ---------- */
+  const ACC = [
+    { k: 'hat', e: '🎩', n: 'Цилиндр', s: 'top:-8%;left:50%;transform:translateX(-50%)', ok: () => lvl >= 3, req: 'ур. 3' },
+    { k: 'candle', e: '🕯️', n: 'Свеча', s: 'right:-2%;top:38%', ok: () => streak >= 3, req: 'серия 3 дн.' },
+    { k: 'bat', e: '🦇', n: 'Летучая мышь', s: 'left:0;top:14%', ok: () => lvl >= 8, req: 'ур. 8' },
+    { k: 'ghost', e: '👻', n: 'Призрак', s: 'left:-4%;top:42%', ok: () => friends >= 3, req: '3 друга' },
+    { k: 'crown', e: '👑', n: 'Корона', s: 'top:-10%;left:50%;transform:translateX(-50%)', ok: () => lvl >= 15, req: 'ур. 15' },
+    { k: 'star', e: '🌟', n: 'Звезда', s: 'right:2%;top:2%', ok: () => friends >= 10, req: '10 друзей' }
+  ];
+  function applyAcc() {
+    const b = $('petBody'); let a = b.querySelector('.acc');
+    const it = ACC.find(x => x.k === ls.getItem('gothic_acc') && x.ok());
+    if (!it) { if (a) a.remove(); return; }
+    if (!a) { a = D.createElement('span'); a.className = 'acc'; b.appendChild(a); }
+    a.textContent = it.e; a.style.cssText = it.s;
+  }
+  function renderAcc() {
+    let box = $('xAcc');
+    if (!box) {
+      const t = [...D.querySelectorAll('#selectScreen .section-title')].find(x => x.textContent.includes('Параметры'));
+      if (!t) return;
+      t.insertAdjacentHTML('beforebegin', '<div class="section-title">Аксессуары</div><div id="xAcc" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px"></div>');
+      box = $('xAcc');
+    }
+    box.innerHTML = '';
+    ACC.forEach(it => {
+      const ok = it.ok(), on = ls.getItem('gothic_acc') === it.k;
+      const d = D.createElement('div');
+      d.className = 'theme-emoji-btn';
+      d.style.cssText = `flex:0 0 calc(33.3% - 4px);padding:10px 0;${ok ? '' : 'opacity:.35;'}${on ? 'border-color:var(--accent2);' : ''}`;
+      d.innerHTML = `${ok ? it.e : '🔒'}<div style="font-size:9px;color:var(--text-muted);margin-top:2px">${ok ? it.n : it.req}</div>`;
+      d.onclick = () => {
+        if (!ok) { toast('Откроется: ' + it.req); return; }
+        ls.setItem('gothic_acc', on ? '' : it.k); applyAcc(); renderAcc(); cloudSave(); hap('select');
+      };
+      box.appendChild(d);
+    });
+  }
+
+  /* ---------- 4. реплики, время суток, сон ---------- */
+  let sayEl = D.createElement('div'); sayEl.className = 'say'; petArea.appendChild(sayEl);
+  let sayT;
+  function say(t, ms = 3400) {
+    sayEl.textContent = t; sayEl.classList.add('show');
+    clearTimeout(sayT); sayT = setTimeout(() => sayEl.classList.remove('show'), ms);
+  }
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  function greet() {
+    const h = new Date().getHours();
+    say(sleeping() ? 'Zzz… ты поздно…' : h < 12 ? 'Доброе утро ☀️' : h < 18 ? 'Ты вернулся!' : 'Люблю тёмные вечера…');
+  }
+  setInterval(() => {
+    if (!currentPet || runaway || D.hidden || busy()) return;
+    petArea.classList.toggle('sleep', sleeping());
+    if (sleeping()) return say('Zzz…', 2500);
+    if (hunger < 35) say(pick(['Хочу печеньку…', 'Живот урчит 🍪']));
+    else if (fun < 35) say(pick(['Мне скучно…', 'Давай поиграем?']));
+    else if (mood < 35) say('Побудь со мной…');
+    else if (Math.random() < 0.6) say(pick(['Я рад, что ты здесь 🖤', 'Тьма сегодня уютная', 'Погладь меня ✨', 'Ты лучший']));
+  }, 25000);
+  card.addEventListener('pointerdown', () => { if (sleeping() && !busy()) say('Ещё чуть-чуть поспать…', 2200); });
+
+  /* ---------- 5. случайные события ---------- */
+  let lastEv = Date.now();
+  const EV = [
+    () => { const c = 20 + Math.floor(Math.random() * 40); coins += c; say('Нашёл монету!'); toast(`🪙 Питомец нашёл ${c} монет`); },
+    () => { inventory.feather = (inventory.feather || 0) + 1; toast('🪶 Питомец нашёл перо'); say('Смотри, что у меня!'); },
+    () => { mood = Math.min(100, mood + 12); floatEmoji(['🖤', '✨'], 4); say('Мне приснился хороший сон'); },
+    () => {
+      if (!(inventory.cookie > 0)) return EV[0]();
+      const o = modal(`<h3>👻 Призрачный гость</h3><div class="sub">Просит печенье. Угостишь?</div>
+        <button class="btn" data-y>Угостить 🍪 (+120 🪙)</button><button class="btn ghost" data-n style="margin-top:8px">Прогнать</button>`);
+      o.querySelector('[data-y]').onclick = () => {
+        inventory.cookie--; coins += 120; o.remove(); addExp(100); toast('Гость доволен: +120 🪙'); hap('success');
+      };
+      o.querySelector('[data-n]').onclick = () => o.remove();
+    }
+  ];
+  setInterval(() => {
+    if (!currentPet || runaway || D.hidden || busy() || sleeping()) return;
+    if (Date.now() - lastEv < 240000 || Math.random() > 0.35) return;
+    lastEv = Date.now(); EV[Math.floor(Math.random() * EV.length)](); saveData(); updateUI();
+  }, 60000);
+
+  /* ---------- 6. друзья ---------- */
+  const TIERS = [
+    { n: 1, c: 200, t: '200 🪙' },
+    { n: 3, c: 300, t: '300 🪙 + 👻 аксессуар' },
+    { n: 5, c: 500, items: { elixir: 1 }, t: '500 🪙 + 🍷 эликсир' },
+    { n: 10, c: 1000, t: '1000 🪙 + 🌟 аксессуар' }
+  ];
+  $('tab-friends').insertAdjacentHTML('beforeend',
+    '<div class="section-title" style="margin-top:12px">Награды за друзей</div><div id="xTiers"></div><button class="btn ghost" id="xShare" style="margin-top:6px">📤 Поделиться питомцем</button>');
+  const claimed = () => { try { return JSON.parse(ls.getItem('gothic_tiers') || '[]'); } catch (e) { return []; } };
+  function renderTiers() {
+    const box = $('xTiers'), got = claimed();
+    box.innerHTML = '';
+    TIERS.forEach(t => {
+      const done = got.includes(t.n), can = friends >= t.n && !done;
+      const d = D.createElement('div'); d.className = 'tier';
+      d.innerHTML = `<div><b>${t.n} ${t.n === 1 ? 'друг' : t.n < 5 ? 'друга' : 'друзей'}</b><div class="muted" style="font-size:10px">${t.t}</div></div>` +
+        (done ? '<span class="muted">✓</span>' : `<button class="btn" ${can ? '' : 'disabled'}>Забрать</button>`);
+      const b = d.querySelector('button');
+      if (b) b.onclick = () => {
+        coins += t.c;
+        if (t.items) for (const k in t.items) inventory[k] = (inventory[k] || 0) + t.items[k];
+        got.push(t.n); ls.setItem('gothic_tiers', JSON.stringify(got));
+        saveData(); updateUI(); toast('🎁 Награда получена'); hap('success');
+      };
+      box.appendChild(d);
+    });
+  }
+  const uid = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id;
+  const refLink = () => `https://t.me/blobbypet_bot?start=ref${uid || ''}`;
+  if (uid) $('refLink').value = refLink();
+  if (tg.initData) { const tb = [...D.querySelectorAll('#tab-friends .btn')].find(b => b.textContent.includes('Тест')); if (tb) tb.classList.add('hidden'); }
+  $('xShare').onclick = () => {
+    const n = ls.getItem(nameKey()) || petsData[currentPet].name;
+    const url = `https://t.me/share/url?url=${enc(refLink())}&text=${enc(`Мой ${n} — уровень ${lvl}! Заходи, вместе веселее 🖤`)}`;
+    if (tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
+  };
+  const post = (path, body) => fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ initData: tg.initData }, body)) });
+  async function registerRef() {
+    const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+    if (!tg.initData || !sp || !sp.startsWith('ref') || ls.getItem('gothic_ref_done')) return;
+    try {
+      const r = await post('/api/referral', { ref: sp });
+      if (r.ok) { ls.setItem('gothic_ref_done', '1'); coins += 300; saveData(); updateUI(); toast('🎁 Бонус за приглашение: +300 🪙'); }
+    } catch (e) {}
+  }
+  async function syncFriends() {
+    if (!tg.initData) return;
+    try {
+      const r = await post('/api/friends', {});
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.count > friends) {
+        const diff = d.count - friends; friends = d.count; coins += 300 * diff;
+        toast(`Новая связь! +${300 * diff} 🪙`); saveData(); updateUI();
+      }
+    } catch (e) {}
+  }
+  setInterval(syncFriends, 120000);
+
+  /* ---------- 7. облачное сохранение (Telegram CloudStorage) ---------- */
+  const cs = tg.CloudStorage;
+  let cT;
+  function cloudSave(now) {
+    if (!cs || !tg.initData) return;
+    clearTimeout(cT);
+    cT = setTimeout(() => {
+      const o = {};
+      Object.keys(ls).forEach(k => { if (k.startsWith('gothic_') && k !== 'gothic_wa') o[k] = ls.getItem(k); });
+      const s = JSON.stringify(o), n = Math.ceil(s.length / 3500);
+      try {
+        cs.setItem('n', String(n));
+        for (let i = 0; i < n; i++) cs.setItem('s' + i, s.slice(i * 3500, (i + 1) * 3500));
+      } catch (e) {}
+    }, now ? 0 : 4000);
+  }
+  const _save = saveData;
+  saveData = function () { _save(); cloudSave(); };
+  D.addEventListener('visibilitychange', () => { if (D.hidden) cloudSave(true); });
+  // новое устройство / очищенный кэш: восстанавливаем прогресс из облака
+  if (cs && tg.initData && !ls.getItem('gothic_pet')) {
+    cs.getItem('n', (e, v) => {
+      const n = parseInt(v); if (e || !n) return;
+      const keys = Array.from({ length: n }, (_, i) => 's' + i);
+      cs.getItems(keys, (e2, r) => {
+        if (e2 || !r) return;
+        try {
+          const o = JSON.parse(keys.map(k => r[k]).join(''));
+          Object.keys(o).forEach(k => ls.setItem(k, o[k]));
+          location.reload();
+        } catch (x) {}
+      });
+    });
+  }
+
+  /* ---------- подключение к существующим функциям ---------- */
+  function extra() {
+    if (!currentPet) return;
+    applyEvo(); applyName(); applyAcc(); renderAcc(); renderTiers();
+    petArea.classList.toggle('sleep', sleeping());
+  }
+  const _ui = updateUI;
+  updateUI = function () { _ui(); extra(); };
+  const _us = updateStats;
+  updateStats = function () {
+    _us();
+    if (currentPet && sleeping() && !petArea.classList.contains('sad')) {
+      const t = $('thought'); t.innerText = '💤'; t.classList.add('show');
+    }
+  };
+  const _od = openDaily;
+  openDaily = function () { if (currentPet && !ls.getItem(nameKey())) return; _od(); };
+  const _os = openSelectScreen;
+  openSelectScreen = function () { _os(); renderAcc(); };
+
+  function afterInit() {
+    extra();
+    if (!ls.getItem(nameKey())) { setTimeout(() => askName(true), 400); }
+    else { setTimeout(greet, 1200); registerRef(); syncFriends(); }
+  }
+  const _init = initGame;
+  initGame = function (t) { _init(t); afterInit(); };
+  if (currentPet && petsData[currentPet]) afterInit();
+})();
+
+/* Gothic Pet — аддон 2: музыка, голоса питомцев, подарки и визиты друзей.
+   Подключать ПОСЛЕ addon.js. Файлы со звуками не нужны — всё синтезируется. */
+(function () {
+  const D = document, ls = localStorage;
+  const BOT = 'https://t.me/blobbypet_bot';          // ссылка на твоего бота
+  const link = p => `${BOT}?startapp=${p}`;           // нужен Main Mini App в BotFather
+  const uid = (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 0;
+  const MUSIC_VOL = 0.8, VOICE_VOL = 0.4;             // громкость музыки / голосов
+
+  /* ================= ЗВУК ================= */
+  let ac, master, vg, running = false, timer, nextT = 0, step = 0, idx = 3;
+  let musicOn = ls.getItem('gothic_music') !== 'false';
+
+  function ctx() {
+    if (!ac) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ac = new AC();
+      master = ac.createGain(); master.gain.value = 0;
+      vg = ac.createGain(); vg.gain.value = VOICE_VOL; vg.connect(ac.destination);
+      const dl = ac.createDelay(1); dl.delayTime.value = 0.42;
+      const fb = ac.createGain(); fb.gain.value = 0.38;
+      const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1800;
+      master.connect(ac.destination); master.connect(dl);
+      dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(ac.destination);
+    }
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function note(f, t, d, type, v) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + Math.min(0.06, d / 4));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + d + 0.05);
+  }
+  const CH = [[110, 164.8, 220], [87.3, 130.8, 174.6], [130.8, 196, 261.6], [98, 146.8, 196]];
+  const SC = [220, 261.6, 293.7, 329.6, 392, 440, 523.3, 587.3];
+  function sched() {
+    if (!ac) return;
+    while (nextT < ac.currentTime + 1.5) {
+      if (step % 4 === 0) CH[(step / 4) % 4].forEach((f, i) => note(f, nextT + i * 0.08, 3.6, 'sine', 0.05));
+      if (Math.random() < 0.7) {
+        idx = Math.max(0, Math.min(SC.length - 1, idx + Math.floor(Math.random() * 5) - 2));
+        note(SC[idx], nextT, 1.8, 'triangle', 0.05);
+      }
+      step++; nextT += 0.8;
+    }
+  }
+  function syncMusic() {
+    const want = soundEnabled && musicOn && !D.hidden && !!currentPet;
+    if (want && !running) {
+      if (!ctx()) return;
+      running = true; nextT = ac.currentTime + 0.1;
+      master.gain.setTargetAtTime(MUSIC_VOL, ac.currentTime, 1);
+      timer = setInterval(sched, 400); sched();
+    } else if (!want && running) {
+      running = false; clearInterval(timer);
+      if (ac) master.gain.setTargetAtTime(0, ac.currentTime, 0.3);
+    }
+  }
+  setInterval(syncMusic, 1000);
+  D.addEventListener('pointerdown', () => { if (soundEnabled && ac && ac.state === 'suspended') ac.resume(); syncMusic(); }, true);
+  D.addEventListener('visibilitychange', syncMusic);
+
+  // переключатель музыки в настройках
+  const sRow = $('soundToggle').closest('.setting-row');
+  sRow.insertAdjacentHTML('afterend',
+    `<div class="setting-row"><span style="font-size:12px">Музыка</span><label class="toggle-switch">
+     <input type="checkbox" id="xMusic" ${musicOn ? 'checked' : ''}><span class="toggle-slider"></span></label></div>`);
+  $('xMusic').onchange = e => { musicOn = e.target.checked; ls.setItem('gothic_music', musicOn); syncMusic(); };
+
+  /* ---------- голоса питомцев ---------- */
+  function tone(type, t, dur, f0, f1, f2, vol, filt) {
+    const o = ac.createOscillator(), g = ac.createGain(), b = ac.createBiquadFilter();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.linearRampToValueAtTime(f1, t + dur * 0.45);
+    o.frequency.linearRampToValueAtTime(f2, t + dur);
+    b.type = 'bandpass'; b.frequency.value = filt; b.Q.value = 1.4;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + dur * 0.2);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(b); b.connect(g); g.connect(vg); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function voice(kind) {                       // kind: 'happy' | 'sad'
+    if (!soundEnabled || !currentPet || !ctx()) return;
+    const t = ac.currentTime + 0.01, sad = kind === 'sad';
+    if (currentPet === 'ghostcat') {           // мяу
+      if (sad) tone('sawtooth', t, 0.9, 380, 520, 290, 1, 1000);
+      else tone('sawtooth', t, 0.55, 450, 800, 420, 1, 1400);
+    } else if (currentPet === 'squish') {      // писк-буль
+      if (sad) tone('sine', t, 0.5, 520, 380, 280, 1, 700);
+      else { tone('sine', t, 0.12, 900, 1500, 1100, 1, 1500); tone('sine', t + 0.16, 0.14, 1000, 1700, 900, 1, 1600); }
+    } else {                                   // облачко: мягкое «ууу»
+      if (sad) tone('sine', t, 0.9, 260, 300, 200, 1, 500);
+      else { tone('sine', t, 0.7, 300, 440, 340, 1, 700); tone('triangle', t + 0.05, 0.6, 450, 660, 510, 0.5, 900); }
+    }
+  }
+  let lastV = 0;
+  card.addEventListener('pointerdown', () => {
+    const n = Date.now();
+    if (n - lastV > 1500 && Math.random() < 0.5) { lastV = n; voice('happy'); }
+  });
+  const _use = useInventoryItem;
+  useInventoryItem = function (k) { _use(k); setTimeout(() => voice('happy'), 200); };
+  setInterval(() => {
+    if (!currentPet || runaway || D.hidden || !soundEnabled) return;
+    const h = new Date().getHours(); if (h >= 23 || h < 7) return;
+    if (Math.min(hunger, fun, mood) < 35) voice('sad');
+    else if (mood > 60 && Math.random() < 0.4) voice('happy');
+  }, 45000);
+
+  /* ================= ДРУЗЬЯ: ПОДАРКИ И ВИЗИТЫ ================= */
+  function modal(inner) {
+    const o = D.createElement('div');
+    o.className = 'overlay modal';
+    o.innerHTML = `<div class="daily-card">${inner}</div>`;
+    D.body.appendChild(o);
+    return o;
+  }
+  const busy = () => D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden');
+  const share = (url, text) => {
+    const u = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    if (tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, '_blank');
+  };
+  const myName = () => ls.getItem(`gothic_${currentPet}_name`) || petsData[currentPet].name;
+  const GIFTS = ['cookie', 'matcha', 'cake', 'feather', 'ball'];
+
+  // ссылки приглашения теперь открывают мини-приложение напрямую
+  if (uid) $('refLink').value = link('ref' + uid);
+  if ($('xShare')) $('xShare').onclick = () =>
+    share(link('ref' + uid), `Мой ${myName()} — уровень ${lvl}! Заходи, вместе веселее 🖤`);
+
+  $('tab-friends').insertAdjacentHTML('beforeend',
+    `<div class="section-title" style="margin-top:12px">Общение с друзьями</div>
+     <button class="btn" id="xGift" style="margin-bottom:6px">🎁 Отправить подарок</button>
+     <button class="btn ghost" id="xVisit">👋 Позвать питомца в гости</button>`);
+
+  function giftModal() {
+    const list = GIFTS.filter(k => inventory[k] > 0);
+    if (!list.length) { toast('В инвентаре нечего дарить'); return; }
+    const o = modal(`<h3>🎁 Подарок другу</h3><div class="sub">Предмет спишется из инвентаря</div>
+      <div class="inv-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px"></div>
+      <button class="btn ghost" data-c>Отмена</button>`);
+    const grid = o.querySelector('.inv-grid');
+    list.forEach(k => {
+      const [em, nm] = splitName(itemsMeta[k].name);
+      const c = D.createElement('div'); c.className = 'inv-item-card';
+      c.innerHTML = `<div class="e">${em}</div><div class="n">${nm} ×${inventory[k]}</div>`;
+      c.onclick = () => {
+        inventory[k]--; saveData(); updateUI(); o.remove();
+        const rid = Math.random().toString(36).slice(2, 6);
+        share(link(`g_${k}_${uid}_${rid}`), `${myName()} дарит тебе ${em}! Забирай 🖤`);
+      };
+      grid.appendChild(c);
+    });
+    o.querySelector('[data-c]').onclick = () => o.remove();
+  }
+  $('xGift').onclick = () => { if (currentPet) giftModal(); };
+  $('xVisit').onclick = () => {
+    if (currentPet) share(link(`v_${uid}_${currentPet}_${lvl}`), `Мой ${myName()} приглашает тебя в гости 👻`);
+  };
+
+  /* ---------- приём ссылок от друзей ---------- */
+  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  const today = () => new Date().toISOString().slice(0, 10);
+  function handle() {
+    const p = sp.split('_');
+    if (p[0] === 'g') {
+      const [, item, from] = p, got = JSON.parse(ls.getItem('gothic_gifts') || '[]');
+      if (!GIFTS.includes(item)) return;
+      if (String(from) === String(uid) && uid) { toast('Это твой собственный подарок 🙂'); return; }
+      if (got.includes(sp)) return;
+      got.push(sp); ls.setItem('gothic_gifts', JSON.stringify(got.slice(-50)));
+      inventory[item] = (inventory[item] || 0) + 1; coins += 40;
+      saveData(); updateUI(); voice('happy'); hap('success');
+      const em = splitName(itemsMeta[item].name)[0];
+      const o = modal(`<h3>🎁 Подарок от друга!</h3><div class="sub">Тебе прислали ${itemsMeta[item].name}<br>+1 ${em} в инвентаре и +40 🪙</div>
+        <button class="btn" data-r>Ответить подарком</button><button class="btn ghost" data-c style="margin-top:8px">Спасибо!</button>`);
+      o.querySelector('[data-r]').onclick = () => { o.remove(); giftModal(); };
+      o.querySelector('[data-c]').onclick = () => o.remove();
+    } else if (p[0] === 'v') {
+      const [, from, pet, fl] = p;
+      if (!petsData[pet] || (String(from) === String(uid) && uid)) return;
+      const fl2 = Math.max(1, Math.min(99, parseInt(fl) || 1));
+      const o = modal(`<img src="${petsData[pet].img}" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 10px 15px rgba(0,0,0,.5))">
+        <h3>Гость пришёл!</h3><div class="sub">Питомец друга (ур. ${fl2}) зашёл в гости</div>
+        <button class="btn" data-p>Погладить 🖤</button><button class="btn ghost" data-c style="margin-top:8px">Позвать своего в ответ</button>`);
+      o.querySelector('[data-p]').onclick = () => {
+        const k = `gothic_visit_${from}`;
+        if (ls.getItem(k) === today()) { toast('Сегодня ты его уже гладил(а)'); o.remove(); return; }
+        ls.setItem(k, today());
+        coins += 25; mood = Math.min(100, mood + 10);
+        o.remove(); voice('happy'); floatEmoji(['🖤', '✨'], 5); addExp(60);
+        toast('Гостю понравилось: +25 🪙');
+      };
+      o.querySelector('[data-c]').onclick = () => { o.remove(); $('xVisit').click(); };
+    }
+  }
+  if (sp && /^(g|v)_/.test(sp)) {
+    const w = setInterval(() => {
+      if (!currentPet || !ls.getItem(`gothic_${currentPet}_name`) || busy()) return;
+      clearInterval(w); try { handle(); } catch (e) {}
+    }, 1500);
+  }
+})();
+</script>
+
 </body>
 </html>
