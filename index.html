@@ -154,7 +154,44 @@
             75%  { transform: translateY(-10px) scale(0.98, 1.03); }
             100% { transform: translateY(0) scale(1, 1); }
         }
-        .pet-area.sad .pet-body { animation-duration: 5.5s; }
+        .pet-area.sad .pet-body:not(.tap):not(.hop):not(.spawn):not(.eat):not(.wiggle) { animation-duration: 5.5s; }
+        .pet-area.sad .orbit { opacity: 0.15; }
+
+        .pet-body.spawn { animation: spawn 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes spawn {
+            0%   { transform: scale(0) rotate(-25deg); opacity: 0; }
+            60%  { opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .pet-body.eat { animation: eat 0.8s ease-in-out; }
+        @keyframes eat {
+            0%,100% { transform: scale(1, 1); }
+            15% { transform: scale(1.08, 0.92); } 30% { transform: scale(0.96, 1.05); }
+            45% { transform: scale(1.08, 0.92); } 60% { transform: scale(0.96, 1.05); }
+            75% { transform: scale(1.06, 0.94); }
+        }
+        .pet-body.wiggle { animation: wiggle 1s ease-in-out; }
+        @keyframes wiggle {
+            0%,100% { transform: rotate(0deg); }
+            20% { transform: rotate(-7deg) translateY(-4px); }
+            40% { transform: rotate(6deg) translateY(-6px); }
+            60% { transform: rotate(-4deg); }
+            80% { transform: rotate(3deg); }
+        }
+
+        .orbit { position: absolute; inset: -6%; pointer-events: none; animation: orbit 16s linear infinite; z-index: 6; transition: opacity 0.6s; }
+        .orbit i { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 10px 2px var(--glow); }
+        .orbit i:nth-child(1) { top: 0; left: 50%; }
+        .orbit i:nth-child(2) { bottom: 12%; left: 6%; width: 4px; height: 4px; }
+        .orbit i:nth-child(3) { top: 35%; right: 0; width: 5px; height: 5px; }
+        @keyframes orbit { to { transform: rotate(360deg); } }
+
+        .ring {
+            position: absolute; inset: 8%; border-radius: 50%; pointer-events: none; z-index: 4;
+            border: 2px solid var(--accent2); box-shadow: 0 0 24px var(--glow);
+            animation: ringOut 0.9s ease-out forwards;
+        }
+        @keyframes ringOut { from { transform: scale(0.4); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } }
         .pet-area.sad .pet-body img { filter: grayscale(0.55) brightness(0.82) drop-shadow(0 26px 30px rgba(0,0,0,0.8)); }
         .pet-area.sad .pet-glow { opacity: 0.15 !important; animation: none; }
 
@@ -502,6 +539,7 @@
         <div class="stage" id="stage">
             <div class="pet-area" id="petArea">
                 <div class="pet-glow"></div>
+                <div class="orbit"><i></i><i></i><i></i></div>
                 <div class="pet-shadow"></div>
                 <div class="thought" id="thought"></div>
                 <div class="character-card" id="characterCard">
@@ -846,11 +884,12 @@
             energyRefresh();
             saveData();
             updateStats();
+            syncServer();
         }, 20000);
 
         document.addEventListener('visibilitychange', () => {
             if (!currentPet || runaway) return;
-            if (document.hidden) { saveData(); }
+            if (document.hidden) { saveData(); syncServer(true); }
             else { catchUp(); energyRefresh(); updateUI(); }
         });
 
@@ -904,17 +943,30 @@
             localStorage.setItem(`gothic_${currentPet}_last_active`, Date.now());
         }
 
-        function clearPetData(type) {
-            Object.keys(localStorage).forEach(k => { if (k.startsWith(`gothic_${type}_`)) localStorage.removeItem(k); });
+        /* ---------- СВЯЗЬ С СЕРВЕРОМ (пуш-напоминания от бота) ---------- */
+        let lastSync = 0;
+        function syncServer(force) {
+            if (!tg.initData || !currentPet || runaway) return;   // вне Telegram не работает
+            const now = Date.now();
+            if (!force && now - lastSync < 60000) return;
+            lastSync = now;
+            try {
+                fetch('/api/ping', {
+                    method: 'POST',
+                    keepalive: true,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        initData: tg.initData,
+                        hunger, mood, fun,
+                        petName: petsData[currentPet].name,
+                        tz: new Date().getTimezoneOffset()
+                    })
+                }).catch(() => {});
+            } catch (e) {}
         }
 
-        /* ---------- ЗАПУСК ---------- */
-        energyRefresh();
-        if (!currentPet || !petsData[currentPet]) {
-            $('selectScreen').classList.remove('hidden');
-        } else {
-            loadPetData(currentPet);
-            initGame(currentPet);
+        function clearPetData(type) {
+            Object.keys(localStorage).forEach(k => { if (k.startsWith(`gothic_${type}_`)) localStorage.removeItem(k); });
         }
 
         function openSelectScreen() {
@@ -954,6 +1006,16 @@
             $('petName').innerText = p.name;
             $('gameTitle').innerText = p.name;
             updateUI();
+            playBodyAnim('spawn');
+            ringAtPet();
+            syncServer(true);
+            // один раз просим разрешение, чтобы бот мог напоминать о питомце
+            try {
+                if (tg.requestWriteAccess && !localStorage.getItem('gothic_wa')) {
+                    localStorage.setItem('gothic_wa', '1');
+                    setTimeout(() => tg.requestWriteAccess(), 4000);
+                }
+            } catch (e) {}
             setTimeout(() => { if (dailyAvailable().can && !runaway) openDaily(); }, 700);
         }
 
@@ -999,16 +1061,65 @@
         }
 
         function playBodyAnim(cls) {
-            petBody.classList.remove('tap', 'hop');
+            petBody.classList.remove('tap', 'hop', 'spawn', 'eat', 'wiggle');
             void petBody.offsetWidth;
             petBody.classList.add(cls);
         }
-        petBody.addEventListener('animationend', () => petBody.classList.remove('tap', 'hop'));
+        petBody.addEventListener('animationend', () => petBody.classList.remove('tap', 'hop', 'spawn', 'eat', 'wiggle'));
 
+        // кольцо-волна вокруг питомца (еда, левел-ап, появление)
+        function ringAtPet() {
+            const r = document.createElement('div');
+            r.className = 'ring';
+            petArea.appendChild(r);
+            setTimeout(() => r.remove(), 1000);
+        }
+
+        // эмодзи, плавно поднимающиеся над питомцем (сердечки, слёзы)
+        function floatEmoji(list, n) {
+            const rect = stage.getBoundingClientRect();
+            const pr = petArea.getBoundingClientRect();
+            for (let i = 0; i < n; i++) {
+                const p = document.createElement('span');
+                p.className = 'particle';
+                p.textContent = list[Math.floor(Math.random() * list.length)];
+                const x = pr.left + pr.width * (0.25 + Math.random() * 0.5) - rect.left;
+                const y = pr.top + pr.height * (0.2 + Math.random() * 0.3) - rect.top;
+                p.style.cssText = `left:${x}px;top:${y}px;--dx:${Math.random() * 40 - 20}px;--dy:-90px;--r:${Math.random() * 30 - 15}deg;--d:1800ms;font-size:${14 + Math.random() * 8}px`;
+                stage.appendChild(p);
+                setTimeout(() => p.remove(), 1900);
+            }
+        }
+
+        // случайные «живые» движения, пока питомец в порядке
         setInterval(() => {
-            if (!currentPet || isDragging || runaway) return;
-            if (Math.min(hunger, mood, fun) >= 30 && mood > 60) playBodyAnim('hop');
-        }, 9000);
+            if (!currentPet || isDragging || runaway || document.hidden) return;
+            if (Math.min(hunger, mood, fun) < 30) return;
+            playBodyAnim(Math.random() < 0.5 ? 'hop' : 'wiggle');
+        }, 7000);
+
+        // настроение питомца: грустит — капают слёзы, счастлив — летят сердечки
+        setInterval(() => {
+            if (!currentPet || runaway || document.hidden) return;
+            if (Math.min(hunger, mood, fun) < 30) floatEmoji(['💧'], 1);
+            else if (mood > 85 && Math.random() < 0.7) floatEmoji(['🖤', '✨'], 1);
+        }, 2600);
+
+        // Моргание: положи рядом картинку с закрытыми глазами и впиши её имя,
+        // например cloud: 'IMG_6540_blink.png'. Пока поля пустые, моргания нет.
+        const BLINK_IMG = { cloud: '', squish: '', ghostcat: '' };
+        function scheduleBlink() {
+            setTimeout(() => {
+                const f = BLINK_IMG[currentPet];
+                const img = $('petImg');
+                if (f && img && !runaway && (currentPet !== 'ghostcat' || currentPose === 'afk')) {
+                    const orig = img.getAttribute('src');
+                    img.src = f;
+                    setTimeout(() => { if (img.getAttribute('src') === f) img.src = orig; }, 140);
+                }
+                scheduleBlink();
+            }, 2500 + Math.random() * 3500);
+        }
 
         (function createMotes() {
             const m = $('motes');
@@ -1032,6 +1143,7 @@
                 hap('success');
                 toast(`✨ Уровень ${lvl}! +200 🪙`);
                 burstAtPet(['✨', '⭐', '🖤'], 16, 140);
+                ringAtPet();
             }
             saveData();
             updateUI();
@@ -1215,7 +1327,8 @@
 
             const em = splitName(meta.name)[0];
             burstAtPet(meta.type === 'food' ? [em, em, '✨'] : [em, '💫', '✨'], 9, 110);
-            playBodyAnim('hop');
+            ringAtPet();
+            playBodyAnim(meta.type === 'food' ? 'eat' : 'hop');
             if (currentPet === 'ghostcat') setCatPose('spin', 1200);
             addExp(meta.exp || 100);
             hap('success');
@@ -1538,6 +1651,23 @@
             }
             refresh(); pop();
             return () => { over = true; cleanup(); };
+        }
+
+        /* ---------- ЗАПУСК (всегда в самом конце, когда всё уже объявлено) ---------- */
+        window.addEventListener('error', ev => { try { toast('Ошибка: ' + ev.message); } catch (e) {} });
+        try {
+            energyRefresh();
+            if (!currentPet || !petsData[currentPet]) {
+                $('selectScreen').classList.remove('hidden');
+            } else {
+                loadPetData(currentPet);
+                initGame(currentPet);
+            }
+            scheduleBlink();
+        } catch (err) {
+            console.error(err);
+            toast('Ошибка запуска: ' + err.message);
+            $('selectScreen').classList.remove('hidden');
         }
     </script>
 </body>
