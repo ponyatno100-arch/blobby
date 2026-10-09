@@ -2587,6 +2587,7 @@
   const PET_PRICE = 1000;            // цена открытия нового питомца (первый — бесплатно)
   const FREEZE_INACTIVE = true;      // true: пока выбран другой питомец, этот не голодает и не грустит
   const PETS = ['cloud', 'squish', 'ghostcat'];   // порядок вкладок
+  const FREE_PETS = ['cloud', 'squish', 'ghostcat'];    // все питомцы бесплатные
   /* =================================== */
 
   const st = D.createElement('style');
@@ -2618,6 +2619,8 @@
     adopted = PETS.filter(p => p === currentPet || ls.getItem(`gothic_${p}_lvl`) !== null);
     ls.setItem('gothic_adopted', JSON.stringify(adopted));
   }
+  FREE_PETS.forEach(p => { if (!adopted.includes(p)) adopted.push(p); });
+  ls.setItem('gothic_adopted', JSON.stringify(adopted));
   const owns = t => adopted.includes(t);
   const saveAdopted = () => ls.setItem('gothic_adopted', JSON.stringify(adopted));
   const adopt = t => { if (!owns(t)) { adopted.push(t); saveAdopted(); } };
@@ -2654,7 +2657,7 @@
   const _cp = choosePet;
   choosePet = function (type) {
     if (!owns(type)) {
-      if (!adopted.length || allow) adopt(type);
+      if (allow || !currentPet) adopt(type);
       else { toast('Открой питомца во вкладках сверху 🔒'); return; }
     }
     _cp(type); syncCards(); renderTabs();
@@ -2712,7 +2715,7 @@
   resetAfterRunaway = function () {
     const lost = currentPet;
     _rr();
-    adopted = adopted.filter(x => x !== lost); saveAdopted();
+    adopted = adopted.filter(x => x !== lost || FREE_PETS.includes(x)); saveAdopted();
     if (adopted.length) { $('selectScreen').classList.add('hidden'); wake(adopted[0]); choosePet(adopted[0]); }
     syncCards(); renderTabs();
   };
