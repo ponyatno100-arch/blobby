@@ -2596,7 +2596,7 @@
   const PET_PRICE = 1000;            // цена открытия нового питомца (первый — бесплатно)
   const FREEZE_INACTIVE = true;      // true: пока выбран другой питомец, этот не голодает и не грустит
   const PETS = ['cloud', 'squish', 'ghostcat'];   // порядок вкладок
-  const FREE_PETS = ['cloud', 'squish', 'ghostcat'];    // все питомцы бесплатные
+  const FREE_PETS = [];    // все питомцы бесплатные
   /* =================================== */
 
   const st = D.createElement('style');
@@ -3552,5 +3552,476 @@
 })();
 
     </script>
+<script>
+/* Gothic Pet — аддон 9: один питомец, привязанность, друзья по коду, визиты питомцев. */
+(function () {
+  const D = document, ls = localStorage;
+  const DB = (window.GOTHIC_DB_URL || '').replace(/\/+$/, '');
+  const APP = window.GOTHIC_APP_LINK || 'https://t.me/blobbypet_bot';
+  const tuser = (tg.initDataUnsafe && tg.initDataUnsafe.user) || {};
+  const uid = tuser.id || 0;
+  let pid = uid ? String(uid) : ls.getItem('gothic_pid');
+  if (!pid) { pid = 'u' + Math.random().toString(36).slice(2, 9); ls.setItem('gothic_pid', pid); }
+
+  /* ============ НАСТРОЙКИ ============ */
+  const BOND_LV = [
+    { n: 'Знакомство', e: '🤝', min: 0 },
+    { n: 'Друзья', e: '💞', min: 100 },
+    { n: 'Лучшие друзья', e: '💖', min: 400 }
+  ];
+  const VISIT_H = 3;                          // длительность визита, часов
+  const FRIEND_XP = [0, 40, 120, 250, 450];   // очки дружбы для уровней
+  const FRIEND_LV = ['Знакомые', 'Приятели', 'Друзья', 'Близкие', 'Неразлучные'];
+  const MAX_CARES = 3;                        // сколько раз хозяин может позаботиться о госте
+  /* =================================== */
+
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const imgOk = s => (/^[\w.\-]{1,60}\.(png|PNG|jpg|jpeg|webp|gif)$/.test(s || '') ? s : 'IMG_6542.PNG');
+  const busy = () => D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden');
+  const pname = () => String(tuser.first_name || 'Друг').slice(0, 16);
+  const petNm = () => String(ls.getItem(`gothic_${currentPet}_name`) || petsData[currentPet].name).slice(0, 14);
+  const thumbNow = () => (window.petThumb ? window.petThumb(currentPet) : petImgSrc());
+  const hm = ms => `${Math.floor(ms / 3600000)} ч ${Math.floor(ms % 3600000 / 60000)} м`;
+  function modal(inner) {
+    const o = D.createElement('div');
+    o.className = 'overlay modal'; o.style.zIndex = 330;
+    o.innerHTML = `<div class="daily-card">${inner}</div>`;
+    D.body.appendChild(o); return o;
+  }
+
+  const st = D.createElement('style');
+  st.textContent = `
+  #xTabs{display:none!important}
+  .xaway{position:absolute;inset:0;z-index:15;background:rgba(5,4,7,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;font-size:13px;padding:0 30px 150px}
+  .xaway .btn{width:auto;padding:9px 16px;font-size:11px}
+  .xguests{position:absolute;right:10px;bottom:178px;display:flex;flex-direction:column;gap:6px;z-index:12}
+  .xguest{display:flex;flex-direction:column;align-items:center;font-size:9px;cursor:pointer;background:var(--badge-bg);
+    border:1px solid var(--border-color);border-radius:14px;padding:4px 6px;animation:floatIdle 3s ease-in-out infinite}
+  .xguest img{width:46px;height:46px;object-fit:contain}
+  .xf{margin-bottom:8px}
+  .xf img{width:44px;height:44px;object-fit:contain}`;
+  D.head.appendChild(st);
+
+  /* ================= 1. ОДИН ПИТОМЕЦ ================= */
+  let blockAuto = false, confirmed = false;
+  const _cp = choosePet;
+  choosePet = function (type) {
+    if (blockAuto) return;
+    if (currentPet && type !== currentPet) { toast('Новый питомец появится, только когда этот уйдёт 🖤'); return; }
+    if (!currentPet && !confirmed) {
+      const o = modal(`<h3>${esc(petsData[type].name)}?</h3>
+        <div class="sub">Это твой спутник. Завести другого можно будет только тогда, когда он уйдёт.</div>
+        <button class="btn" data-y>Да, он мой</button><button class="btn ghost" data-n style="margin-top:8px">Выбрать другого</button>`);
+      o.querySelector('[data-n]').onclick = () => o.remove();
+      o.querySelector('[data-y]').onclick = () => { o.remove(); confirmed = true; try { _cp(type); } finally { confirmed = false; } };
+      return;
+    }
+    _cp(type);
+  };
+  const _rr = resetAfterRunaway;
+  resetAfterRunaway = function () {
+    blockAuto = true;
+    try { _rr(); } finally { blockAuto = false; }
+    ls.removeItem('gothic_away'); away = null;
+    $('selectScreen').classList.remove('hidden');
+  };
+
+  /* ================= 2. ХАРАКТЕР И ПРИВЯЗАННОСТЬ ================= */
+  let away = null;
+  try { away = JSON.parse(ls.getItem('gothic_away') || 'null'); } catch (e) { away = null; }
+
+  const bk = () => `gothic_${currentPet}_bond`, mk = () => `gothic_${currentPet}_mem`;
+  const bond = () => parseFloat(ls.getItem(bk())) || 0;
+  const lvOf = b => (b >= BOND_LV[2].min ? 2 : b >= BOND_LV[1].min ? 1 : 0);
+  function mem() {
+    let m = {}; try { m = JSON.parse(ls.getItem(mk()) || '{}') || {}; } catch (e) {}
+    return Object.assign({ tap: 0, feed: 0, play: 0, game: 0, days: 0, night: 0, day: '', tapDay: '', tb: 0, sec: 0 }, m);
+  }
+  const setMem = m => ls.setItem(mk(), JSON.stringify(m));
+  function trait() {
+    const m = mem();
+    const t = [['Лакомка', m.feed], ['Непоседа', m.play + m.game], ['Ласкун', m.tap / 6], ['Ночной', m.night * 3]].sort((a, b) => b[1] - a[1]);
+    return t[0][1] >= 5 ? t[0][0] : 'Загадочный';
+  }
+  const PH = {
+    0: ['Кто ты?..', 'Я пока присматриваюсь…', 'Тут… уютно?', 'Можно я посижу рядом?'],
+    1: ['Я рад, что ты пришёл 🖤', 'Расскажи, как прошёл день?', 'Мы ведь друзья, да?', 'С тобой не страшно в темноте'],
+    2: ['{p}, ты мой самый лучший друг!', 'Я никому не расскажу твои секреты', 'Всегда буду рядом 💖', 'Ты — мой любимый человек']
+  };
+  const TP = {
+    'Лакомка': { 1: ['А печеньки сегодня будут?'], 2: ['Ты кормишь лучше всех!'] },
+    'Непоседа': { 1: ['Давай сыграем!'], 2: ['С тобой весело каждый день!'] },
+    'Ласкун': { 1: ['Почеши ещё, пожалуйста'], 2: ['Мурр… не останавливайся'] },
+    'Ночной': { 1: ['Ночью лучше всего'], 2: ['Мы с тобой — ночные стражи 🌙'] }
+  };
+  const SEC = ['Секрет: я боюсь грозы, но с тобой — нет', 'Секрет: я коплю звёздочки под подушкой', 'Секрет: я однажды видел настоящего призрака, и он оказался милым'];
+  const phrase = () => { const l = lvOf(bond()), t = trait(); return pick([...PH[l], ...((TP[t] && TP[t][l]) || [])]); };
+
+  let bt;
+  function bsay(t, ms = 3800) {
+    const el = petArea.querySelector('.say'); if (!el) return;
+    el.textContent = t.replace('{p}', pname()); el.classList.add('show');
+    clearTimeout(bt); bt = setTimeout(() => el.classList.remove('show'), ms);
+  }
+
+  function addBond(n) {
+    if (!currentPet) return;
+    const b0 = bond(); let b = b0 + n;
+    if (n < 0) b = Math.max(BOND_LV[lvOf(b0)].min, b);
+    b = Math.max(0, b);
+    ls.setItem(bk(), b);
+    if (lvOf(b) > lvOf(b0)) levelUp(lvOf(b));
+    renderBond();
+  }
+  function levelUp(l) {
+    const L = BOND_LV[l];
+    const reward = l === 1 ? 150 : 400;
+    coins += reward;
+    if (l === 2) ls.removeItem('gothic_box_day');
+    saveData(); updateStats();
+    burstAtPet(['💞', '✨', '🖤'], 18, 150); ringAtPet(); hap('success');
+    modal(`<div style="font-size:56px">${L.e}</div><h3>${L.n}!</h3>
+      <div class="sub">Ты и ${esc(petNm())} стали ближе.<br>${l === 1 ? 'Питомец теперь чаще говорит с тобой и приносит подарки.' : 'Он зовёт тебя по имени, делится секретами и радуется каждой встрече.'}<br>+${reward} 🪙${l === 2 ? ' · бесплатная коробка' : ''}</div>
+      <button class="btn" onclick="this.closest('.overlay').remove()">Ура 🖤</button>`);
+  }
+
+  $('petName').closest('.pet-head').insertAdjacentHTML('afterend',
+    '<div id="xBond" style="margin:-2px 0 10px"><div class="muted" style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:.4px"><span id="xBondL"></span><span id="xBondT"></span></div><div class="exp-bar" style="margin:3px 0 0"><div id="xBondBar" style="background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div></div>');
+  const bondEl = $('xBond');
+  if ($('xTitle')) $('xTitle').insertAdjacentElement('afterend', bondEl);
+  function renderBond() {
+    if (!currentPet) return;
+    const b = bond(), l = lvOf(b), L = BOND_LV[l], nx = BOND_LV[l + 1];
+    $('xBondL').textContent = `${L.e} ${L.n} · ${trait()}`;
+    $('xBondT').textContent = nx ? `${Math.floor(b)}/${nx.min}` : 'MAX';
+    $('xBondBar').style.width = (nx ? (b - L.min) / (nx.min - L.min) * 100 : 100) + '%';
+  }
+
+  // действия игрока запоминаются
+  card.addEventListener('pointerdown', () => {
+    if (!currentPet || away) return;
+    const m = mem(), t = todayStr();
+    if (m.tapDay !== t) { m.tapDay = t; m.tb = 0; }
+    m.tap++;
+    let gain = 0;
+    if (m.tap % 8 === 0 && m.tb < 15) { m.tb++; gain = 1; }
+    setMem(m); if (gain) addBond(1);
+    const l = lvOf(bond()), n = Date.now();
+    if (l >= 1 && Math.random() < 0.15) floatEmoji(['💞'], 1);
+    if (n - lastTapSay > 9000 && Math.random() < (l ? 0.18 : 0.1)) { lastTapSay = n; bsay(phrase()); }
+    if (l === 2 && Math.random() < 0.06) playBodyAnim('hop');
+  });
+  let lastTapSay = 0;
+
+  const _use = useInventoryItem;
+  useInventoryItem = function (k) {
+    if (away) { toast('Питомец сейчас в гостях 🧳'); return; }
+    const before = inventory[k]; _use(k);
+    if (inventory[k] < before) {
+      const meta = itemsMeta[k], m = mem();
+      if (meta.type === 'food') m.feed++; else m.play++;
+      setMem(m); addBond(3);
+    }
+  };
+  const _fun = doFunActivity;
+  doFunActivity = function () {
+    if (away) { toast('Питомец сейчас в гостях 🧳'); return; }
+    const b = lastFunTime; _fun();
+    if (lastFunTime !== b) { const m = mem(); m.play++; setMem(m); addBond(4); }
+  };
+  const _fg = finishGame;
+  finishGame = function (id, res) { _fg(id, res); if (currentPet) { const m = mem(); m.game++; setMem(m); addBond(2); } };
+
+  function onOpen() {
+    if (!currentPet) return;
+    const m = mem(), t = todayStr();
+    if (m.day !== t) {
+      m.day = t; m.days++;
+      if (new Date().getHours() >= 22 || new Date().getHours() < 5) m.night++;
+      setMem(m); addBond(5);
+    }
+    renderBond();
+    if (lvOf(bond()) === 2 && !away) setTimeout(() => { playBodyAnim('hop'); bsay(`{p}! Ты пришёл! 💖`, 4200); }, 1800);
+  }
+
+  // события, зависящие от уровня связи
+  let lastEv = Date.now();
+  setInterval(() => {
+    if (!currentPet || runaway || away || D.hidden || busy()) return;
+    const l = lvOf(bond());
+    if (l < 1 || Date.now() - lastEv < 4 * 60000 || Math.random() > 0.3) return;
+    lastEv = Date.now();
+    const r = Math.random();
+    if (l === 2 && r < 0.35) {
+      const m = mem(); bsay(SEC[m.sec % SEC.length], 6500); m.sec++; setMem(m);
+      mood = Math.min(100, mood + 10); floatEmoji(['💖'], 3);
+    } else if (r < 0.7) {
+      const c = (l === 2 ? 60 : 30) + Math.floor(Math.random() * 40);
+      coins += c; bsay('Это тебе! 🎁'); toast(`🎁 ${petNm()} принёс ${c} 🪙`); floatEmoji(['🪙'], 3);
+    } else if (r < 0.85) {
+      const k = pick(['cookie', 'feather', 'ball']);
+      inventory[k] = (inventory[k] || 0) + 1;
+      bsay('Нашёл для тебя!'); toast(`🎁 ${petNm()} принёс ${splitName(itemsMeta[k].name)[0]}`);
+    } else {
+      mood = Math.min(100, mood + 15); addBond(1); floatEmoji(['💞', '✨'], 4); bsay('Обними меня 🖤');
+    }
+    saveData(); updateUI();
+  }, 60000);
+  setInterval(() => {   // если забросить питомца — привязанность тает (но уровень не падает)
+    if (!currentPet || runaway || away) return;
+    if (Math.min(hunger, mood, fun) < 15) addBond(-0.4);
+  }, 60000);
+  setInterval(() => {
+    if (!currentPet || runaway || away || D.hidden || busy() || Math.random() > 0.4) return;
+    bsay(phrase());
+  }, 45000);
+
+  /* ================= 3. ДРУЗЬЯ ПО КОДУ И ВИЗИТЫ ================= */
+  const api = (p, method, body) =>
+    fetch(`${DB}/${p}.json`, { method: method || 'GET', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+      .then(r => (r.ok ? r.json() : null)).catch(() => null);
+  const pair = id => [pid, id].sort().join('_');
+  const flv = x => { let l = 0; FRIEND_XP.forEach((v, i) => { if (x >= v) l = i; }); return l; };
+  let myCode = ls.getItem('gothic_fcode') || '', friends2 = [], guests = {};
+
+  $('tab-friends').insertAdjacentHTML('afterbegin', `
+    <div class="section-title">Друзья по коду</div>
+    <div class="tier"><span>Мой код: <b id="xCode">${esc(myCode) || '…'}</b></span><button class="btn" id="xCopyCode">Копировать</button></div>
+    <button class="btn" id="xShareCode" style="margin-bottom:8px">📨 Отправить код другу</button>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input id="xCodeIn" maxlength="8" placeholder="КОД ДРУГА" style="flex:1;min-width:0;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--border-color);color:var(--text-main);border-radius:12px;font-size:13px;text-align:center;outline:none;text-transform:uppercase">
+      <button class="btn" id="xAddF" style="width:auto;padding:0 16px">Добавить</button></div>
+    <div id="xFList"></div>`);
+
+  async function ensureCode() {
+    if (!DB) return;
+    let c = myCode;
+    if (c) { const o = await api('codes/' + c); if (o === pid) return; if (o === null) { await api('codes/' + c, 'PUT', pid); return; } }
+    const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    for (let i = 0; i < 8; i++) {
+      c = ''; for (let j = 0; j < 6; j++) c += A[Math.floor(Math.random() * A.length)];
+      if ((await api('codes/' + c)) === null) {
+        await api('codes/' + c, 'PUT', pid);
+        myCode = c; ls.setItem('gothic_fcode', c); $('xCode').textContent = c; return;
+      }
+    }
+  }
+  async function pushProfile() {
+    if (!DB || !currentPet) return;
+    await api('users/' + pid, 'PATCH', { n: pname(), pn: petNm(), p: currentPet, l: lvl, i: thumbNow(), t: { '.sv': 'timestamp' } });
+  }
+
+  $('xCopyCode').onclick = () => {
+    if (!myCode) { toast('Код создаётся… подожди секунду'); return; }
+    try { navigator.clipboard.writeText(myCode); } catch (e) {}
+    toast('Код скопирован'); hap('success');
+  };
+  $('xShareCode').onclick = () => {
+    if (!myCode) { toast('Код создаётся… подожди секунду'); return; }
+    const u = `https://t.me/share/url?url=${encodeURIComponent(`${APP}?startapp=f_${myCode}`)}&text=${encodeURIComponent(`Давай дружить в игре! Мой код: ${myCode} 🖤`)}`;
+    if (tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, '_blank');
+  };
+  $('xAddF').onclick = () => addFriend($('xCodeIn').value);
+
+  async function addFriend(raw) {
+    if (!DB) { toast('Друзья появятся после подключения базы'); return; }
+    const code = String(raw || '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) { toast('Введи код друга (6 символов)'); return; }
+    if (code === myCode) { toast('Это твой собственный код 🙂'); return; }
+    const fp = await api('codes/' + code);
+    if (!fp || typeof fp !== 'string') { toast('Такого кода нет'); return; }
+    if (fp === pid) { toast('Это твой собственный код 🙂'); return; }
+    const t = Date.now();
+    await api('', 'PATCH', { [`friends/${pid}/${fp}`]: t, [`friends/${fp}/${pid}`]: t });
+    const u = await api('users/' + fp);
+    let added = []; try { added = JSON.parse(ls.getItem('gothic_fadded') || '[]'); } catch (e) {}
+    if (!added.includes(fp)) { added.push(fp); ls.setItem('gothic_fadded', JSON.stringify(added.slice(-100))); coins += 100; saveData(); updateStats(); }
+    $('xCodeIn').value = '';
+    toast(`🖤 Теперь вы друзья с ${(u && u.n) || 'другом'}! +100 🪙`); hap('success');
+    loadFriends();
+  }
+
+  async function loadFriends() {
+    if (!DB) { $('xFList').innerHTML = '<div class="muted" style="font-size:11px;margin-bottom:8px">Нужна база Firebase (GOTHIC_DB_URL).</div>'; return; }
+    const f = (await api('friends/' + pid)) || {};
+    const ids = Object.keys(f).slice(0, 30);
+    const us = await Promise.all(ids.map(id => api('users/' + id)));
+    const xp = await Promise.all(ids.map(id => api(`friendships/${pair(id)}/xp`)));
+    friends2 = ids.map((id, i) => ({ id, u: us[i] || {}, xp: xp[i] || 0 }));
+    // награды за новые уровни дружбы
+    friends2.forEach(fr => {
+      const l = flv(fr.xp), k = `gothic_fl_${fr.id}`, got = parseInt(ls.getItem(k)) || 0;
+      if (l > got) {
+        let sum = 0; for (let i = got + 1; i <= l; i++) sum += 100 * i;
+        ls.setItem(k, l); coins += sum; saveData(); updateStats();
+        toast(`💞 Дружба с ${fr.u.n || 'другом'}: «${FRIEND_LV[l]}» +${sum} 🪙`); hap('success');
+      }
+    });
+    renderFriends();
+  }
+  function renderFriends() {
+    const box = $('xFList'); box.innerHTML = '';
+    if (!friends2.length) { box.innerHTML = '<div class="muted" style="font-size:11px;margin-bottom:8px">Пока никого. Отправь свой код другу — или введи его код выше.</div>'; return; }
+    friends2.forEach(fr => {
+      const u = fr.u, l = flv(fr.xp), nx = FRIEND_XP[l + 1];
+      const visited = ls.getItem(`gothic_vis_${fr.id}`) === todayStr();
+      const d = D.createElement('div'); d.className = 'tier xf'; d.style.cssText = 'flex-direction:column;align-items:stretch;gap:8px';
+      d.innerHTML = `<div style="display:flex;gap:10px;align-items:center">
+        <img src="${imgOk(u.i)}">
+        <div style="flex:1;min-width:0"><b>${esc(u.n || 'Друг')}</b> <span class="muted">· ${esc(u.pn || 'питомец')} ур. ${parseInt(u.l) || 1}</span>
+          <div class="muted" style="font-size:10px">💞 ${FRIEND_LV[l]} · ${fr.xp}${nx ? '/' + nx : ''}</div>
+          <div class="exp-bar" style="margin:3px 0 0"><div style="width:${nx ? (fr.xp - FRIEND_XP[l]) / (nx - FRIEND_XP[l]) * 100 : 100}%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div></div></div>
+        <button class="btn" style="padding:9px;font-size:11px" ${away || visited || !currentPet ? 'disabled' : ''}>${away ? 'Питомец уже в гостях' : visited ? 'Сегодня уже ходил(а) в гости' : `🧳 Отправить в гости на ${VISIT_H} ч`}</button>`;
+      d.querySelector('button').onclick = () => sendPet(fr);
+      box.appendChild(d);
+    });
+  }
+
+  /* ---------- мой питомец уходит в гости ---------- */
+  async function sendPet(fr) {
+    if (away || !currentPet || runaway) return;
+    const now = Date.now(), until = now + VISIT_H * 3600000;
+    const body = { n: pname(), pn: petNm(), p: currentPet, i: thumbNow(), l: lvl, since: now, until, cares: 0 };
+    const o = modal(`<h3>🧳 В гости?</h3><div class="sub">${esc(petNm())} отправится к ${esc(fr.u.n || 'другу')} на ${VISIT_H} ч. Пока его нет, шкалы не убывают. Вернётся с подарками, а ваша дружба вырастет.</div>
+      <button class="btn" data-y>Отправить</button><button class="btn ghost" data-n style="margin-top:8px">Не сейчас</button>`);
+    o.querySelector('[data-n]').onclick = () => o.remove();
+    o.querySelector('[data-y]').onclick = async () => {
+      o.remove();
+      const res = await api(`visits/${fr.id}/${pid}`, 'PUT', body);
+      if (!res) { toast('Не получилось отправить, попробуй позже'); return; }
+      away = { to: fr.id, tn: fr.u.n || 'друг', since: now, until, snap: { h: hunger, m: mood, f: fun } };
+      ls.setItem('gothic_away', JSON.stringify(away)); ls.setItem(`gothic_vis_${fr.id}`, todayStr());
+      saveData(); renderAway(); renderFriends(); hap('success');
+    };
+  }
+  $('stage').insertAdjacentHTML('beforeend', '<div class="xaway hidden" id="xAway"><div style="font-size:42px">🧳</div><div id="xAwayT"></div><button class="btn ghost" id="xRecall">Вернуть сейчас</button></div>');
+  $('xRecall').onclick = () => {
+    const o = modal('<h3>Вернуть питомца?</h3><div class="sub">Если вернуть раньше срока, награды за визит не будет.</div><button class="btn" data-y>Вернуть</button><button class="btn ghost" data-n style="margin-top:8px">Пусть погостит</button>');
+    o.querySelector('[data-n]').onclick = () => o.remove();
+    o.querySelector('[data-y]').onclick = () => { o.remove(); returnHome(true); };
+  };
+  function renderAway() {
+    const el = $('xAway');
+    if (!away || !currentPet) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    $('xAwayT').innerHTML = `<b>${esc(petNm())}</b> в гостях у ${esc(away.tn)}<br><span class="muted">вернётся через ${hm(Math.max(0, away.until - Date.now()))}</span>`;
+  }
+  setInterval(() => {
+    if (!away) return;
+    // пока питомец в гостях, шкалы не падают
+    hunger = Math.max(hunger, away.snap.h); mood = Math.max(mood, away.snap.m); fun = Math.max(fun, away.snap.f);
+    if (Date.now() >= away.until) returnHome(false); else renderAway();
+  }, 1000);
+
+  async function returnHome(early) {
+    const a = away; if (!a) return;
+    away = null; ls.removeItem('gothic_away'); renderAway();
+    const node = await api(`visits/${a.to}/${pid}`);
+    const cares = (node && node.cares) || 0;
+    await api(`visits/${a.to}/${pid}`, 'DELETE');
+    if (early) { toast('Питомец вернулся раньше срока'); renderFriends(); return; }
+    const c = 80 + cares * 30, x = 25 + cares * 5;
+    coins += c; addBond(5); addExp(120);
+    api('', 'PATCH', { [`friendships/${pair(a.to)}/xp`]: { '.sv': { increment: x } } }).then(loadFriends);
+    saveData(); updateUI();
+    burstAtPet(['🧳', '✨', '🎁', '💞'], 16, 150); ringAtPet(); hap('success');
+    modal(`<div style="font-size:56px">🧳</div><h3>${esc(petNm())} вернулся!</h3>
+      <div class="sub">Гостил у ${esc(a.tn)}. «${pick(['Там пахнет печеньем!', 'Мы играли в прятки', 'Я немного скучал по тебе', 'У друга уютно, но у тебя лучше'])}»<br>
+      ${cares ? `О нём позаботились ${cares} раз(а)<br>` : ''}+${c} 🪙 · дружба +${x} · привязанность +5</div>
+      <button class="btn" onclick="this.closest('.overlay').remove()">С возвращением 🖤</button>`);
+  }
+
+  /* ---------- гости у меня дома ---------- */
+  async function pollGuests() {
+    if (!DB || !currentPet) return;
+    const g = await api('visits/' + pid);
+    guests = (g && typeof g === 'object') ? g : {};
+    renderGuests(); handleExpired();
+  }
+  function renderGuests() {
+    let box = $('xGuests');
+    if (!box) { box = D.createElement('div'); box.id = 'xGuests'; box.className = 'xguests'; $('stage').appendChild(box); }
+    box.innerHTML = '';
+    const now = Date.now();
+    Object.entries(guests).filter(([, g]) => g && g.until > now).slice(0, 3).forEach(([k, g]) => {
+      const d = D.createElement('div'); d.className = 'xguest';
+      d.innerHTML = `<img src="${imgOk(g.i)}"><span>${esc(g.pn)}</span>`;
+      d.onclick = () => guestModal(k, g);
+      box.appendChild(d);
+    });
+  }
+  function handleExpired() {
+    const now = Date.now();
+    Object.entries(guests).forEach(([k, g]) => {
+      if (!g || !(g.until <= now)) return;
+      const fk = `gothic_hd_${k}_${g.since}`;
+      if (ls.getItem(fk)) return;
+      ls.setItem(fk, '1');
+      const c = 60 + Math.min(MAX_CARES, g.cares || 0) * 15; coins += c;
+      toast(`🎁 Гость ${g.pn} ушёл и оставил ${c} 🪙`); saveData(); updateStats();
+    });
+  }
+  function guestModal(k, g) {
+    const ck = `gothic_gc_${k}_${g.since}`, used = parseInt(ls.getItem(ck)) || 0, left = MAX_CARES - used;
+    const o = modal(`<img src="${imgOk(g.i)}" style="width:96px;height:96px;object-fit:contain">
+      <h3>${esc(g.pn)}</h3><div class="sub">Гость от ${esc(g.n)} · ур. ${parseInt(g.l) || 1}<br>Побудет ещё ${hm(Math.max(0, g.until - Date.now()))}<br>Забот осталось: ${left}</div>
+      <button class="btn" data-f ${left <= 0 ? 'disabled' : ''}>🍪 Угостить печеньем</button>
+      <button class="btn ghost" data-p ${left <= 0 ? 'disabled' : ''} style="margin-top:8px">🖤 Погладить</button>
+      <button class="btn ghost" data-x style="margin-top:8px">Закрыть</button>`);
+    const care = feed => {
+      if (feed) { if (!(inventory.cookie > 0)) { toast('Нет печенья 🍪'); return; } inventory.cookie--; }
+      ls.setItem(ck, used + 1); coins += 15; mood = Math.min(100, mood + 5);
+      api(`visits/${pid}/${k}`, 'PATCH', { cares: { '.sv': { increment: 1 } } });
+      api('', 'PATCH', { [`friendships/${pair(k)}/xp`]: { '.sv': { increment: 4 } } });
+      g.cares = (g.cares || 0) + 1;
+      floatEmoji(['🖤', '✨'], 4); hap('success'); toast('Гость доволен: +15 🪙');
+      saveData(); updateUI(); o.remove();
+    };
+    o.querySelector('[data-f]').onclick = () => care(true);
+    o.querySelector('[data-p]').onclick = () => care(false);
+    o.querySelector('[data-x]').onclick = () => o.remove();
+  }
+
+  // друг прислал ссылку с кодом
+  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  if (sp && /^f_[A-Za-z0-9]{4,8}$/.test(sp) && ls.getItem('gothic_fseen') !== sp) {
+    const w = setInterval(() => {
+      if (!currentPet || !ls.getItem(`gothic_${currentPet}_name`) || !myCode || busy()) return;
+      clearInterval(w);
+      const code = sp.slice(2).toUpperCase();
+      ls.setItem('gothic_fseen', sp);
+      if (code === myCode) return;
+      const o = modal(`<div style="font-size:56px">💞</div><h3>Тебя зовут дружить!</h3><div class="sub">Код друга: ${esc(code)}</div>
+        <button class="btn" data-y>Добавить в друзья</button><button class="btn ghost" data-n style="margin-top:8px">Позже</button>`);
+      o.querySelector('[data-n]').onclick = () => o.remove();
+      o.querySelector('[data-y]').onclick = () => { o.remove(); addFriend(code); };
+    }, 1500);
+  }
+
+  /* ---------- подключение ---------- */
+  const _st = switchTab;
+  switchTab = function (n, b) { _st(n, b); if (n === 'friends') loadFriends(); };
+  const _ui = updateUI;
+  updateUI = function () { _ui(); renderBond(); };
+
+  let netDone = false;
+  function boot() {
+    if (!currentPet) return;
+    onOpen(); renderAway();
+    if (DB && !netDone) {
+      netDone = true;
+      ensureCode().then(pushProfile).then(pollGuests);
+      setInterval(pushProfile, 5 * 60000);
+      setInterval(pollGuests, 90000);
+    } else if (DB) pushProfile();
+  }
+  const _init = initGame;
+  initGame = function (t) { _init(t); boot(); };
+  if (currentPet && petsData[currentPet]) boot();
+})();
+
+</script>
 </body>
 </html>
