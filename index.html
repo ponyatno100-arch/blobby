@@ -3779,31 +3779,43 @@
   }, 45000);
 
   /* ================= 3. ДРУЗЬЯ ПО КОДУ И ВИЗИТЫ ================= */
+  let lastErr = '';
   const api = (p, method, body) =>
     fetch(`${DB}/${p}.json`, { method: method || 'GET', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
-      .then(r => (r.ok ? r.json() : null)).catch(() => null);
+      .then(r => { if (!r.ok) { lastErr = 'HTTP ' + r.status; return null; } lastErr = ''; return r.json(); })
+      .catch(() => { lastErr = 'нет связи'; return null; });
+  const dbFail = () => toast(`База недоступна (${lastErr}). Проверь адрес и правила Firebase`);
   const pair = id => [pid, id].sort().join('_');
   const flv = x => { let l = 0; FRIEND_XP.forEach((v, i) => { if (x >= v) l = i; }); return l; };
   let myCode = ls.getItem('gothic_fcode') || '', friends2 = [], guests = {};
 
   $('tab-friends').insertAdjacentHTML('afterbegin', `
-    <div class="section-title">Друзья по коду</div>
-    <div class="tier"><span>Мой код: <b id="xCode">${esc(myCode) || '…'}</b></span><button class="btn" id="xCopyCode">Копировать</button></div>
-    <button class="btn" id="xShareCode" style="margin-bottom:8px">📨 Отправить код другу</button>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <input id="xCodeIn" maxlength="8" placeholder="КОД ДРУГА" style="flex:1;min-width:0;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--border-color);color:var(--text-main);border-radius:12px;font-size:13px;text-align:center;outline:none;text-transform:uppercase">
-      <button class="btn" id="xAddF" style="width:auto;padding:0 16px">Добавить</button></div>
-    <div id="xFList"></div>`);
+    <div id="xFr" data-keep>
+      <div class="tier" style="margin-bottom:8px"><span>Мой код: <b id="xCode">${esc(myCode) || '…'}</b></span>
+        <span style="display:flex;gap:6px"><button class="btn" id="xCopyCode" style="width:auto;padding:7px 12px;font-size:12px">📋</button><button class="btn" id="xShareCode" style="width:auto;padding:7px 12px;font-size:12px">📤</button></span></div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <input id="xCodeIn" maxlength="8" placeholder="КОД ДРУГА" style="flex:1;min-width:0;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--border-color);color:var(--text-main);border-radius:12px;font-size:13px;text-align:center;outline:none;text-transform:uppercase">
+        <button class="btn" id="xAddF" style="width:auto;padding:0 16px">Добавить</button></div>
+      <div id="xFList"></div>
+    </div>`);
 
   async function ensureCode() {
     if (!DB) return;
     let c = myCode;
-    if (c) { const o = await api('codes/' + c); if (o === pid) return; if (o === null) { await api('codes/' + c, 'PUT', pid); return; } }
+    if (c) {
+      const o = await api('codes/' + c);
+      if (lastErr) { $('xCode').textContent = 'нет связи'; return; }
+      if (o === pid) return;
+      if (o === null) { await api('codes/' + c, 'PUT', pid); if (lastErr) $('xCode').textContent = 'ошибка базы'; return; }
+    }
     const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     for (let i = 0; i < 8; i++) {
       c = ''; for (let j = 0; j < 6; j++) c += A[Math.floor(Math.random() * A.length)];
-      if ((await api('codes/' + c)) === null) {
+      const ex = await api('codes/' + c);
+      if (lastErr) { $('xCode').textContent = 'нет связи'; return; }
+      if (ex === null) {
         await api('codes/' + c, 'PUT', pid);
+        if (lastErr) { $('xCode').textContent = 'ошибка базы'; return; }
         myCode = c; ls.setItem('gothic_fcode', c); $('xCode').textContent = c; return;
       }
     }
@@ -3825,16 +3837,31 @@
   };
   $('xAddF').onclick = () => addFriend($('xCodeIn').value);
 
+  // убираем старую реферальную систему: остаются счётчик, код, список друзей и награды
+  (function tidy() {
+    const t = $('tab-friends'), p = t.querySelector('p'), fr = $('xFr');
+    [...t.children].forEach(el => {
+      if (el === p || el === fr || el.id === 'xTiers') return;
+      if (el.classList.contains('section-title') && el.textContent.includes('Награды')) return;
+      el.remove();
+    });
+    p.innerHTML = 'Друзей: <b style="color: var(--text-main);" id="friendCount">' + friends + '</b> · +100 🪙 за каждого нового';
+    t.insertBefore(p, fr);
+  })();
+
   async function addFriend(raw) {
     if (!DB) { toast('Друзья появятся после подключения базы'); return; }
     const code = String(raw || '').trim().toUpperCase();
     if (!/^[A-Z0-9]{4,8}$/.test(code)) { toast('Введи код друга (6 символов)'); return; }
     if (code === myCode) { toast('Это твой собственный код 🙂'); return; }
     const fp = await api('codes/' + code);
+    if (lastErr) { dbFail(); return; }
     if (!fp || typeof fp !== 'string') { toast('Такого кода нет'); return; }
     if (fp === pid) { toast('Это твой собственный код 🙂'); return; }
     const t = Date.now();
-    await api('', 'PATCH', { [`friends/${pid}/${fp}`]: t, [`friends/${fp}/${pid}`]: t });
+    await api(`friends/${pid}/${fp}`, 'PUT', t);
+    if (lastErr) { dbFail(); return; }
+    await api(`friends/${fp}/${pid}`, 'PUT', t);
     const u = await api('users/' + fp);
     let added = []; try { added = JSON.parse(ls.getItem('gothic_fadded') || '[]'); } catch (e) {}
     if (!added.includes(fp)) { added.push(fp); ls.setItem('gothic_fadded', JSON.stringify(added.slice(-100))); coins += 100; saveData(); updateStats(); }
@@ -3850,6 +3877,7 @@
     const us = await Promise.all(ids.map(id => api('users/' + id)));
     const xp = await Promise.all(ids.map(id => api(`friendships/${pair(id)}/xp`)));
     friends2 = ids.map((id, i) => ({ id, u: us[i] || {}, xp: xp[i] || 0 }));
+    if (friends2.length > friends) { friends = friends2.length; saveData(); updateStats(); }
     // награды за новые уровни дружбы
     friends2.forEach(fr => {
       const l = flv(fr.xp), k = `gothic_fl_${fr.id}`, got = parseInt(ls.getItem(k)) || 0;
@@ -3890,7 +3918,7 @@
     o.querySelector('[data-y]').onclick = async () => {
       o.remove();
       const res = await api(`visits/${fr.id}/${pid}`, 'PUT', body);
-      if (!res) { toast('Не получилось отправить, попробуй позже'); return; }
+      if (!res) { if (lastErr) dbFail(); else toast('Не получилось отправить, попробуй позже'); return; }
       away = { to: fr.id, tn: fr.u.n || 'друг', since: now, until, snap: { h: hunger, m: mood, f: fun } };
       ls.setItem('gothic_away', JSON.stringify(away)); ls.setItem(`gothic_vis_${fr.id}`, todayStr());
       saveData(); renderAway(); renderFriends(); hap('success');
@@ -3924,7 +3952,7 @@
     if (early) { toast('Питомец вернулся раньше срока'); renderFriends(); return; }
     const c = 80 + cares * 30, x = 25 + cares * 5;
     coins += c; addBond(5); addExp(120);
-    api('', 'PATCH', { [`friendships/${pair(a.to)}/xp`]: { '.sv': { increment: x } } }).then(loadFriends);
+    api(`friendships/${pair(a.to)}`, 'PATCH', { xp: { '.sv': { increment: x } } }).then(loadFriends);
     saveData(); updateUI();
     burstAtPet(['🧳', '✨', '🎁', '💞'], 16, 150); ringAtPet(); hap('success');
     modal(`<div style="font-size:56px">🧳</div><h3>${esc(petNm())} вернулся!</h3>
@@ -3974,7 +4002,7 @@
       if (feed) { if (!(inventory.cookie > 0)) { toast('Нет печенья 🍪'); return; } inventory.cookie--; }
       ls.setItem(ck, used + 1); coins += 15; mood = Math.min(100, mood + 5);
       api(`visits/${pid}/${k}`, 'PATCH', { cares: { '.sv': { increment: 1 } } });
-      api('', 'PATCH', { [`friendships/${pair(k)}/xp`]: { '.sv': { increment: 4 } } });
+      api(`friendships/${pair(k)}`, 'PATCH', { xp: { '.sv': { increment: 4 } } });
       g.cares = (g.cares || 0) + 1;
       floatEmoji(['🖤', '✨'], 4); hap('success'); toast('Гость доволен: +15 🪙');
       saveData(); updateUI(); o.remove();
