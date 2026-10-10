@@ -2730,5 +2730,261 @@
 })();
 
     </script>
+    <script>
+/* Gothic Pet — аддон 6: новые мини-игры (бег, ритм, змейка) и вызовы друзьям */
+(function () {
+  const D = document, ls = localStorage;
+  const BOT = 'https://t.me/blobbypet_bot';
+  const uid = (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 0;
+  const CHALLENGE_BONUS = 100;   // бонус за победу над результатом друга
+
+  function mk(body) {
+    const cv = D.createElement('canvas'); body.appendChild(cv);
+    const ctx = cv.getContext('2d'), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = body.getBoundingClientRect(), W = r.width, H = r.height;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.cssText = `width:${W}px;height:${H}px;touch-action:none;display:block`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { cv, ctx, W, H };
+  }
+
+  /* ================= 1. ПОБЕГ ОТ ТЬМЫ (раннер) ================= */
+  function startDash(body, finish, info) {
+    const { cv, ctx, W, H } = mk(body);
+    const img = new Image(); img.src = petImgSrc();
+    const G = H - 120, S = 64, px = W * 0.2;
+    let y = 0, vy = 0, jumps = 0, dist = 0, stars = 0, speed = 280, spawn = 0.8, obs = [];
+    let over = false, raf = 0, last = performance.now(), flash = 0, lastInfo = '', endT = 0;
+    const jump = () => { if (over || jumps >= 2) return; vy = -760; jumps++; hap('light'); blip(440 + jumps * 140, 0.08); };
+    cv.addEventListener('pointerdown', jump);
+    const score = () => Math.floor(dist / 100) + stars * 5;
+
+    function frame(t) {
+      if (over) return;
+      const dt = Math.min(0.04, (t - last) / 1000); last = t;
+      speed = Math.min(560, 280 + dist / 60); dist += speed * dt;
+      vy += 2100 * dt; y += vy * dt; if (y >= 0) { y = 0; vy = 0; jumps = 0; }
+      spawn -= dt;
+      if (spawn <= 0) {
+        const n = Math.random() < 0.3 ? 2 : 1;
+        obs.push({ x: W + 30, w: 34 * n, h: 42, n });
+        if (Math.random() < 0.5) obs.push({ x: W + 90 + Math.random() * 120, star: true, yy: 70 + Math.random() * 90 });
+        spawn = (0.9 + Math.random() * 0.9) * (300 / speed) + 0.35;
+      }
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, G + 2); ctx.lineTo(W, G + 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      ctx.beginPath(); ctx.ellipse(px + S / 2, G + 4, 26 * (1 + y / 400), 6, 0, 0, 6.3); ctx.fill();
+      if (img.complete && img.naturalWidth) ctx.drawImage(img, px, G + y - S, S, S);
+      const cx = px + S / 2, cy = G + y - S / 2;
+      for (let i = obs.length - 1; i >= 0; i--) {
+        const o = obs[i]; o.x -= speed * dt;
+        if (o.star) {
+          ctx.font = '26px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('⭐', o.x, G - o.yy);
+          if (Math.abs(o.x - cx) < 32 && Math.abs(G - o.yy - cy) < 40) { stars++; hap('light'); blip(760 + stars * 20, 0.08); obs.splice(i, 1); continue; }
+        } else {
+          ctx.font = '38px serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+          for (let k = 0; k < o.n; k++) ctx.fillText('🪦', o.x + k * 34, G + 4);
+          if (px + S - 16 > o.x + 6 && px + 16 < o.x + o.w - 6 && y > -(o.h - 8)) { die(); return; }
+        }
+        if (o.x < -90) obs.splice(i, 1);
+      }
+      if (flash > 0) { ctx.fillStyle = `rgba(224,69,58,${flash})`; ctx.fillRect(0, 0, W, H); flash -= dt; }
+      const txt = `📏 ${Math.floor(dist / 100)}  ⭐ ${stars}`;
+      if (txt !== lastInfo) { info(txt); lastInfo = txt; }
+      raf = requestAnimationFrame(frame);
+    }
+    function die() {
+      over = true; hap('error'); blip(140, 0.25);
+      ctx.fillStyle = 'rgba(224,69,58,.35)'; ctx.fillRect(0, 0, W, H);
+      const s = score();
+      endT = setTimeout(() => finish({
+        score: s, summary: `Дистанция: ${Math.floor(dist / 100)} м`,
+        coins: Math.min(250, Math.floor(s * 0.8)), fun: Math.min(40, 8 + Math.floor(s / 10)), exp: 40 + s
+      }), 450);
+    }
+    raf = requestAnimationFrame(frame);
+    return () => { over = true; cancelAnimationFrame(raf); clearTimeout(endT); };
+  }
+
+  /* ================= 2. РИТМ-НОЧЬ ================= */
+  function startRhythm(body, finish, info) {
+    const { cv, ctx, W, H } = mk(body);
+    const L = 4, lw = W / L, HY = H - 130, E = ['🦇', '🕯️', '🔮', '🌙'], F = [330, 392, 440, 523];
+    const col = getComputedStyle(D.documentElement).getPropertyValue('--accent2').trim() || '#c0394a';
+    let notes = [], score = 0, combo = 0, left = 30, spawn = 0.5, over = false, raf = 0;
+    let last = performance.now(), msg = '', msgT = 0, lastLane = -1, fl = [0, 0, 0, 0], lastInfo = '';
+    const say = t => { msg = t; msgT = 0.5; };
+
+    cv.addEventListener('pointerdown', e => {
+      if (over) return;
+      const b = cv.getBoundingClientRect();
+      const lane = Math.max(0, Math.min(L - 1, Math.floor((e.clientX - b.left) / lw)));
+      fl[lane] = 0.18;
+      const n = notes.filter(x => x.lane === lane).sort((a, c) => Math.abs(a.y - HY) - Math.abs(c.y - HY))[0];
+      if (n && Math.abs(n.y - HY) < 90) {
+        const perfect = Math.abs(n.y - HY) < 38;
+        score += perfect ? 2 : 1; combo++; if (combo % 10 === 0) score += 2;
+        say(perfect ? 'PERFECT' : 'GOOD'); notes.splice(notes.indexOf(n), 1); hap('light'); blip(F[lane], 0.12);
+      } else { combo = 0; say('MISS'); blip(130, 0.1); }
+    });
+
+    function frame(t) {
+      if (over) return;
+      const dt = Math.min(0.05, (t - last) / 1000); last = t;
+      left -= dt; spawn -= dt; msgT -= dt; fl = fl.map(v => Math.max(0, v - dt));
+      const el = 30 - left, sp = 380 + el * 4;
+      if (spawn <= 0) {
+        let l; do { l = Math.floor(Math.random() * L); } while (l === lastLane);
+        lastLane = l; notes.push({ lane: l, y: -30 });
+        spawn = Math.max(0.3, 0.6 - el * 0.01) * (0.8 + Math.random() * 0.5);
+      }
+      for (let i = notes.length - 1; i >= 0; i--) {
+        notes[i].y += sp * dt;
+        if (notes[i].y > HY + 75) { notes.splice(i, 1); combo = 0; say('MISS'); }
+      }
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i < L; i++) {
+        ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.035)' : 'rgba(255,255,255,.015)'; ctx.fillRect(i * lw, 0, lw, H);
+        if (fl[i] > 0) { ctx.globalAlpha = fl[i] * 3; ctx.fillStyle = col; ctx.fillRect(i * lw, 0, lw, H); ctx.globalAlpha = 1; }
+        ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(i * lw + lw / 2, HY, 28, 0, 6.3); ctx.stroke();
+      }
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '28px serif';
+      notes.forEach(n => {
+        const x = n.lane * lw + lw / 2;
+        ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.arc(x, n.y, 26, 0, 6.3); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(E[n.lane], x, n.y + 1);
+      });
+      if (msgT > 0) { ctx.globalAlpha = Math.min(1, msgT * 3); ctx.fillStyle = '#fff'; ctx.font = '700 22px sans-serif'; ctx.fillText(msg, W / 2, HY - 80); ctx.globalAlpha = 1; }
+      if (combo >= 5) { ctx.fillStyle = col; ctx.font = '700 18px sans-serif'; ctx.fillText(`🔥 ${combo}`, W / 2, 30); }
+      const txt = `⏱ ${Math.max(0, Math.ceil(left))}  ⭐ ${score}`;
+      if (txt !== lastInfo) { info(txt); lastInfo = txt; }
+      if (left <= 0) {
+        over = true;
+        finish({ score, summary: `Счёт: ${score}`, coins: Math.min(220, score * 2), fun: Math.min(40, 10 + Math.floor(score / 3)), exp: 40 + score * 2 });
+        return;
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    return () => { over = true; cancelAnimationFrame(raf); };
+  }
+
+  /* ================= 3. НОЧНАЯ ЗМЕЙКА ================= */
+  function startSnake(body, finish, info) {
+    const { cv, ctx, W, H } = mk(body);
+    const img = new Image(); img.src = petImgSrc();
+    const COLS = 12, cell = Math.floor(W / COLS), ROWS = Math.floor((H - 20) / cell);
+    const ox = (W - COLS * cell) / 2, oy = (H - ROWS * cell) / 2;
+    const col = getComputedStyle(D.documentElement).getPropertyValue('--accent2').trim() || '#c0394a';
+    const my = Math.floor(ROWS / 2);
+    let snake = [{ x: 5, y: my }, { x: 4, y: my }, { x: 3, y: my }];
+    let dir = { x: 1, y: 0 }, next = { x: 1, y: 0 }, food = null, score = 0, over = false, timer = 0, endT = 0, tick = 150, sx = null, sy = null;
+    const place = () => { do { food = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) }; } while (snake.some(s => s.x === food.x && s.y === food.y)); };
+    place();
+    cv.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; });
+    cv.addEventListener('pointerup', () => { sx = null; });
+    cv.addEventListener('pointermove', e => {
+      if (sx === null) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+      const d = Math.abs(dx) > Math.abs(dy) ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) };
+      if (d.x !== -dir.x || d.y !== -dir.y) next = d;
+      sx = e.clientX; sy = e.clientY;
+    });
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(255,255,255,.05)';
+      for (let i = 0; i < COLS; i++) for (let j = 0; j < ROWS; j++) ctx.fillRect(ox + i * cell + cell / 2 - 1, oy + j * cell + cell / 2 - 1, 2, 2);
+      snake.forEach((s, i) => {
+        if (i === 0) return;
+        ctx.globalAlpha = Math.max(0.3, 1 - i * 0.04); ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(ox + s.x * cell + cell / 2, oy + s.y * cell + cell / 2, cell * 0.38, 0, 6.3); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      const h = snake[0], sz = cell * 1.3;
+      if (img.complete && img.naturalWidth) ctx.drawImage(img, ox + h.x * cell + cell / 2 - sz / 2, oy + h.y * cell + cell / 2 - sz / 2, sz, sz);
+      ctx.font = `${cell * 0.85}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🍪', ox + food.x * cell + cell / 2, oy + food.y * cell + cell / 2 + 1);
+    }
+    function step() {
+      if (over) return;
+      dir = next;
+      const h = { x: (snake[0].x + dir.x + COLS) % COLS, y: (snake[0].y + dir.y + ROWS) % ROWS };
+      if (snake.some(s => s.x === h.x && s.y === h.y)) {
+        over = true; hap('error'); blip(140, 0.25);
+        endT = setTimeout(() => finish({
+          score, summary: `Съедено: ${score}`, coins: Math.min(240, score * 8), fun: Math.min(40, 8 + score * 2), exp: 40 + score * 6
+        }), 450);
+        return;
+      }
+      snake.unshift(h);
+      if (h.x === food.x && h.y === food.y) { score++; hap('light'); blip(520 + score * 12, 0.08); place(); tick = Math.max(85, 150 - score * 3); info('🍪 ' + score); }
+      else snake.pop();
+      draw(); timer = setTimeout(step, tick);
+    }
+    info('🍪 0'); draw(); timer = setTimeout(step, 600);
+    return () => { over = true; clearTimeout(timer); clearTimeout(endT); };
+  }
+
+  Object.assign(GAMES, {
+    dash:   { emoji: '🏃', title: 'Побег от тьмы', desc: 'Тапай, чтобы прыгать (можно дважды). Собирай звёзды, огибай надгробия!', start: startDash },
+    rhythm: { emoji: '🎵', title: 'Ритм-ночь',     desc: 'Тапай по нотам в такт. Чем длиннее комбо, тем больше очков!',          start: startRhythm },
+    snake:  { emoji: '🐍', title: 'Ночная змейка', desc: 'Свайпай, собирай печенье и не кусай себя за хвост.',                    start: startSnake }
+  });
+
+  /* ================= ВЫЗОВЫ ДРУЗЬЯМ ================= */
+  const _fg = finishGame;
+  finishGame = function (id, res) {
+    let ch = null; try { ch = JSON.parse(ls.getItem('gothic_challenge') || 'null'); } catch (e) {}
+    let won = false;
+    if (ch && ch.g === id) { if (res.score > ch.s) { won = true; res.coins += CHALLENGE_BONUS; } ls.removeItem('gothic_challenge'); }
+    _fg(id, res);
+    const box = D.querySelector('#gameBody .result');
+    if (!box) return;
+    const kids = box.children, last = kids[kids.length - 1];
+    if (ch && ch.g === id) {
+      const p = D.createElement('p');
+      p.style.cssText = 'color:var(--accent2);font-weight:600';
+      p.textContent = won ? `🏆 Вызов выигран! +${CHALLENGE_BONUS} 🪙` : `Друг набрал ${ch.s} — в другой раз получится!`;
+      box.insertBefore(p, kids[kids.length - 2]);
+    }
+    const b = D.createElement('button');
+    b.className = 'btn ghost'; b.textContent = '📤 Бросить вызов другу';
+    b.onclick = () => {
+      const url = `${BOT}?startapp=c_${id}_${res.score}_${uid}`;
+      const text = `Я набрал ${res.score} в «${GAMES[id].title}». Побьёшь? 🖤`;
+      const u = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+      if (tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, '_blank');
+    };
+    box.insertBefore(b, last);
+  };
+
+  // приём вызова по ссылке
+  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  if (sp && /^c_/.test(sp) && ls.getItem('gothic_chal_seen') !== sp) {
+    const w = setInterval(() => {
+      if (!currentPet || !ls.getItem(`gothic_${currentPet}_name`) || D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden')) return;
+      clearInterval(w);
+      const [, g, s, from] = sp.split('_'), score = parseInt(s) || 0;
+      if (!GAMES[g] || String(from) === String(uid)) return;
+      ls.setItem('gothic_chal_seen', sp);
+      const o = D.createElement('div');
+      o.className = 'overlay modal';
+      o.innerHTML = `<div class="daily-card"><div style="font-size:56px">${GAMES[g].emoji}</div><h3>Вызов от друга!</h3>
+        <div class="sub">«${GAMES[g].title}»: друг набрал ${score}.<br>Побей — получишь +${CHALLENGE_BONUS} 🪙</div>
+        <button class="btn" data-y>Принять вызов</button><button class="btn ghost" data-n style="margin-top:8px">Позже</button></div>`;
+      D.body.appendChild(o);
+      o.querySelector('[data-n]').onclick = () => o.remove();
+      o.querySelector('[data-y]').onclick = () => { ls.setItem('gothic_challenge', JSON.stringify({ g, s: score })); o.remove(); openGame(g); };
+    }, 1500);
+  }
+
+  if (currentPet) updateUI();
+})();
+
+    </script>
 </body>
 </html>
