@@ -9,6 +9,10 @@
            Если в BotFather включён Main Mini App, оставь как есть.
            Если создала приложение через /newapp, впиши так: 'https://t.me/blobbypet_bot/короткое_имя' */
         window.GOTHIC_APP_LINK = 'https://t.me/blobbypet_bot';
+
+        /* АДРЕС БАЗЫ FIREBASE ДЛЯ СОВМЕСТНОГО БОЯ С БОССОМ (отряд друзей).
+           Пока пусто — босс работает только в одиночку. Пример: 'https://blobby-default-rtdb.firebaseio.com' */
+        window.GOTHIC_DB_URL = '';
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2992,162 +2996,12 @@
 
     </script>
     <script>
-/* Gothic Pet — аддон 7: босс недели и удобное приглашение друзей */
+/* Gothic Pet — аддон 7: приглашение друзей (кнопка, копирование ссылки) */
 (function () {
   const D = document, ls = localStorage;
   const APP = window.GOTHIC_APP_LINK || 'https://t.me/blobbypet_bot';
   const uid = (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 0;
 
-  /* ============ НАСТРОЙКИ БОССА ============ */
-  const BOSS_HP = 4000;
-  const STRIKE_BASE = 100, STRIKE_LVL = 15;   // бесплатный удар питомца раз в день: 100 + 15 за каждый уровень
-  const FRIEND_STRIKE = 250;                  // удар-подарок от друга
-  const BOSSES = [
-    { n: 'Дедлайн-демон',       e: '😈' },
-    { n: 'Пожиратель печенья',  e: '👹' },
-    { n: 'Теневой дракон',      e: '🐲' },
-    { n: 'Король спама',        e: '👑' },
-    { n: 'Туманный кракен',     e: '🐙' },
-    { n: 'Лунный кошмар',       e: '🌑' }
-  ];
-  const WEAK = ['dash', 'rhythm', 'catch', 'snake', 'whack', 'memory'];   // слабость недели (урон ×2)
-  const GAME_DMG = { catch: 12, memory: 15, whack: 12, dash: 2, rhythm: 3, snake: 12 };   // урон за 1 очко
-  const MILES = [                              // награды за прогресс
-    { p: 0.25, c: 150 },
-    { p: 0.5,  c: 250, item: 'cake' },
-    { p: 0.75, c: 350 },
-    { p: 1,    c: 700, box: true }             // за победу ещё и бесплатная коробка
-  ];
-  /* ========================================= */
-
-  /* ---------- неделя и состояние ---------- */
-  const off = () => new Date().getTimezoneOffset();
-  const week = () => Math.floor((Math.floor((Date.now() - off() * 60000) / 864e5) + 3) / 7);
-  const endMs = w => ((w + 1) * 7 - 3) * 864e5 + off() * 60000;
-  const fresh = () => ({ w: week(), dmg: 0, got: [], tok: 0, free: '', from: [] });
-  let S;
-  try { S = JSON.parse(ls.getItem('gothic_boss') || 'null'); } catch (e) { S = null; }
-  if (!S || typeof S.w !== 'number') S = fresh();
-  function refresh() { if (S.w !== week()) S = fresh(); }
-  const save = () => ls.setItem('gothic_boss', JSON.stringify(S));
-  const boss = () => BOSSES[S.w % BOSSES.length];
-  const weak = () => WEAK[S.w % WEAK.length];
-  const kills = () => parseInt(ls.getItem('gothic_boss_kills')) || 0;
-
-  function addDmg(n) {
-    refresh();
-    const was = S.dmg;
-    S.dmg = Math.min(BOSS_HP, S.dmg + n); save(); renderBoss();
-    if (was < BOSS_HP && S.dmg >= BOSS_HP) toast(`🏆 ${boss().n} повержен! Забери награды в «Досуге»`);
-  }
-  function strike() {
-    refresh();
-    if (!currentPet || runaway) return;
-    if (S.dmg >= BOSS_HP) { toast('Босс уже повержен — жди следующего'); return; }
-    let d;
-    if (S.free !== todayStr()) { S.free = todayStr(); d = STRIKE_BASE + lvl * STRIKE_LVL; }
-    else if (S.tok > 0) { S.tok--; d = FRIEND_STRIKE; }
-    else { toast('Ударов нет: сыграй в мини-игру или позови друга'); return; }
-    burstAtPet(['💥', '⚡', '✨'], 14, 140); playBodyAnim('hop'); hap('success');
-    toast(`💥 ${d} урона`);
-    addDmg(d);
-  }
-  function claim(i) {
-    const m = MILES[i];
-    if (S.dmg < m.p * BOSS_HP || S.got.includes(i)) return;
-    S.got.push(i); save();
-    coins += m.c;
-    if (m.item) inventory[m.item] = (inventory[m.item] || 0) + 1;
-    if (m.box) { ls.removeItem('gothic_box_day'); ls.setItem('gothic_boss_kills', kills() + 1); }
-    toast(`🎁 +${m.c} 🪙${m.item ? ' и ' + splitName(itemsMeta[m.item].name)[0] : ''}${m.box ? ' + бесплатная коробка' : ''}`);
-    hap('success'); burstAtPet(['🪙', '✨', '🎁'], 14, 140);
-    addExp(m.box ? 300 : 80);
-    renderBoss();
-  }
-  function call() {
-    if (!uid) { toast('Открой игру через Telegram — тогда ссылка заработает'); return; }
-    const url = `${APP}?startapp=b_${S.w}_${uid}`;
-    const text = `Помоги победить босса недели «${boss().n}» ${boss().e} — вместе легче! 🖤`;
-    const u = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-    if (tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, '_blank');
-  }
-
-  /* ---------- карточка босса во вкладке «Досуг» ---------- */
-  $('tab-play').insertAdjacentHTML('afterbegin', '<div id="xBoss"></div>');
-  function timeLeft() {
-    const ms = Math.max(0, endMs(S.w) - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
-    return d > 0 ? `${d} д ${h} ч` : `${h} ч`;
-  }
-  function renderBoss() {
-    refresh();
-    const box = $('xBoss'); if (!box) return;
-    const b = boss(), wk = GAMES[weak()], hp = BOSS_HP - S.dmg, dead = hp <= 0;
-    const freeLeft = S.free !== todayStr();
-    box.innerHTML = `<div class="tier" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px"><div style="font-size:38px">${b.e}</div>
-        <div style="flex:1"><b>Босс недели: ${b.n}</b>
-        <div class="muted" style="font-size:10px">Слабость: ${wk ? wk.emoji + ' ' + wk.title : ''} (урон ×2) · ещё ${timeLeft()}</div></div></div>
-      <div class="progress-bar"><div class="progress-fill f-hunger" style="width:${Math.max(0, hp / BOSS_HP * 100)}%"></div></div>
-      <div class="muted" style="font-size:10px;display:flex;justify-content:space-between"><span>${dead ? 'Повержен! 🏆' : `HP ${hp} / ${BOSS_HP}`}</span><span>Побеждено боссов: ${kills()}</span></div>
-      <div style="display:flex;gap:6px" id="xMiles"></div>
-      <div style="display:flex;gap:6px"><button class="btn" id="xStrike" ${dead || (!freeLeft && !S.tok) ? 'disabled' : ''}>⚔️ Удар${freeLeft ? ' (бесплатно)' : S.tok ? ' ×' + S.tok : ''}</button>
-        <button class="btn ghost" id="xCall">📣 Позвать друга</button></div></div>`;
-    const mb = $('xMiles');
-    MILES.forEach((m, i) => {
-      const reached = S.dmg >= m.p * BOSS_HP, got = S.got.includes(i);
-      const c = D.createElement('button');
-      c.className = 'btn ' + (reached && !got ? '' : 'ghost');
-      c.style.cssText = 'padding:8px 2px;font-size:11px';
-      c.disabled = !reached || got;
-      c.textContent = got ? '✓' : reached ? `🎁 ${m.c}` : `🔒 ${Math.round(m.p * 100)}%`;
-      c.onclick = () => claim(i);
-      mb.appendChild(c);
-    });
-    $('xStrike').onclick = strike;
-    $('xCall').onclick = call;
-  }
-
-  /* ---------- урон от мини-игр ---------- */
-  const _fg = finishGame;
-  finishGame = function (id, res) {
-    refresh();
-    let dmg = 0;
-    if (S.dmg < BOSS_HP && GAME_DMG[id]) dmg = Math.round(res.score * GAME_DMG[id] * (id === weak() ? 2 : 1));
-    _fg(id, res);
-    if (dmg > 0) {
-      addDmg(dmg);
-      const box = D.querySelector('#gameBody .result');
-      if (box) {
-        const p = D.createElement('p');
-        p.style.cssText = 'color:var(--accent2);font-weight:600';
-        p.textContent = `💥 Босс получил ${dmg} урона${id === weak() ? ' (слабость ×2!)' : ''}`;
-        box.insertBefore(p, box.querySelector('button'));
-      }
-    }
-  };
-
-  /* ---------- друг позвал на босса ---------- */
-  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
-  if (sp && /^b_/.test(sp)) {
-    const w = setInterval(() => {
-      if (!currentPet || !ls.getItem(`gothic_${currentPet}_name`) || D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden')) return;
-      clearInterval(w);
-      refresh();
-      const [, wk, from] = sp.split('_');
-      if (parseInt(wk) !== S.w || (uid && String(from) === String(uid)) || S.from.includes(from)) return;
-      S.from.push(from); S.tok++; save(); renderBoss();
-      const o = D.createElement('div');
-      o.className = 'overlay modal';
-      o.innerHTML = `<div class="daily-card"><div style="font-size:56px">${boss().e}</div><h3>Друг зовёт на босса!</h3>
-        <div class="sub">«${boss().n}» ещё жив. Тебе подарили удар на ${FRIEND_STRIKE} урона.</div>
-        <button class="btn" data-y>К боссу</button><button class="btn ghost" data-n style="margin-top:8px">Позже</button></div>`;
-      D.body.appendChild(o);
-      o.querySelector('[data-n]').onclick = () => o.remove();
-      o.querySelector('[data-y]').onclick = () => { o.remove(); switchTab('play', D.querySelectorAll('.nav-item')[2]); };
-    }, 1500);
-  }
-
-  /* ---------- приглашение друзей: заметнее и надёжнее ---------- */
   const inv = $('xShare');
   if (inv) {
     inv.className = 'btn'; inv.textContent = '📨 Пригласить друга'; inv.style.marginBottom = '8px';
@@ -3165,12 +3019,540 @@
     const old = () => { i.select(); try { D.execCommand('copy'); } catch (e) {} done(); };
     try { navigator.clipboard.writeText(i.value).then(done, old); } catch (e) { old(); }
   };
+})();
+
+    </script>
+    <script>
+/* Gothic Pet — аддон 8: босс недели — арена, скиллы, анимации, общий отряд (синхронизация через Firebase) */
+(function () {
+  const D = document, ls = localStorage;
+  const APP = window.GOTHIC_APP_LINK || 'https://t.me/blobbypet_bot';
+  const DB = (window.GOTHIC_DB_URL || '').replace(/\/+$/, '');
+  const uid = (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 0;
+  let pid = uid ? String(uid) : ls.getItem('gothic_pid');
+  if (!pid) { pid = 'u' + Math.random().toString(36).slice(2, 9); ls.setItem('gothic_pid', pid); }
+
+  /* ============ НАСТРОЙКИ БОССА ============ */
+  const BASE_HP = 2500, HP_PER_MEMBER = 1500;   // здоровье = 2500 + 1500 за каждого в отряде
+  const CRIT = 0.15, WEAK_MULT = 1.5, BUFF_MULT = 1.25, BUFF_SEC = 60, RESET_PRICE = 150;
+  const GAME_DMG = { catch: 12, memory: 15, whack: 12, dash: 2, rhythm: 3, snake: 12 };   // урон за 1 очко в мини-играх
+  // скиллы: lvl — с какого уровня питомца, cd — перезарядка (сек), dmg(уровень) — урон
+  const SKILLS = [
+    { k: 'punch',  e: '👊', n: 'Удар',        lvl: 1, cd: 8,   dmg: l => 60 + l * 8 },
+    { k: 'fire',   e: '🔥', n: 'Огонь',       lvl: 3, cd: 45,  dmg: l => 150 + l * 15 },
+    { k: 'cry',    e: '📣', n: 'Клич',        lvl: 4, cd: 600, dmg: () => 0 },
+    { k: 'bolt',   e: '⚡', n: 'Молния',      lvl: 5, cd: 90,  dmg: l => 60 + l * 6, hits: 3 },
+    { k: 'poison', e: '☣️', n: 'Яд',          lvl: 6, cd: 120, dmg: l => 25 + l * 2, ticks: 8 },
+    { k: 'moon',   e: '🌙', n: 'Лунный луч',  lvl: 8, cd: 300, dmg: l => 400 + l * 30 }
+  ];
+  // боссы по неделям. weak — скилл, к которому босс уязвим.
+  // Когда нарисуешь: img — основная картинка, hurt/atk/dead — необязательные позы (имена файлов рядом с index.html)
+  const BOSSES = [
+    { n: 'Дедлайн-демон',      e: '😈', weak: 'fire',   img: '', hurt: '', atk: '', dead: '' },
+    { n: 'Пожиратель печенья', e: '👹', weak: 'punch',  img: '', hurt: '', atk: '', dead: '' },
+    { n: 'Теневой дракон',     e: '🐲', weak: 'moon',   img: '', hurt: '', atk: '', dead: '' },
+    { n: 'Король спама',       e: '👑', weak: 'bolt',   img: '', hurt: '', atk: '', dead: '' },
+    { n: 'Туманный кракен',    e: '🐙', weak: 'poison', img: '', hurt: '', atk: '', dead: '' },
+    { n: 'Лунный кошмар',      e: '🌑', weak: 'fire',   img: '', hurt: '', atk: '', dead: '' }
+  ];
+  const MILES = [                                // награды за прогресс боя
+    { p: 0.25, c: 150 },
+    { p: 0.5,  c: 250, item: 'cake' },
+    { p: 0.75, c: 350 },
+    { p: 1,    c: 700, box: true }               // за победу ещё и бесплатная коробка
+  ];
+  /* ========================================= */
+
+  /* ---------- неделя и состояние ---------- */
+  const off = () => new Date().getTimezoneOffset();
+  const week = () => Math.floor((Math.floor((Date.now() - off() * 60000) / 864e5) + 3) / 7);
+  const endMs = w => ((w + 1) * 7 - 3) * 864e5 + off() * 60000;
+  const freshL = () => ({ w: week(), dmg: 0, got: [] });
+  let L; try { L = JSON.parse(ls.getItem('gothic_boss2') || 'null'); } catch (e) { L = null; }
+  if (!L || typeof L.w !== 'number') L = freshL();
+  let net = {}, localBuff = 0, CD = {};
+  try { CD = JSON.parse(ls.getItem('gothic_cd') || '{}') || {}; } catch (e) { CD = {}; }
+  const refresh = () => { if (L.w !== week()) { L = freshL(); net = {}; } };
+  const saveL = () => ls.setItem('gothic_boss2', JSON.stringify(L));
+  const boss = () => BOSSES[L.w % BOSSES.length];
+  const kills = () => parseInt(ls.getItem('gothic_boss_kills')) || 0;
+  const party = () => (DB ? (ls.getItem('gothic_party') || '') : '');
+  const inParty = () => !!party();
+  const members = () => Object.keys(net.players || {}).length;
+  const maxHp = () => BASE_HP + HP_PER_MEMBER * Math.max(1, inParty() ? members() : 1);
+  const dmgNow = () => (inParty() ? (net.dmg || 0) : L.dmg);
+  const buffUntil = () => Math.max(net.buff || 0, localBuff);
+  const buffMult = () => (Date.now() < buffUntil() ? BUFF_MULT : 1);
+  const myName = () => String(ls.getItem(`gothic_${currentPet}_name`) || petsData[currentPet].name).slice(0, 14);
+  const wk = () => SKILLS.find(s => s.k === boss().weak);
+
+  /* ---------- сеть (Firebase Realtime Database, REST) ---------- */
+  const wpath = () => `parties/${party()}/w${L.w}`;
+  const patch = (path, body) => fetch(`${DB}/${path}.json`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  async function register() {
+    if (!inParty() || !currentPet) return;
+    try { await patch(wpath(), { [`players/${pid}/n`]: myName(), [`players/${pid}/d`]: { '.sv': { increment: 0 } } }); } catch (e) {}
+  }
+  async function push(k, n) {
+    if (!inParty()) return;
+    try {
+      await patch(wpath(), {
+        dmg: { '.sv': { increment: n } },
+        [`players/${pid}/d`]: { '.sv': { increment: n } },
+        [`players/${pid}/n`]: myName(),
+        [`players/${pid}/last`]: { s: k, d: n, t: { '.sv': 'timestamp' } }
+      });
+    } catch (e) {}
+  }
+  let seen = {}, tick = 0;
+  async function poll() {
+    refresh();
+    if (!inParty()) return;
+    try {
+      const r = await fetch(`${DB}/${wpath()}.json`);
+      if (!r.ok) return;
+      net = (await r.json()) || {};
+      const ps = net.players || {};
+      if (!ps[pid]) register();
+      for (const k in ps) {
+        const t = ps[k].last && ps[k].last.t;
+        if (!t) continue;
+        if (seen[k] === undefined) { seen[k] = t; continue; }
+        if (t > seen[k]) { seen[k] = t; if (k !== pid) remoteHit(ps[k]); }
+      }
+      renderBoss(); if (arena) renderArena();
+    } catch (e) {}
+  }
+  setInterval(() => { tick++; if (arena || tick % 5 === 0) poll(); }, 4000);
+
+  /* ---------- урон и награды ---------- */
+  function milesReached() { const m = maxHp(), d = dmgNow(); return MILES.map((x, i) => i).filter(i => d >= MILES[i].p * m && !L.got.includes(i)); }
+  function addDamage(n, k) {
+    refresh();
+    const max = maxHp(), before = dmgNow();
+    if (before >= max) return;
+    const had = milesReached().length;
+    if (inParty()) { net.dmg = (net.dmg || 0) + n; push(k, n); } else { L.dmg += n; saveL(); }
+    if (milesReached().length > had) toast('🎁 Награда за босса доступна — забери в «Досуге»');
+    if (before < max && dmgNow() >= max) victory();
+    renderBoss(); if (arena) renderArena();
+  }
+  function claim(i) {
+    const m = MILES[i];
+    if (!m || dmgNow() < m.p * maxHp() || L.got.includes(i)) return;
+    L.got.push(i); saveL();
+    coins += m.c;
+    if (m.item) inventory[m.item] = (inventory[m.item] || 0) + 1;
+    if (m.box) { ls.removeItem('gothic_box_day'); ls.setItem('gothic_boss_kills', kills() + 1); }
+    toast(`🎁 +${m.c} 🪙${m.item ? ' и ' + splitName(itemsMeta[m.item].name)[0] : ''}${m.box ? ' + бесплатная коробка' : ''}`);
+    hap('success'); burstAtPet(['🪙', '✨', '🎁'], 14, 140);
+    addExp(m.box ? 300 : 80);
+    renderBoss(); if (arena) renderArena();
+  }
+  const claimAll = () => milesReached().forEach(claim);
+
+  /* ---------- карточка во вкладке «Досуг» ---------- */
+  $('tab-play').insertAdjacentHTML('afterbegin', '<div id="xBoss"></div>');
+  function timeLeft() {
+    const ms = Math.max(0, endMs(L.w) - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+    return d > 0 ? `${d} д ${h} ч` : `${h} ч`;
+  }
+  function renderBoss() {
+    refresh();
+    const box = $('xBoss'); if (!box) return;
+    const b = boss(), s = wk(), max = maxHp(), hp = Math.max(0, max - dmgNow()), dead = hp <= 0;
+    box.innerHTML = `<div class="tier" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px"><div style="font-size:38px">${b.img ? `<img src="${b.img}" style="width:44px;height:44px;object-fit:contain" onerror="this.outerHTML='${b.e}'">` : b.e}</div>
+        <div style="flex:1"><b>Босс недели: ${b.n}</b>
+        <div class="muted" style="font-size:10px">Слабость: ${s.e} ${s.n} · ещё ${timeLeft()}${inParty() ? ' · отряд ' + party() : ''}</div></div></div>
+      <div class="progress-bar"><div class="progress-fill f-hunger" style="width:${hp / max * 100}%"></div></div>
+      <div class="muted" style="font-size:10px;display:flex;justify-content:space-between"><span>${dead ? 'Повержен! 🏆' : `HP ${hp} / ${max}`}</span><span>Побеждено боссов: ${kills()}</span></div>
+      <div style="display:flex;gap:6px" id="xMiles"></div>
+      <div style="display:flex;gap:6px"><button class="btn" id="xFight">⚔️ В бой!</button>${DB ? '<button class="btn ghost" id="xParty">👥 Отряд</button>' : ''}</div></div>`;
+    const mb = $('xMiles');
+    MILES.forEach((m, i) => {
+      const reached = dmgNow() >= m.p * max, got = L.got.includes(i);
+      const c = D.createElement('button');
+      c.className = 'btn ' + (reached && !got ? '' : 'ghost');
+      c.style.cssText = 'padding:8px 2px;font-size:11px';
+      c.disabled = !reached || got;
+      c.textContent = got ? '✓' : reached ? `🎁 ${m.c}` : `🔒 ${Math.round(m.p * 100)}%`;
+      c.onclick = () => claim(i);
+      mb.appendChild(c);
+    });
+    $('xFight').onclick = openArena;
+    if ($('xParty')) $('xParty').onclick = partyModal;
+  }
+
+  /* ---------- стили арены ---------- */
+  const st = D.createElement('style');
+  st.textContent = `
+  .xa-wrap{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;background:var(--stage-grad);position:relative}
+  .xa-top{display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 6px}
+  .xa-hp{position:relative;margin:4px 16px;height:16px;border-radius:10px;background:rgba(255,255,255,.07);overflow:hidden;border:1px solid var(--border-color)}
+  .xa-hp>div{height:100%;width:100%;background:linear-gradient(90deg,#8a1c1c,#e0453a);transition:width .5s}
+  .xa-hp>span{position:absolute;inset:0;text-align:center;font-size:10px;font-weight:700;line-height:16px;text-shadow:0 1px 3px #000}
+  .xa-party{font-size:10px;padding:2px 16px;min-height:16px;color:var(--text-muted)}
+  .xa-stage{position:relative;flex:1;overflow:hidden}
+  .xa-bossbox{position:absolute;left:0;right:0;top:3%;display:flex;justify-content:center}
+  .xa-boss{font-size:min(40vw,170px);line-height:1;transform-origin:50% 100%;animation:xidle 3s ease-in-out infinite;filter:drop-shadow(0 20px 24px rgba(0,0,0,.7))}
+  .xa-boss img{width:min(70vw,300px);height:auto;display:block}
+  .xa-boss.rage{animation-duration:1.3s;filter:drop-shadow(0 0 22px #e0453a) drop-shadow(0 20px 24px rgba(0,0,0,.7))}
+  .xa-boss.tox{filter:hue-rotate(80deg) saturate(1.6) drop-shadow(0 0 16px #8f8)}
+  .xa-boss.hit{animation:xhit .38s}
+  .xa-boss.atk{animation:xatk .7s}
+  .xa-boss.dead{animation:xdead 1.2s forwards}
+  .xa-petbox{position:absolute;left:7%;bottom:3%;width:min(120px,28vw)}
+  .xa-pet{width:100%}
+  .xa-pet img{width:100%;display:block;animation:floatIdle 3s ease-in-out infinite;filter:drop-shadow(0 12px 14px rgba(0,0,0,.7))}
+  .xa-pet.dash{animation:xdash .45s}.xa-pet.cast{animation:xcast .6s}.xa-pet.hurt{animation:xhurt .5s}
+  .xa-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .xa-skills{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 12px calc(12px + env(safe-area-inset-bottom,0px))}
+  .xa-sk{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--border-color);color:var(--text-main);font-size:9px;cursor:pointer;transition:transform .1s}
+  .xa-sk .e{font-size:24px;line-height:1.1}.xa-sk .c{font-size:10px;font-weight:700;color:var(--text-muted);min-height:12px}
+  .xa-sk.off{opacity:.45}.xa-sk:active{transform:scale(.93)}
+  .xa-shake{animation:xsh .4s}
+  @keyframes xidle{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-10px) scale(1.03,.98)}}
+  @keyframes xhit{0%{transform:translateX(0);filter:brightness(2.4)}25%{transform:translateX(-14px) rotate(-3deg)}50%{transform:translateX(12px) rotate(3deg)}75%{transform:translateX(-6px)}100%{transform:none}}
+  @keyframes xatk{0%{transform:none}35%{transform:translateY(-14px) scale(.92)}60%{transform:translateY(70px) scale(1.35)}100%{transform:none}}
+  @keyframes xdead{0%{transform:none;opacity:1}30%{transform:translateX(10px) rotate(4deg)}100%{transform:translateY(90px) scale(.15) rotate(50deg);opacity:0;filter:blur(5px)}}
+  @keyframes xdash{0%{transform:none}35%{transform:translate(110px,-150px) scale(1.25) rotate(12deg)}100%{transform:none}}
+  @keyframes xcast{0%{transform:none}30%{transform:translateY(8px) scale(1.12,.88)}60%{transform:translateY(-26px) scale(.92,1.1)}100%{transform:none}}
+  @keyframes xhurt{0%,100%{transform:none}20%{transform:translateX(-12px) rotate(-6deg);filter:brightness(.6) sepia(1) hue-rotate(-30deg) saturate(4)}40%{transform:translateX(10px) rotate(5deg)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+  @keyframes xsh{0%,100%{transform:translate(0)}20%{transform:translate(-6px,3px)}40%{transform:translate(6px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,2px)}}`;
+  D.head.appendChild(st);
+
+  /* ---------- помощники для эффектов ---------- */
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const $a = id => D.getElementById(id);
+  function mkEl(txt, css) {
+    const s = D.createElement('span'); s.textContent = txt;
+    s.style.cssText = 'position:absolute;pointer-events:none;white-space:nowrap;' + css;
+    $a('xaFx').appendChild(s); return s;
+  }
+  function pos(node) {
+    const f = $a('xaFx').getBoundingClientRect(), r = node.getBoundingClientRect();
+    return { x: r.left - f.left + r.width / 2, y: r.top - f.top + r.height / 2 };
+  }
+  function play(node, frames, opts) {
+    return new Promise(res => { try { const a = node.animate(frames, opts); a.onfinish = () => res(); a.oncancel = () => res(); } catch (e) { res(); } });
+  }
+  function cls(node, c, ms) { if (!node) return; node.classList.remove(c); void node.offsetWidth; node.classList.add(c); setTimeout(() => node.classList.remove(c), ms); }
+  async function fly(txt, a, b, ms, size, arc) {
+    const s = mkEl(txt, `left:0;top:0;font-size:${size}px`);
+    const t = (p, sc) => `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${sc})`;
+    await play(s, [{ transform: t(a, 0.6) }, { transform: t({ x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - arc }, 1) }, { transform: t(b, 1.3) }], { duration: ms, easing: 'ease-in' });
+    s.remove();
+  }
+  function boom(p, list, n, spread) {
+    for (let i = 0; i < n; i++) {
+      const s = mkEl(list[i % list.length], `left:${p.x}px;top:${p.y}px;font-size:${16 + Math.random() * 16}px`);
+      const a = Math.random() * 6.28, d = spread * (0.4 + Math.random() * 0.6);
+      play(s, [{ transform: 'translate(-50%,-50%) scale(.5)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${Math.cos(a) * d}px),calc(-50% + ${Math.sin(a) * d}px)) scale(1.2)`, opacity: 0 }],
+        { duration: 600 + Math.random() * 400, easing: 'ease-out' }).then(() => s.remove());
+    }
+  }
+  function num(p, text, crit) {
+    const s = mkEl(text, `left:${p.x}px;top:${p.y}px;font-weight:800;font-size:${crit ? 30 : 22}px;color:${crit ? '#ffb347' : '#fff'};text-shadow:0 2px 8px rgba(0,0,0,.8)`);
+    play(s, [{ transform: 'translate(-50%,0) scale(.6)', opacity: 0 }, { transform: 'translate(-50%,-14px) scale(1.25)', opacity: 1, offset: 0.2 },
+      { transform: 'translate(-50%,-90px) scale(1)', opacity: 0 }], { duration: 900, easing: 'ease-out' }).then(() => s.remove());
+  }
+  function flash(color, ms) {
+    const s = D.createElement('div');
+    s.style.cssText = `position:absolute;inset:0;background:${color};pointer-events:none`;
+    $a('xaFx').appendChild(s);
+    play(s, [{ opacity: 1 }, { opacity: 0 }], { duration: ms }).then(() => s.remove());
+  }
+
+  /* ---------- арена ---------- */
+  let arena = null, atkTimer = 0, skTimer = 0, casting = false, deadShown = null;
+  const bossEl = () => $a('xaBoss'), petEl = () => $a('xaPet');
+  function paintBoss() {
+    const b = boss(), el = bossEl(), dead = dmgNow() >= maxHp();
+    deadShown = dead;
+    el.className = 'xa-boss' + (dead ? ' dead' : '');
+    el.innerHTML = b.img ? `<img src="${b.img}" alt="">` : b.e;
+    const im = el.querySelector('img'); if (im) im.onerror = () => { el.textContent = b.e; };
+  }
+  function pose(name) {
+    const b = boss(), im = bossEl().querySelector('img');
+    if (!im || !b[name]) return;
+    im.src = b[name]; setTimeout(() => { if (im.isConnected) im.src = b.img; }, 500);
+  }
+  function openArena() {
+    if (!currentPet || runaway || arena || D.querySelector('.overlay:not(.hidden)')) return;
+    refresh();
+    arena = D.createElement('div'); arena.className = 'overlay'; arena.style.zIndex = 310;
+    arena.innerHTML = `<div class="xa-wrap" id="xaWrap">
+      <div class="xa-top"><div><b id="xaName"></b><div class="muted" id="xaSub" style="font-size:10px"></div></div>
+        <div style="display:flex;gap:6px;align-items:center"><button class="btn" id="xaClaim" style="width:auto;padding:6px 10px;font-size:11px;display:none"></button>
+        <button class="icon-btn" id="xaClose">✕</button></div></div>
+      <div class="xa-hp"><div id="xaHp"></div><span id="xaHpTxt"></span></div>
+      <div class="xa-party" id="xaParty"></div>
+      <div class="xa-stage"><div class="xa-bossbox"><div class="xa-boss" id="xaBoss"></div></div>
+        <div class="xa-petbox"><div class="xa-pet" id="xaPet"><img alt=""></div></div><div class="xa-fx" id="xaFx"></div></div>
+      <div class="xa-skills" id="xaSkills"></div></div>`;
+    D.body.appendChild(arena);
+    petEl().querySelector('img').src = window.petThumb ? window.petThumb(currentPet) : petImgSrc();
+    $a('xaClose').onclick = closeArena;
+    $a('xaClaim').onclick = claimAll;
+    const box = $a('xaSkills');
+    SKILLS.forEach(s => {
+      const b = D.createElement('button'); b.className = 'xa-sk'; b.dataset.k = s.k;
+      b.innerHTML = `<span class="e">${s.e}</span><span>${s.n}</span><span class="c"></span>`;
+      b.onclick = () => cast(s); box.appendChild(b);
+    });
+    const r = D.createElement('button'); r.className = 'xa-sk';
+    r.innerHTML = `<span class="e">⏳</span><span>Сброс</span><span class="c">${RESET_PRICE} 🪙</span>`;
+    r.onclick = resetCd; box.appendChild(r);
+    paintBoss(); renderArena();
+    skTimer = setInterval(tickSkills, 250);
+    atkTimer = setTimeout(function loop() { bossAttack(); atkTimer = setTimeout(loop, rnd(6000, 10000)); }, 4000);
+    poll();
+  }
+  function closeArena() {
+    if (!arena) return;
+    clearInterval(skTimer); clearTimeout(atkTimer);
+    arena.remove(); arena = null; casting = false;
+    renderBoss(); updateUI();
+  }
+  function renderArena() {
+    if (!arena) return;
+    refresh();
+    const b = boss(), s = wk(), max = maxHp(), cur = dmgNow(), hp = Math.max(0, max - cur), dead = hp <= 0;
+    $a('xaName').textContent = `${b.e} ${b.n}`;
+    $a('xaSub').textContent = `Слабость: ${s.e} ${s.n} ×${WEAK_MULT} · ещё ${timeLeft()}`;
+    $a('xaHp').style.width = (hp / max * 100) + '%';
+    $a('xaHpTxt').textContent = dead ? 'ПОВЕРЖЕН' : `${hp} / ${max}`;
+    const ps = Object.values(net.players || {}).sort((x, y) => (y.d || 0) - (x.d || 0)).slice(0, 3);
+    const bf = buffUntil() - Date.now();
+    $a('xaParty').textContent = (inParty() ? `👥 ${members()} в отряде · ` + ps.map(p => `${p.n || '?'} ${p.d || 0}`).join(' · ') : 'Соло-бой · зови друзей в отряд 👥')
+      + (bf > 0 ? `   📣 +25% ещё ${Math.ceil(bf / 1000)} с` : '');
+    const n = milesReached().length, cb = $a('xaClaim');
+    cb.style.display = n ? '' : 'none'; cb.textContent = `🎁 Забрать (${n})`;
+    if (deadShown !== dead && !dead) paintBoss();
+    if (!dead) bossEl().classList.toggle('rage', hp / max < 0.25);
+    tickSkills();
+  }
+  function tickSkills() {
+    if (!arena) return;
+    arena.querySelectorAll('.xa-sk[data-k]').forEach(b => {
+      const s = SKILLS.find(x => x.k === b.dataset.k), left = Math.ceil(((CD[s.k] || 0) - Date.now()) / 1000), locked = lvl < s.lvl;
+      b.classList.toggle('off', locked || left > 0);
+      b.lastChild.textContent = locked ? `🔒 ур. ${s.lvl}` : left > 0 ? (left >= 60 ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : left + ' с') : '';
+    });
+    const bf = buffUntil() - Date.now();
+    if (bf <= 0 && arena) { /* бафф закончился */ }
+  }
+  function resetCd() {
+    if (!arena) return;
+    if (coins < RESET_PRICE) { toast('Недостаточно монет 🪙'); hap('error'); return; }
+    coins -= RESET_PRICE; CD = {}; ls.setItem('gothic_cd', '{}');
+    saveData(); updateStats(); tickSkills(); toast('⏳ Все скиллы готовы'); hap('success');
+    boom(pos(petEl()), ['✨', '⏳'], 8, 80);
+  }
+
+  /* ---------- удары и скиллы ---------- */
+  function strikeBoss(base, k) {
+    const crit = Math.random() < CRIT, weak = boss().weak === k;
+    const d = Math.round(base * (crit ? 2 : 1) * buffMult() * (weak ? WEAK_MULT : 1));
+    const p = pos(bossEl());
+    num({ x: p.x + rnd(-40, 40), y: p.y - 30 + rnd(-20, 20) }, `${crit ? 'КРИТ ' : ''}-${d}${weak ? ' ↑' : ''}`, crit);
+    cls(bossEl(), 'hit', 380); pose('hurt'); blip(110 + rnd(0, 90), 0.12); hap(crit ? 'medium' : 'light');
+    addDamage(d, k);
+  }
+  const shake = () => cls($a('xaWrap'), 'xa-shake', 400);
+  const FX = {
+    async punch(s) {
+      await wait(200);
+      boom(pos(bossEl()), ['💥', '✨'], 8, 90); shake();
+      strikeBoss(s.dmg(lvl), 'punch');
+    },
+    async fire(s) {
+      await fly('🔥', pos(petEl()), pos(bossEl()), 650, 46, 130);
+      boom(pos(bossEl()), ['🔥', '💥', '✨'], 12, 110); shake();
+      strikeBoss(s.dmg(lvl), 'fire');
+    },
+    async bolt(s) {
+      for (let i = 0; i < s.hits; i++) {
+        if (!arena) return;
+        const p = pos(bossEl());
+        flash('rgba(255,240,120,.4)', 140);
+        const z = mkEl('⚡', `left:${p.x + rnd(-40, 40)}px;top:${p.y - 30}px;font-size:70px`);
+        play(z, [{ transform: 'translate(-50%,-80%) scale(.4)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.3)', opacity: 0 }], { duration: 400 }).then(() => z.remove());
+        shake(); strikeBoss(s.dmg(lvl), 'bolt');
+        await wait(230);
+      }
+    },
+    async poison(s) {
+      const el = bossEl(); el.classList.add('tox');
+      for (let i = 0; i < s.ticks; i++) {
+        if (!arena) return;
+        const p = pos(bossEl());
+        boom({ x: p.x + rnd(-40, 40), y: p.y + 20 }, ['☣️', '🫧', '💚'], 3, 40);
+        await wait(650);
+        if (!arena) return;
+        strikeBoss(s.dmg(lvl), 'poison');
+      }
+      if (arena) el.classList.remove('tox');
+    },
+    async moon(s) {
+      const p = pos(bossEl());
+      flash('rgba(10,10,40,.45)', 900);
+      const beam = D.createElement('div');
+      beam.style.cssText = `position:absolute;left:${p.x}px;top:0;width:90px;height:${p.y + 50}px;margin-left:-45px;background:linear-gradient(180deg,rgba(200,220,255,0),rgba(215,230,255,.95));border-radius:0 0 50px 50px;filter:blur(2px);transform-origin:top;pointer-events:none`;
+      $a('xaFx').appendChild(beam);
+      play(beam, [{ transform: 'scaleY(0)', opacity: 0.3 }, { transform: 'scaleY(1)', opacity: 1, offset: 0.35 }, { transform: 'scaleY(1)', opacity: 0 }], { duration: 1000 }).then(() => beam.remove());
+      await wait(400);
+      boom(p, ['🌙', '✨', '⭐'], 16, 130); shake();
+      strikeBoss(s.dmg(lvl), 'moon');
+    },
+    async cry() {
+      const p = pos(petEl());
+      for (let i = 0; i < 3; i++) {
+        const r = D.createElement('div');
+        r.style.cssText = `position:absolute;left:${p.x}px;top:${p.y}px;width:60px;height:60px;margin:-30px 0 0 -30px;border:3px solid var(--accent2);border-radius:50%;pointer-events:none`;
+        $a('xaFx').appendChild(r);
+        play(r, [{ transform: 'scale(.3)', opacity: 0.9 }, { transform: 'scale(4)', opacity: 0 }], { duration: 800, delay: i * 180 }).then(() => r.remove());
+      }
+      const until = Date.now() + BUFF_SEC * 1000; localBuff = until;
+      if (inParty()) patch(wpath(), { buff: until }).catch(() => {});
+      blip(520, 0.15); setTimeout(() => blip(660, 0.2), 120);
+      num({ x: p.x, y: p.y - 70 }, '📣 +25% урона!', true);
+      renderArena();
+    }
+  };
+  async function cast(s) {
+    refresh();
+    if (!arena || casting) return;
+    if (lvl < s.lvl) { toast(`Откроется на ${s.lvl} уровне`); return; }
+    if (dmgNow() >= maxHp()) { toast('Босс уже повержен'); return; }
+    if ((CD[s.k] || 0) > Date.now()) return;
+    casting = true; setTimeout(() => { casting = false; }, 450);
+    CD[s.k] = Date.now() + s.cd * 1000; ls.setItem('gothic_cd', JSON.stringify(CD)); tickSkills();
+    cls(petEl(), s.k === 'punch' ? 'dash' : 'cast', 650);
+    try { await FX[s.k](s); } catch (e) {}
+  }
+  function bossAttack() {
+    if (!arena || dmgNow() >= maxHp()) return;
+    pose('atk'); cls(bossEl(), 'atk', 700);
+    setTimeout(() => {
+      if (!arena) return;
+      flash('rgba(224,69,58,.35)', 350); shake(); cls(petEl(), 'hurt', 500); blip(110, 0.25); hap('error');
+      const p = pos(petEl()); num({ x: p.x, y: p.y - 50 }, 'Ай!', false);
+    }, 380);
+  }
+  function remoteHit(p) {
+    if (!arena || !p.last) return;
+    const s = SKILLS.find(x => x.k === p.last.s), e = s ? s.e : '💥', b = pos(bossEl());
+    num({ x: b.x + rnd(-50, 50), y: b.y - 60 }, `${p.n || 'Друг'} ${e} -${p.last.d}`, false);
+    cls(bossEl(), 'hit', 380); boom(b, [e, '✨'], 6, 90); blip(180 + rnd(0, 80), 0.1);
+  }
+  function victory() {
+    toast(`🏆 ${boss().n} повержен! Забери награды в «Досуге»`);
+    if (!arena) return;
+    setTimeout(() => {
+      if (!arena) return;
+      const b = pos(bossEl());
+      bossEl().className = 'xa-boss dead'; pose('dead'); deadShown = true;
+      boom(b, ['💥', '✨', '⭐', '🎉'], 28, 210); flash('rgba(255,255,255,.6)', 600); shake();
+      num({ x: b.x, y: b.y - 60 }, '🏆 ПОБЕДА!', true);
+      [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.2), i * 140));
+      hap('success');
+    }, 500);
+  }
+
+  /* ---------- отряд ---------- */
+  function modal(inner) {
+    const o = D.createElement('div');
+    o.className = 'overlay modal'; o.style.zIndex = 320;
+    o.innerHTML = `<div class="daily-card">${inner}</div>`;
+    D.body.appendChild(o); return o;
+  }
+  const inputCss = 'width:100%;padding:12px;margin:8px 0;background:rgba(255,255,255,.04);border:1px solid var(--border-color);color:var(--text-main);border-radius:12px;font-size:14px;text-align:center;outline:none;text-transform:uppercase';
+  function setParty(code) {
+    ls.setItem('gothic_party', code); net = {}; seen = {};
+    register().then(poll); renderBoss(); if (arena) renderArena();
+  }
+  function partyModal() {
+    if (!DB) return;
+    const code = party();
+    let o;
+    if (!code) {
+      o = modal(`<h3>👥 Отряд</h3><div class="sub">Бейте босса вместе: у всех общее здоровье босса и общий урон</div>
+        <button class="btn" data-c>Создать отряд</button>
+        <input maxlength="8" placeholder="КОД ОТРЯДА" style="${inputCss}">
+        <button class="btn ghost" data-j>Вступить по коду</button><button class="btn ghost" data-x style="margin-top:8px">Закрыть</button>`);
+      o.querySelector('[data-c]').onclick = () => {
+        const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c = '';
+        for (let i = 0; i < 5; i++) c += A[Math.floor(Math.random() * A.length)];
+        o.remove(); setParty(c); setTimeout(partyModal, 400);
+      };
+      o.querySelector('[data-j]').onclick = () => {
+        const c = o.querySelector('input').value.trim().toUpperCase();
+        if (!/^[A-Z0-9]{3,8}$/.test(c)) { toast('Код: 3–8 букв или цифр'); return; }
+        o.remove(); setParty(c); setTimeout(partyModal, 400);
+      };
+    } else {
+      const ps = Object.values(net.players || {}).sort((x, y) => (y.d || 0) - (x.d || 0));
+      o = modal(`<h3>Отряд ${code}</h3><div class="sub">Участников: ${members()} · общий урон: ${net.dmg || 0}</div>
+        <div style="margin-bottom:12px">${ps.map(p => `<div class="tier" style="margin-bottom:4px"><span>${p.n || '?'}</span><b>${p.d || 0}</b></div>`).join('')}</div>
+        <button class="btn" data-s>📨 Позвать в отряд</button><button class="btn ghost" data-l style="margin-top:8px">Выйти из отряда</button>
+        <button class="btn ghost" data-x style="margin-top:8px">Закрыть</button>`);
+      o.querySelector('[data-s]').onclick = () => {
+        if (!uid) { toast('Открой игру через Telegram — тогда ссылка заработает'); return; }
+        const u = `https://t.me/share/url?url=${encodeURIComponent(`${APP}?startapp=p_${code}`)}&text=${encodeURIComponent(`Бей босса «${boss().n}» ${boss().e} вместе со мной! Отряд ${code} 🖤`)}`;
+        if (tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, '_blank');
+      };
+      o.querySelector('[data-l]').onclick = () => { ls.removeItem('gothic_party'); net = {}; o.remove(); renderBoss(); if (arena) renderArena(); };
+    }
+    o.querySelector('[data-x]').onclick = () => o.remove();
+  }
+
+  // друг позвал в отряд по ссылке
+  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  if (DB && sp && /^p_[A-Za-z0-9]{3,8}$/.test(sp) && ls.getItem('gothic_party_seen') !== sp) {
+    const w = setInterval(() => {
+      if (!currentPet || !ls.getItem(`gothic_${currentPet}_name`) || D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden')) return;
+      clearInterval(w);
+      const code = sp.slice(2).toUpperCase();
+      ls.setItem('gothic_party_seen', sp);
+      if (party() === code) return;
+      const o = modal(`<div style="font-size:56px">${boss().e}</div><h3>Тебя зовут в отряд!</h3>
+        <div class="sub">Бей босса «${boss().n}» вместе с друзьями. Отряд ${code}</div>
+        <button class="btn" data-y>Вступить</button><button class="btn ghost" data-n style="margin-top:8px">Позже</button>`);
+      o.querySelector('[data-n]').onclick = () => o.remove();
+      o.querySelector('[data-y]').onclick = () => { o.remove(); setParty(code); toast('Ты в отряде 👥'); };
+    }, 1500);
+  }
+
+  /* ---------- урон от мини-игр ---------- */
+  const _fg = finishGame;
+  finishGame = function (id, res) {
+    refresh();
+    let dmg = 0;
+    if (dmgNow() < maxHp() && GAME_DMG[id]) dmg = Math.min(2500, Math.round(res.score * GAME_DMG[id] * buffMult()));
+    _fg(id, res);
+    if (dmg > 0) {
+      addDamage(dmg, 'game');
+      const box = D.querySelector('#gameBody .result');
+      if (box) {
+        const p = D.createElement('p');
+        p.style.cssText = 'color:var(--accent2);font-weight:600';
+        p.textContent = `💥 Босс получил ${dmg} урона`;
+        box.insertBefore(p, box.querySelector('button'));
+      }
+    }
+  };
 
   /* ---------- подключение ---------- */
   const _ui = updateUI;
   updateUI = function () { _ui(); renderBoss(); };
   setInterval(renderBoss, 60000);
   renderBoss();
+  if (inParty()) register().then(poll);
 })();
 
     </script>
