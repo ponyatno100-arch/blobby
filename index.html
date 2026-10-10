@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gothic Pet</title>
+    <script>
+        /* ССЫЛКА НА ТВОЁ МИНИ-ПРИЛОЖЕНИЕ — по ней друзья заходят в игру.
+           Если в BotFather включён Main Mini App, оставь как есть.
+           Если создала приложение через /newapp, впиши так: 'https://t.me/blobbypet_bot/короткое_имя' */
+        window.GOTHIC_APP_LINK = 'https://t.me/blobbypet_bot';
+    </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1886,10 +1892,9 @@
   async function registerRef() {
     const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
     if (!tg.initData || !sp || !sp.startsWith('ref') || ls.getItem('gothic_ref_done')) return;
-    try {
-      const r = await post('/api/referral', { ref: sp });
-      if (r.ok) { ls.setItem('gothic_ref_done', '1'); coins += 300; saveData(); updateUI(); toast('🎁 Бонус за приглашение: +300 🪙'); }
-    } catch (e) {}
+    ls.setItem('gothic_ref_done', '1');
+    try { await post('/api/referral', { ref: sp }); } catch (e) {}
+    coins += 300; saveData(); updateUI(); toast('🎁 Бонус за приглашение: +300 🪙');
   }
   async function syncFriends() {
     if (!tg.initData) return;
@@ -1974,7 +1979,7 @@
    Подключать ПОСЛЕ addon.js. Файлы со звуками не нужны — всё синтезируется. */
 (function () {
   const D = document, ls = localStorage;
-  const BOT = 'https://t.me/blobbypet_bot';          // ссылка на твоего бота
+  const BOT = window.GOTHIC_APP_LINK || 'https://t.me/blobbypet_bot';          // ссылка на твоего бота
   const link = p => `${BOT}?startapp=${p}`;           // нужен Main Mini App в BotFather
   const uid = (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 0;
   const MUSIC_VOL = 0.8, VOICE_VOL = 0.4;             // громкость музыки / голосов
@@ -2734,7 +2739,7 @@
 /* Gothic Pet — аддон 6: новые мини-игры (бег, ритм, змейка) и вызовы друзьям */
 (function () {
   const D = document, ls = localStorage;
-  const BOT = 'https://t.me/blobbypet_bot';
+  const BOT = window.GOTHIC_APP_LINK || 'https://t.me/blobbypet_bot';
   const uid = (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 0;
   const CHALLENGE_BONUS = 100;   // бонус за победу над результатом друга
 
@@ -2983,6 +2988,189 @@
   }
 
   if (currentPet) updateUI();
+})();
+
+    </script>
+    <script>
+/* Gothic Pet — аддон 7: босс недели и удобное приглашение друзей */
+(function () {
+  const D = document, ls = localStorage;
+  const APP = window.GOTHIC_APP_LINK || 'https://t.me/blobbypet_bot';
+  const uid = (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 0;
+
+  /* ============ НАСТРОЙКИ БОССА ============ */
+  const BOSS_HP = 4000;
+  const STRIKE_BASE = 100, STRIKE_LVL = 15;   // бесплатный удар питомца раз в день: 100 + 15 за каждый уровень
+  const FRIEND_STRIKE = 250;                  // удар-подарок от друга
+  const BOSSES = [
+    { n: 'Дедлайн-демон',       e: '😈' },
+    { n: 'Пожиратель печенья',  e: '👹' },
+    { n: 'Теневой дракон',      e: '🐲' },
+    { n: 'Король спама',        e: '👑' },
+    { n: 'Туманный кракен',     e: '🐙' },
+    { n: 'Лунный кошмар',       e: '🌑' }
+  ];
+  const WEAK = ['dash', 'rhythm', 'catch', 'snake', 'whack', 'memory'];   // слабость недели (урон ×2)
+  const GAME_DMG = { catch: 12, memory: 15, whack: 12, dash: 2, rhythm: 3, snake: 12 };   // урон за 1 очко
+  const MILES = [                              // награды за прогресс
+    { p: 0.25, c: 150 },
+    { p: 0.5,  c: 250, item: 'cake' },
+    { p: 0.75, c: 350 },
+    { p: 1,    c: 700, box: true }             // за победу ещё и бесплатная коробка
+  ];
+  /* ========================================= */
+
+  /* ---------- неделя и состояние ---------- */
+  const off = () => new Date().getTimezoneOffset();
+  const week = () => Math.floor((Math.floor((Date.now() - off() * 60000) / 864e5) + 3) / 7);
+  const endMs = w => ((w + 1) * 7 - 3) * 864e5 + off() * 60000;
+  const fresh = () => ({ w: week(), dmg: 0, got: [], tok: 0, free: '', from: [] });
+  let S;
+  try { S = JSON.parse(ls.getItem('gothic_boss') || 'null'); } catch (e) { S = null; }
+  if (!S || typeof S.w !== 'number') S = fresh();
+  function refresh() { if (S.w !== week()) S = fresh(); }
+  const save = () => ls.setItem('gothic_boss', JSON.stringify(S));
+  const boss = () => BOSSES[S.w % BOSSES.length];
+  const weak = () => WEAK[S.w % WEAK.length];
+  const kills = () => parseInt(ls.getItem('gothic_boss_kills')) || 0;
+
+  function addDmg(n) {
+    refresh();
+    const was = S.dmg;
+    S.dmg = Math.min(BOSS_HP, S.dmg + n); save(); renderBoss();
+    if (was < BOSS_HP && S.dmg >= BOSS_HP) toast(`🏆 ${boss().n} повержен! Забери награды в «Досуге»`);
+  }
+  function strike() {
+    refresh();
+    if (!currentPet || runaway) return;
+    if (S.dmg >= BOSS_HP) { toast('Босс уже повержен — жди следующего'); return; }
+    let d;
+    if (S.free !== todayStr()) { S.free = todayStr(); d = STRIKE_BASE + lvl * STRIKE_LVL; }
+    else if (S.tok > 0) { S.tok--; d = FRIEND_STRIKE; }
+    else { toast('Ударов нет: сыграй в мини-игру или позови друга'); return; }
+    burstAtPet(['💥', '⚡', '✨'], 14, 140); playBodyAnim('hop'); hap('success');
+    toast(`💥 ${d} урона`);
+    addDmg(d);
+  }
+  function claim(i) {
+    const m = MILES[i];
+    if (S.dmg < m.p * BOSS_HP || S.got.includes(i)) return;
+    S.got.push(i); save();
+    coins += m.c;
+    if (m.item) inventory[m.item] = (inventory[m.item] || 0) + 1;
+    if (m.box) { ls.removeItem('gothic_box_day'); ls.setItem('gothic_boss_kills', kills() + 1); }
+    toast(`🎁 +${m.c} 🪙${m.item ? ' и ' + splitName(itemsMeta[m.item].name)[0] : ''}${m.box ? ' + бесплатная коробка' : ''}`);
+    hap('success'); burstAtPet(['🪙', '✨', '🎁'], 14, 140);
+    addExp(m.box ? 300 : 80);
+    renderBoss();
+  }
+  function call() {
+    if (!uid) { toast('Открой игру через Telegram — тогда ссылка заработает'); return; }
+    const url = `${APP}?startapp=b_${S.w}_${uid}`;
+    const text = `Помоги победить босса недели «${boss().n}» ${boss().e} — вместе легче! 🖤`;
+    const u = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    if (tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, '_blank');
+  }
+
+  /* ---------- карточка босса во вкладке «Досуг» ---------- */
+  $('tab-play').insertAdjacentHTML('afterbegin', '<div id="xBoss"></div>');
+  function timeLeft() {
+    const ms = Math.max(0, endMs(S.w) - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+    return d > 0 ? `${d} д ${h} ч` : `${h} ч`;
+  }
+  function renderBoss() {
+    refresh();
+    const box = $('xBoss'); if (!box) return;
+    const b = boss(), wk = GAMES[weak()], hp = BOSS_HP - S.dmg, dead = hp <= 0;
+    const freeLeft = S.free !== todayStr();
+    box.innerHTML = `<div class="tier" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px"><div style="font-size:38px">${b.e}</div>
+        <div style="flex:1"><b>Босс недели: ${b.n}</b>
+        <div class="muted" style="font-size:10px">Слабость: ${wk ? wk.emoji + ' ' + wk.title : ''} (урон ×2) · ещё ${timeLeft()}</div></div></div>
+      <div class="progress-bar"><div class="progress-fill f-hunger" style="width:${Math.max(0, hp / BOSS_HP * 100)}%"></div></div>
+      <div class="muted" style="font-size:10px;display:flex;justify-content:space-between"><span>${dead ? 'Повержен! 🏆' : `HP ${hp} / ${BOSS_HP}`}</span><span>Побеждено боссов: ${kills()}</span></div>
+      <div style="display:flex;gap:6px" id="xMiles"></div>
+      <div style="display:flex;gap:6px"><button class="btn" id="xStrike" ${dead || (!freeLeft && !S.tok) ? 'disabled' : ''}>⚔️ Удар${freeLeft ? ' (бесплатно)' : S.tok ? ' ×' + S.tok : ''}</button>
+        <button class="btn ghost" id="xCall">📣 Позвать друга</button></div></div>`;
+    const mb = $('xMiles');
+    MILES.forEach((m, i) => {
+      const reached = S.dmg >= m.p * BOSS_HP, got = S.got.includes(i);
+      const c = D.createElement('button');
+      c.className = 'btn ' + (reached && !got ? '' : 'ghost');
+      c.style.cssText = 'padding:8px 2px;font-size:11px';
+      c.disabled = !reached || got;
+      c.textContent = got ? '✓' : reached ? `🎁 ${m.c}` : `🔒 ${Math.round(m.p * 100)}%`;
+      c.onclick = () => claim(i);
+      mb.appendChild(c);
+    });
+    $('xStrike').onclick = strike;
+    $('xCall').onclick = call;
+  }
+
+  /* ---------- урон от мини-игр ---------- */
+  const _fg = finishGame;
+  finishGame = function (id, res) {
+    refresh();
+    let dmg = 0;
+    if (S.dmg < BOSS_HP && GAME_DMG[id]) dmg = Math.round(res.score * GAME_DMG[id] * (id === weak() ? 2 : 1));
+    _fg(id, res);
+    if (dmg > 0) {
+      addDmg(dmg);
+      const box = D.querySelector('#gameBody .result');
+      if (box) {
+        const p = D.createElement('p');
+        p.style.cssText = 'color:var(--accent2);font-weight:600';
+        p.textContent = `💥 Босс получил ${dmg} урона${id === weak() ? ' (слабость ×2!)' : ''}`;
+        box.insertBefore(p, box.querySelector('button'));
+      }
+    }
+  };
+
+  /* ---------- друг позвал на босса ---------- */
+  const sp = tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  if (sp && /^b_/.test(sp)) {
+    const w = setInterval(() => {
+      if (!currentPet || !ls.getItem(`gothic_${currentPet}_name`) || D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden')) return;
+      clearInterval(w);
+      refresh();
+      const [, wk, from] = sp.split('_');
+      if (parseInt(wk) !== S.w || (uid && String(from) === String(uid)) || S.from.includes(from)) return;
+      S.from.push(from); S.tok++; save(); renderBoss();
+      const o = D.createElement('div');
+      o.className = 'overlay modal';
+      o.innerHTML = `<div class="daily-card"><div style="font-size:56px">${boss().e}</div><h3>Друг зовёт на босса!</h3>
+        <div class="sub">«${boss().n}» ещё жив. Тебе подарили удар на ${FRIEND_STRIKE} урона.</div>
+        <button class="btn" data-y>К боссу</button><button class="btn ghost" data-n style="margin-top:8px">Позже</button></div>`;
+      D.body.appendChild(o);
+      o.querySelector('[data-n]').onclick = () => o.remove();
+      o.querySelector('[data-y]').onclick = () => { o.remove(); switchTab('play', D.querySelectorAll('.nav-item')[2]); };
+    }, 1500);
+  }
+
+  /* ---------- приглашение друзей: заметнее и надёжнее ---------- */
+  const inv = $('xShare');
+  if (inv) {
+    inv.className = 'btn'; inv.textContent = '📨 Пригласить друга'; inv.style.marginBottom = '8px';
+    $('tab-friends').querySelector('p').insertAdjacentElement('afterend', inv);
+    inv.onclick = () => {
+      if (!uid) { toast('Открой игру через Telegram — тогда ссылка заработает'); return; }
+      const n = ls.getItem(`gothic_${currentPet}_name`) || petsData[currentPet].name;
+      const u = `https://t.me/share/url?url=${encodeURIComponent(APP + '?startapp=ref' + uid)}&text=${encodeURIComponent(`Заходи ко мне в игру! Мой ${n} уже ${lvl} уровня 🖤`)}`;
+      if (tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, '_blank');
+    };
+  }
+  if (!uid) $('refLink').value = APP;
+  copyRef = function () {
+    const i = $('refLink'), done = () => { toast('Ссылка скопирована'); hap('success'); };
+    const old = () => { i.select(); try { D.execCommand('copy'); } catch (e) {} done(); };
+    try { navigator.clipboard.writeText(i.value).then(done, old); } catch (e) { old(); }
+  };
+
+  /* ---------- подключение ---------- */
+  const _ui = updateUI;
+  updateUI = function () { _ui(); renderBoss(); };
+  setInterval(renderBoss, 60000);
+  renderBoss();
 })();
 
     </script>
