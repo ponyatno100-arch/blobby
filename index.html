@@ -4174,9 +4174,9 @@
      pvb — область для маленькой иконки в магазине (для широких вещей),
      t — реакция при тапе: e — эмодзи-частицы, st — что подрастает (mood / fun / hunger) */
   const SLOTS = {
-    ceil:   { t: 'Потолок', css: 'left:50%;top:0;transform:translateX(-50%)' },
-    winL:   { t: 'Окно',    css: 'left:5%;top:12%' },
-    wallR:  { t: 'Стена',   css: 'right:6%;top:12%' },
+    ceil:   { t: 'Потолок', css: 'left:50%;top:58px;transform:translateX(-50%)' },
+    winL:   { t: 'Окно',    css: 'left:5%;top:100px' },
+    wallR:  { t: 'Стена',   css: 'right:6%;top:100px' },
     floorL: { t: 'Слева',   css: 'left:3%;bottom:24%' },
     floorR: { t: 'Справа',  css: 'right:4%;bottom:24%' },
     rug:    { t: 'Ковёр',   css: 'left:50%;bottom:19%;transform:translateX(-50%)' }
@@ -4229,7 +4229,7 @@
   const cozy = () => { const r = roomState(); return ITEMS.reduce((a, i) => a + (r[i.s] === i.id ? i.cz : 0), 0); };
 
   // слой с комнатой — за питомцем
-  $('stage').insertAdjacentHTML('afterbegin', '<div id="xRoom" style="position:absolute;top:0;left:0;right:0;bottom:170px;z-index:0;pointer-events:none"></div>');
+  $('stage').insertAdjacentHTML('afterbegin', '<div id="xRoom" style="position:absolute;top:0;left:0;right:0;bottom:calc(30vh + 104px + env(safe-area-inset-bottom,0px));z-index:0;pointer-events:none"></div>');
   const BACKDROP =
     '<div style="position:absolute;left:0;right:0;top:0;bottom:27%;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 26px,rgba(255,255,255,0) 26px 52px)"></div>' +
     '<div style="position:absolute;left:0;right:0;bottom:27%;height:8px;background:rgba(255,255,255,.09);border-top:1px solid rgba(255,255,255,.08)"></div>' +
