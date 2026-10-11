@@ -4051,5 +4051,207 @@
 })();
 
 </script>
+    <script>
+/* Gothic Pet — аддон 10: комната питомца (мебель, копилка) и ежедневные задания.
+   Вставить ПОСЛЕ скрипта «аддон 9» и ПЕРЕД </body>. */
+(function () {
+  const D = document, ls = localStorage;
+
+  /* ============ НАСТРОЙКИ ============ */
+  const PIG_RATE = 2;      // монет в час за 1 очко уюта
+  const PIG_CAP_H = 6;     // копилка копит не дольше стольких часов
+  const TAP_COOLDOWN = 60; // сек между бонусами за тап по мебели
+  const QUEST_BONUS = 150; // награда за все 3 задания дня
+  /* =================================== */
+
+  /* ---------- каталог мебели ----------
+     s — место, n — название, ic — значок в магазине, p — цена, cz — очки уюта,
+     h — как выглядит в комнате (HTML; потом можно заменить на <img src="файл.png" style="width:..">),
+     t — реакция при тапе: e — эмодзи, st — что подрастает (mood / fun / hunger) */
+  const win = (g, e) => `<div style="width:62px;height:78px;border:4px solid #6b5a8e;border-radius:10px 10px 4px 4px;background:${g};display:flex;align-items:center;justify-content:center;font-size:26px">${e}</div>`;
+  const rug = c => `<div style="width:56vw;max-width:260px;height:56px;border-radius:50%;background:radial-gradient(ellipse,${c} 0%,transparent 72%);opacity:.9"></div>`;
+  const big = e => `<div style="font-size:54px;line-height:1">${e}</div>`;
+  const SLOTS = {
+    ceil:   { t: 'Потолок', css: 'left:50%;top:1%;transform:translateX(-50%)' },
+    winL:   { t: 'Окно',    css: 'left:4%;top:9%' },
+    wallR:  { t: 'Стена',   css: 'right:5%;top:10%' },
+    floorL: { t: 'Слева',   css: 'left:2%;bottom:24%' },
+    floorR: { t: 'Справа',  css: 'right:3%;bottom:24%' },
+    rug:    { t: 'Ковёр',   css: 'left:50%;bottom:22%;transform:translateX(-50%)' }
+  };
+  const ITEMS = [
+    { id: 'lights', s: 'ceil', n: 'Гирлянда', ic: '💡', p: 300, cz: 2, h: '<div style="font-size:20px;letter-spacing:16px">💡✨💡✨💡</div>', t: { e: ['✨'] } },
+    { id: 'webs',   s: 'ceil', n: 'Паутина',  ic: '🕸️', p: 400, cz: 2, h: '<div style="font-size:30px;letter-spacing:90px">🕸️🕷️🕸️</div>', t: { e: ['🕷️'] } },
+    { id: 'moonwin', s: 'winL', n: 'Лунное окно',  ic: '🌙', p: 400, cz: 2, h: win('linear-gradient(#1a1840,#0b0a14)', '🌙'), t: { e: ['🌙', '✨'] } },
+    { id: 'sakwin',  s: 'winL', n: 'Окно в сакуру', ic: '🌸', p: 500, cz: 2, h: win('linear-gradient(#5b2a4a,#1c0f1a)', '🌸'), t: { e: ['🌸'] } },
+    { id: 'neonwin', s: 'winL', n: 'Неон-город',   ic: '🏙️', p: 600, cz: 3, h: win('linear-gradient(#3b1a6b,#0b2a4a)', '🏙️'), t: { e: ['⚡', '💜'] } },
+    { id: 'poster', s: 'wallR', n: 'Постер', ic: '🖼️', p: 250, cz: 1, h: '<div style="width:56px;height:72px;border:3px solid #ddd;border-radius:4px;background:#1b1626;display:flex;align-items:center;justify-content:center;font-size:30px">👻</div>', t: { e: ['👻'] } },
+    { id: 'guitar', s: 'wallR', n: 'Гитара', ic: '🎸', p: 500, cz: 2, h: big('🎸'), t: { e: ['🎵', '🎶'], st: 'fun', melody: true } },
+    { id: 'clock',  s: 'wallR', n: 'Часы',   ic: '🕰️', p: 350, cz: 1, h: big('🕰️'), t: { e: ['⏰'], time: true } },
+    { id: 'bed',  s: 'floorL', n: 'Лежанка', ic: '🛏️', p: 600, cz: 3, h: '<div style="width:92px;height:44px;border-radius:24px;background:linear-gradient(#6a4a86,#3d2a55);display:flex;align-items:center;justify-content:center;font-size:20px">💤</div>', t: { e: ['💤'], st: 'mood' } },
+    { id: 'pouf', s: 'floorL', n: 'Пуфик',   ic: '🔴', p: 400, cz: 2, h: '<div style="width:66px;height:46px;border-radius:50% 50% 14px 14px;background:linear-gradient(#c0394a,#7a1c24)"></div>', t: { e: ['💖'], st: 'mood' } },
+    { id: 'bowl', s: 'floorL', n: 'Миска',   ic: '🥣', p: 300, cz: 1, h: big('🥣'), t: { e: ['🍪'], st: 'hunger' } },
+    { id: 'plant', s: 'floorR', n: 'Растение',   ic: '🪴', p: 350, cz: 2, h: big('🪴'), t: { e: ['🍃'] } },
+    { id: 'tv',    s: 'floorR', n: 'Приставка',  ic: '📺', p: 700, cz: 3, h: big('📺'), t: { e: ['🎮', '✨'], st: 'fun' } },
+    { id: 'aqua',  s: 'floorR', n: 'Аквариум',   ic: '🐠', p: 800, cz: 3, h: big('🐠'), t: { e: ['🫧', '🐠'], st: 'mood' } },
+    { id: 'rug1', s: 'rug', n: 'Ковёр Луна',   ic: '🟣', p: 400, cz: 1, h: rug('#7a5ab8') },
+    { id: 'rug2', s: 'rug', n: 'Ковёр Сакура', ic: '🌺', p: 500, cz: 2, h: rug('#d94b8c') },
+    { id: 'rug3', s: 'rug', n: 'Ковёр Неон',   ic: '🟢', p: 600, cz: 2, h: rug('#00ffcc') }
+  ];
+
+  const jget = (k, d) => { try { return JSON.parse(ls.getItem(k) || 'null') || d; } catch (e) { return d; } };
+  function modal(inner) {
+    const o = D.createElement('div');
+    o.className = 'overlay modal'; o.innerHTML = `<div class="daily-card">${inner}</div>`;
+    D.body.appendChild(o); return o;
+  }
+  function confirmBuy(name, price, done) {
+    const o = modal(`<h3>${name}</h3><div class="sub">Купить за ${price} 🪙?</div>
+      <button class="btn" data-y>Купить</button><button class="btn ghost" data-n style="margin-top:8px">Не сейчас</button>`);
+    o.querySelector('[data-n]').onclick = () => o.remove();
+    o.querySelector('[data-y]').onclick = () => {
+      if (coins < price) { toast('Недостаточно монет 🪙'); hap('error'); return; }
+      coins -= price; o.remove(); done(); saveData(); updateUI(); hap('success');
+    };
+  }
+
+  /* ================= КОМНАТА ================= */
+  const roomState = () => jget('gothic_room', {});
+  const owned = () => jget('gothic_room_own', []);
+  const cozy = () => { const r = roomState(); return ITEMS.reduce((a, i) => a + (r[i.s] === i.id ? i.cz : 0), 0); };
+
+  // слой с мебелью — за питомцем
+  $('stage').insertAdjacentHTML('afterbegin', '<div id="xRoom" style="position:absolute;top:0;left:0;right:0;bottom:170px;z-index:0;pointer-events:none"></div>');
+  function paintRoom() {
+    const r = roomState(), box = $('xRoom'); box.innerHTML = '';
+    ITEMS.forEach(i => {
+      if (r[i.s] !== i.id) return;
+      const d = D.createElement('div');
+      d.dataset.i = i.id;
+      d.style.cssText = `position:absolute;${SLOTS[i.s].css};filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))`;
+      d.innerHTML = i.h; box.appendChild(d);
+    });
+  }
+  // тап по мебели
+  const tapAt = {};
+  $('stage').addEventListener('pointerdown', e => {
+    if (e.target.closest('#characterCard')) return;
+    const x = e.clientX, y = e.clientY;
+    const el = [...$('xRoom').querySelectorAll('[data-i]')].find(n => {
+      const b = n.getBoundingClientRect(); return x > b.left - 8 && x < b.right + 8 && y > b.top - 8 && y < b.bottom + 8;
+    });
+    if (!el || !currentPet || runaway) return;
+    const it = ITEMS.find(i => i.id === el.dataset.i), t = it.t || {};
+    playBodyAnim(Math.random() < 0.5 ? 'hop' : 'wiggle'); hap('light');
+    if (t.e) floatEmoji(t.e, 3);
+    if (t.time) toast('🕰️ Сейчас ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+    if (t.melody) [392, 494, 587, 784].forEach((f, k) => setTimeout(() => blip(f, 0.18), k * 140));
+    if (t.st && Date.now() - (tapAt[it.id] || 0) > TAP_COOLDOWN * 1000) {
+      tapAt[it.id] = Date.now();
+      if (t.st === 'mood') mood = Math.min(100, mood + 3);
+      if (t.st === 'fun') fun = Math.min(100, fun + 3);
+      if (t.st === 'hunger') hunger = Math.min(100, hunger + 3);
+      updateStats();
+    }
+  });
+
+  /* ---------- вкладка «Комната» ---------- */
+  D.querySelector('.nav-bar').insertAdjacentHTML('beforeend',
+    `<button class="nav-item" onclick="switchTab('room', this)">
+       <svg viewBox="0 0 24 24"><path d="M4 21V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v16"/><path d="M3 21h18"/><path d="M14.5 12.5h.01"/></svg>Комната
+     </button>`);
+  D.querySelector('.content-body').insertAdjacentHTML('beforeend', '<div id="tab-room" class="tab-content"><div id="xRoomUi"></div></div>');
+  const pigAcc = () => {
+    const t = parseInt(ls.getItem('gothic_room_t')) || Date.now();
+    return Math.floor(Math.min(PIG_CAP_H, (Date.now() - t) / 36e5) * cozy() * PIG_RATE);
+  };
+  function renderRoomUi() {
+    const box = $('xRoomUi'); if (!box) return;
+    if (cozy() === 0) ls.setItem('gothic_room_t', Date.now());
+    const acc = pigAcc(), own = owned(), r = roomState();
+    box.innerHTML = `<div class="tier" style="margin-bottom:8px"><div><b>🐷 Копилка</b>
+      <div class="muted" style="font-size:10px">Уют: ${cozy()} · +${cozy() * PIG_RATE} 🪙/час (до ${PIG_CAP_H} ч) · накоплено ${acc}</div></div>
+      <button class="btn" id="xPig" style="width:auto;padding:7px 12px;font-size:11px" ${acc < 1 ? 'disabled' : ''}>Забрать</button></div>`;
+    $('xPig').onclick = () => {
+      const a = pigAcc(); if (a < 1) return;
+      coins += a; ls.setItem('gothic_room_t', Date.now());
+      toast(`🐷 +${a} 🪙`); hap('success'); saveData(); updateUI();
+    };
+    Object.keys(SLOTS).forEach(sk => {
+      box.insertAdjacentHTML('beforeend', `<div class="section-title" style="margin-top:8px">${SLOTS[sk].t}</div>`);
+      const g = D.createElement('div'); g.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px';
+      ITEMS.filter(i => i.s === sk).forEach(i => {
+        const has = own.includes(i.id), on = r[sk] === i.id;
+        const d = D.createElement('div'); d.className = 'theme-emoji-btn';
+        d.style.cssText = 'padding:8px 2px;font-size:12px' + (on ? ';border-color:var(--accent2)' : '');
+        d.innerHTML = `<div style="font-size:26px;line-height:1.1">${i.ic}</div><div style="font-size:10px;font-weight:600">${i.n}</div>
+          <div style="font-size:9px;color:var(--text-muted);margin-top:2px">${on ? 'Стоит ✓' : has ? 'Есть' : i.p + ' 🪙'} · уют ${i.cz}</div>`;
+        d.onclick = () => {
+          const put = () => {
+            const rs = roomState(); if (rs[sk] === i.id) delete rs[sk]; else rs[sk] = i.id;
+            ls.setItem('gothic_room', JSON.stringify(rs)); paintRoom(); renderRoomUi(); saveData(); hap('select');
+          };
+          if (has) put();
+          else confirmBuy(i.n, i.p, () => { ls.setItem('gothic_room_own', JSON.stringify([...owned(), i.id])); put(); });
+        };
+        g.appendChild(d);
+      });
+      box.appendChild(g);
+    });
+  }
+
+  /* ================= ЗАДАНИЯ ДНЯ ================= */
+  const POOL = [
+    { id: 'care',  t: 'Покорми или порадуй питомца', n: 3,  r: 80 },
+    { id: 'play',  t: 'Сыграй в мини-игры',          n: 3,  r: 120 },
+    { id: 'tap',   t: 'Погладь питомца',             n: 20, r: 60 },
+    { id: 'score', t: 'Набери 30+ очков в игре',     n: 1,  r: 100 },
+    { id: 'room',  t: 'Загляни в комнату',           n: 1,  r: 40 }
+  ];
+  const hash = s => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 100003; return h; };
+  const qState = () => { const s = jget('gothic_q', null); return s && s.d === todayStr() ? s : { d: todayStr(), p: {}, c: [], b: 0 }; };
+  const qList = () => POOL.map(q => ({ q, s: hash(todayStr() + q.id) })).sort((a, b) => a.s - b.s).slice(0, 3).map(x => x.q);
+  $('tab-home').insertAdjacentHTML('beforeend', '<div class="section-title" style="margin-top:12px">Задания на сегодня</div><div id="xQ"></div>');
+  let qT = 0;
+  function inc(id) {
+    const q = qList().find(x => x.id === id); if (!q) return;
+    const s = qState(); s.p[id] = Math.min(q.n, (s.p[id] || 0) + 1);
+    ls.setItem('gothic_q', JSON.stringify(s));
+    clearTimeout(qT); qT = setTimeout(renderQ, 300);
+  }
+  function renderQ() {
+    const box = $('xQ'); if (!box) return;
+    const s = qState(); box.innerHTML = '';
+    qList().forEach(q => {
+      const p = s.p[q.id] || 0, done = p >= q.n, got = s.c.includes(q.id);
+      const d = D.createElement('div'); d.className = 'tier';
+      d.innerHTML = `<div><b>${q.t}</b><div class="muted" style="font-size:10px">${p}/${q.n} · +${q.r} 🪙</div></div>` +
+        (got ? '<span class="muted">✓</span>' : done ? '<button class="btn" style="width:auto;padding:7px 12px;font-size:11px">Забрать</button>' : '');
+      const b = d.querySelector('button');
+      if (b) b.onclick = () => {
+        const st = qState(); st.c.push(q.id); coins += q.r;
+        const all = qList().every(x => st.c.includes(x.id));
+        if (all && !st.b) { st.b = 1; coins += QUEST_BONUS; toast(`🎉 Все задания! +${QUEST_BONUS} 🪙`); } else toast(`🎁 +${q.r} 🪙`);
+        ls.setItem('gothic_q', JSON.stringify(st)); hap('success'); saveData(); updateUI();
+      };
+      box.appendChild(d);
+    });
+    box.insertAdjacentHTML('beforeend', `<div class="muted" style="font-size:10px;margin-top:2px">Все три задания: бонус +${QUEST_BONUS} 🪙</div>`);
+  }
+
+  /* ---------- подключение ---------- */
+  const _ui = updateUI;
+  updateUI = function () { _ui(); renderRoomUi(); renderQ(); };
+  const _sw = switchTab;
+  switchTab = function (t, b) { _sw(t, b); if (t === 'room') { inc('room'); renderRoomUi(); } };
+  const _use = useInventoryItem;
+  useInventoryItem = function (k) { const b = inventory[k] || 0; _use(k); if ((inventory[k] || 0) < b) inc('care'); };
+  const _fg = finishGame;
+  finishGame = function (id, res) { _fg(id, res); inc('play'); if (res.score >= 30) inc('score'); };
+  card.addEventListener('pointerdown', () => inc('tap'));
+  setInterval(renderRoomUi, 60000);
+  paintRoom(); renderRoomUi(); renderQ();
+})();
+</script>
 </body>
 </html>
