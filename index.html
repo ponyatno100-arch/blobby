@@ -4403,56 +4403,6 @@
       { transform: `translateY(${dist}px)`, opacity: 0 }], { duration: ms, easing: 'ease-in' }).onfinish = () => sp.remove();
   }
 
-  /* ================= ОБЛАЧКО ================= */
-  const RAIN_CD = 20 * 60000;
-  let lp = null;
-
-  // тап — пушистое «пуф»
-  card.addEventListener('pointerdown', () => {
-    if (currentPet !== 'cloud' || runaway) return;
-    const el = pimg();
-    if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1,1.06)', offset: .35 }, { transform: 'scale(1)' }], { duration: 450, easing: 'ease-out' });
-    burstAtPet(['☁️', '✨'], 3, 70);
-    // долгое нажатие — дождик
-    clearTimeout(lp);
-    lp = setTimeout(() => { if (Math.hypot(currentDeltaX, currentDeltaY) < 12) rain(); }, 700);
-  });
-  window.addEventListener('pointerup', () => clearTimeout(lp));
-
-  function rain() {
-    if (currentPet !== 'cloud' || runaway || D.hidden) return;
-    const last = parseInt(ls.getItem('gothic_cloud_rain')) || 0, left = RAIN_CD - (Date.now() - last);
-    if (left > 0) { toast(`☁️ Облачко устало. Дождик через ${Math.ceil(left / 60000)} мин`); return; }
-    ls.setItem('gothic_cloud_rain', Date.now());
-    const p = stagePos();
-    for (let i = 0; i < 28; i++) setTimeout(() => fall('💧', p.x + rnd(-p.w * .5, p.w * .5), p.y + p.h * .1, p.h * .9, rnd(900, 1400), rnd(14, 22)), i * 90);
-    setTimeout(() => {
-      for (let i = 0; i < 5; i++) fall(['🌷', '🌱', '🌼'][i % 3], p.x + rnd(-p.w * .6, p.w * .6), p.y + p.h * .45, -30, 2200, 26);
-      mood = Math.min(100, mood + 8); coins += 15;
-      saveData(); updateStats();
-      toast('🌧️ Дождик прошёл: +15 🪙, настроение выросло'); hap('success');
-    }, 2600);
-    hap('medium'); blip(330, .3);
-  }
-
-  // погода по настроению: грустит — капает дождик, счастлив — радуга
-  setInterval(() => {
-    if (currentPet !== 'cloud' || runaway || D.hidden) return;
-    if (Math.min(hunger, mood, fun) < 35) {
-      const p = stagePos();
-      fall('💧', p.x + rnd(-p.w * .3, p.w * .3), p.y + p.h * .2, p.h * .7, 1300, 16);
-    }
-  }, 1200);
-  setInterval(() => {
-    if (currentPet !== 'cloud' || runaway || D.hidden || mood < 80 || Math.random() > .5) return;
-    const r = D.createElement('div');
-    r.style.cssText = 'position:absolute;left:10%;top:10%;width:80%;height:38%;z-index:1;pointer-events:none;opacity:0;' +
-      'background:radial-gradient(circle at 50% 100%,transparent 55%,#e0453a 56%,#ff9f43 60%,#ffe14d 64%,#5ad17a 68%,#4da3ff 72%,#a06bff 76%,transparent 77%)';
-    $('stage').appendChild(r);
-    if (r.animate) r.animate([{ opacity: 0 }, { opacity: .7, offset: .25 }, { opacity: .7, offset: .75 }, { opacity: 0 }], { duration: 7000 }).onfinish = () => r.remove();
-    else r.remove();
-  }, 40000);
-
   /* ================= СКВИШ ================= */
   const HUE = { cookie: 25, matcha: 95, cake: 320, sushi: 180, ramen: 10, bento: 55, elixir: 280 };
   let taps = 0, tapT = 0;
@@ -4510,5 +4460,304 @@
   applyHue();
 })();
 </script>
+<script>
+/* Gothic Pet — аддон 12: Облачко — погода и дневник погоды; Сквиш — палитра и мини-сквиши. */
+(function () {
+  const D = document, ls = localStorage;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const jget = (k, d) => { try { return JSON.parse(ls.getItem(k) || 'null') || d; } catch (e) { return d; } };
+  const busy = () => D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden');
+  const pimg = () => $('petImg');
+
+  /* ============ НАСТРОЙКИ ============ */
+  const WEATHER_MS = 3 * 60000;     // сколько длится погода
+  const SUMMON_CD = 10 * 60000;     // перезарядка вызова погоды (долгое нажатие)
+  const DISCOVER_COINS = 80;        // за первую погоду каждого вида
+  const DIARY_BONUS = 800;          // за все 6 видов
+  const BOLT_COINS = 10, BOLT_MAX = 8;
+  const COLOR_COINS = 60, PALETTE_BONUS = 1000;
+  const MINI_COINS = 8, MINI_ALL_BONUS = 20;
+  /* =================================== */
+
+  /* ---------- общий слой эффектов ---------- */
+  const FX = D.createElement('div');
+  FX.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1';
+  stage.appendChild(FX);
+  const TINT = D.createElement('div');
+  TINT.style.cssText = 'position:absolute;inset:0;opacity:0;transition:opacity 2s';
+  FX.appendChild(TINT);
+  const roomH = () => Math.max(120, stage.clientHeight - (0.30 * innerHeight + 104));
+  function petCenter() {
+    const s = stage.getBoundingClientRect(), p = petArea.getBoundingClientRect();
+    return { x: p.left - s.left + p.width / 2, y: p.top - s.top + p.height / 2, w: p.width, h: p.height };
+  }
+
+  /* ================= ОБЛАЧКО: ПОГОДА ================= */
+  const ic = d => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const CLOUD = '<path d="M7 14a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 17 14z"/>';
+  const WX = {
+    rain:    { n: 'Дождь',  i: ic(CLOUD + '<path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>') },
+    storm:   { n: 'Гроза',  i: ic(CLOUD + '<path d="M12 14l-3 4.5h3l-1 3.5 4-5h-3l1-3z"/>') },
+    snow:    { n: 'Снег',   i: ic('<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="M10 4.5l2 1.5 2-1.5M10 19.5l2-1.5 2 1.5"/>') },
+    rainbow: { n: 'Радуга', i: ic('<path d="M3 18a9 9 0 0 1 18 0M6 18a6 6 0 0 1 12 0M9 18a3 3 0 0 1 6 0"/>') },
+    stars:   { n: 'Звёзды', i: ic('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/>') },
+    sunset:  { n: 'Закат',  i: ic('<path d="M3 18h18M6 18a6 6 0 0 1 12 0M12 7v2M5 11l1.5 1.5M19 11l-1.5 1.5"/>') }
+  };
+  const WKEYS = Object.keys(WX);
+  const seen = () => jget('gothic_wx_seen', []);
+
+  let cur = null, loops = [], bolts = 0, nextAuto = Date.now() + 45000;
+  const every = (fn, ms) => loops.push(setInterval(fn, ms));
+  const later = (fn, ms) => loops.push(setTimeout(fn, ms));
+
+  function stopWeather() {
+    loops.forEach(clearInterval); loops.forEach(clearTimeout); loops = [];
+    FX.querySelectorAll('.wx').forEach(n => n.remove());
+    TINT.style.opacity = 0; cur = null; bolts = 0;
+  }
+  function particle(css, frames, ms, easing) {
+    const el = D.createElement('i'); el.className = 'wx';
+    el.style.cssText = 'position:absolute;display:block;pointer-events:none;' + css;
+    FX.appendChild(el);
+    if (!el.animate) { el.remove(); return; }
+    el.animate(frames, { duration: ms, easing: easing || 'linear' }).onfinish = () => el.remove();
+  }
+  const W = () => stage.clientWidth, H = () => stage.clientHeight;
+  const rainDrop = () => particle(`left:${rnd(0, W())}px;top:-20px;width:2px;height:${rnd(12, 20)}px;border-radius:2px;background:linear-gradient(transparent,rgba(130,190,255,.85))`,
+    [{ transform: 'translate(0,0)' }, { transform: `translate(-24px,${H() + 40}px)` }], rnd(650, 950));
+  const snowFlake = () => { const s = rnd(3, 6); particle(`left:${rnd(0, W())}px;top:-10px;width:${s}px;height:${s}px;border-radius:50%;background:#fff;opacity:.85`,
+    [{ transform: 'translate(0,0)' }, { transform: `translate(${rnd(-50, 50)}px,${H() + 20}px)` }], rnd(5000, 8000)); };
+
+  function flash(a) {
+    const f = D.createElement('div'); f.className = 'wx';
+    f.style.cssText = `position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none`;
+    FX.appendChild(f);
+    if (f.animate) f.animate([{ opacity: a || .35 }, { opacity: 0 }], { duration: 260 }).onfinish = () => f.remove(); else f.remove();
+  }
+  function spawnBolt() {
+    if (bolts >= BOLT_MAX) return;
+    bolts++;
+    const el = D.createElement('div');
+    const h = roomH();
+    el.style.cssText = `position:absolute;left:${rnd(8, 80)}%;top:${rnd(60, Math.max(80, h * .6))}px;width:38px;height:54px;z-index:31;cursor:pointer;filter:drop-shadow(0 0 10px #ffe14d)`;
+    el.innerHTML = '<svg viewBox="0 0 24 34" width="100%" height="100%"><path d="M14 1L3 19h7l-2 14L21 13h-8z" fill="#ffe14d" stroke="#fff3a8" stroke-width="1.2" stroke-linejoin="round"/></svg>';
+    stage.appendChild(el);
+    if (el.animate) el.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1.1)', opacity: 1, offset: .2 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300 });
+    const kill = () => { if (el.animate) el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250 }).onfinish = () => el.remove(); else el.remove(); };
+    let alive = true;
+    el.addEventListener('pointerdown', e => {
+      e.stopPropagation(); if (!alive) return; alive = false;
+      coins += BOLT_COINS; saveData(); updateStats(); hap('light'); blip(880, .1);
+      const r = el.getBoundingClientRect(), s = stage.getBoundingClientRect();
+      burst(r.left + r.width / 2, r.top + r.height / 2, ['✨', '⚡'], 5, 50);
+      el.remove();
+    });
+    setTimeout(() => { if (alive) { alive = false; kill(); } }, 2200);
+  }
+
+  function setWeather(k) {
+    stopWeather();
+    cur = k;
+    if (k === 'rain')   { TINT.style.background = '#0a1830'; TINT.style.opacity = .3; every(rainDrop, 110); }
+    if (k === 'storm')  {
+      TINT.style.background = '#050510'; TINT.style.opacity = .5; every(rainDrop, 60);
+      (function loop() { if (cur !== 'storm') return; flash(); blip(90, .4); spawnBolt(); later(loop, rnd(3000, 5500)); })();
+    }
+    if (k === 'snow')   { TINT.style.background = '#bcd8ff'; TINT.style.opacity = .09; every(snowFlake, 220); }
+    if (k === 'stars')  {
+      TINT.style.background = '#02020a'; TINT.style.opacity = .45;
+      for (let i = 0; i < 28; i++) {
+        const s = rnd(1.5, 3.2), el = D.createElement('i'); el.className = 'wx';
+        el.style.cssText = `position:absolute;left:${rnd(0, 100)}%;top:${rnd(2, 65)}%;width:${s}px;height:${s}px;border-radius:50%;background:#fff;box-shadow:0 0 6px #fff`;
+        FX.appendChild(el);
+        if (el.animate) el.animate([{ opacity: .15 }, { opacity: 1 }], { duration: rnd(900, 2200), iterations: Infinity, direction: 'alternate', delay: -rnd(0, 2000) });
+      }
+    }
+    if (k === 'sunset') {
+      TINT.style.background = 'linear-gradient(180deg,rgba(255,120,60,0),rgba(255,110,80,.28) 55%,rgba(255,60,120,.22))'; TINT.style.opacity = 1;
+    }
+    if (k === 'rainbow') {
+      const r = D.createElement('div'); r.className = 'wx';
+      r.style.cssText = 'position:absolute;left:8%;top:10%;width:84%;height:40%;opacity:0;transition:opacity 2.5s;' +
+        'background:radial-gradient(circle at 50% 100%,transparent 55%,#e0453a 56%,#ff9f43 60%,#ffe14d 64%,#5ad17a 68%,#4da3ff 72%,#a06bff 76%,transparent 77%)';
+      FX.appendChild(r); setTimeout(() => { r.style.opacity = .75; }, 50);
+      every(() => { const p = petCenter(); particle(`left:${p.x + rnd(-p.w / 2, p.w / 2)}px;top:${p.y + rnd(-p.h / 2, 0)}px;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff`,
+        [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-50px)' }], 1400); }, 400);
+    }
+    later(stopWeather, WEATHER_MS);
+    discover(k);
+    renderDiary();
+  }
+
+  function discover(k) {
+    const s = seen();
+    if (s.includes(k)) return;
+    s.push(k); ls.setItem('gothic_wx_seen', JSON.stringify(s));
+    coins += DISCOVER_COINS;
+    toast(`📖 Дневник погоды: «${WX[k].n}» +${DISCOVER_COINS} 🪙`);
+    if (s.length === WKEYS.length) {
+      coins += DIARY_BONUS; ls.setItem('gothic_cloud_queen', '1');
+      setTimeout(() => toast(`👑 Дневник заполнен! +${DIARY_BONUS} 🪙 · теперь Облачко повелевает грозой`), 2600);
+      hap('success');
+    }
+    saveData(); updateStats();
+  }
+
+  // долгое нажатие — вызвать погоду
+  let lp = null;
+  card.addEventListener('pointerdown', () => {
+    if (currentPet !== 'cloud' || runaway) return;
+    const el = pimg();
+    if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1,1.06)', offset: .35 }, { transform: 'scale(1)' }], { duration: 450, easing: 'ease-out' });
+    burstAtPet(['☁️'], 2, 60);
+    clearTimeout(lp);
+    lp = setTimeout(() => { if (Math.hypot(currentDeltaX, currentDeltaY) < 12) summon(); }, 700);
+  });
+  window.addEventListener('pointerup', () => clearTimeout(lp));
+  function summon() {
+    if (currentPet !== 'cloud' || runaway || D.hidden) return;
+    const left = SUMMON_CD - (Date.now() - (parseInt(ls.getItem('gothic_wx_summon')) || 0));
+    if (left > 0) { toast(`☁️ Облачко отдыхает. Ещё ${Math.ceil(left / 60000)} мин`); return; }
+    const s = seen(), fresh = WKEYS.filter(k => !s.includes(k) && k !== cur);
+    const pool = fresh.length ? fresh : WKEYS.filter(k => k !== cur);
+    ls.setItem('gothic_wx_summon', Date.now());
+    setWeather(pool[Math.floor(Math.random() * pool.length)]);
+    hap('medium'); blip(330, .3);
+    toast(`${WX[cur].n} — Облачко призвало погоду`);
+  }
+
+  // погода сама меняется по времени суток и настроению
+  setInterval(() => {
+    if (currentPet !== 'cloud') { if (cur) stopWeather(); return; }
+    if (runaway || D.hidden || busy() || cur || Date.now() < nextAuto) return;
+    const h = new Date().getHours(), m = new Date().getMonth();
+    let k;
+    if (h >= 22 || h < 5) k = 'stars';
+    else if (h >= 18 && h < 21) k = 'sunset';
+    else if (mood < 35) k = 'storm';
+    else if (m === 11 || m <= 1) k = Math.random() < .6 ? 'snow' : 'rain';
+    else k = mood > 70 && Math.random() < .35 ? 'rainbow' : 'rain';
+    nextAuto = Date.now() + rnd(8, 15) * 60000;
+    setWeather(k);
+  }, 20000);
+
+  // повелительница грозы: редкие красивые вспышки вокруг питомца
+  setInterval(() => {
+    if (currentPet !== 'cloud' || !ls.getItem('gothic_cloud_queen') || D.hidden || busy()) return;
+    flash(.18);
+    const el = pimg();
+    if (el && el.animate) el.animate([{ filter: 'brightness(1)' }, { filter: 'brightness(2.2) drop-shadow(0 0 20px #ffe14d)' }, { filter: 'brightness(1)' }], { duration: 420 });
+    burstAtPet(['⚡', '✨'], 4, 90);
+  }, 25000);
+
+  /* ================= СКВИШ: ПАЛИТРА ================= */
+  const PAL = {
+    cookie: { n: 'Печенье', c: '#d9a066' }, matcha: { n: 'Матча', c: '#7bbf6a' }, cake: { n: 'Пирог', c: '#ff7eb6' },
+    sushi: { n: 'Сет', c: '#4fc3d9' }, ramen: { n: 'Рамен', c: '#e8743a' }, bento: { n: 'Бенто', c: '#e8c872' }, elixir: { n: 'Эликсир', c: '#9b5de5' }
+  };
+  const PKEYS = Object.keys(PAL);
+  const pal = () => jget('gothic_squish_pal', []);
+  let rb = null;
+
+  function applyRainbow() {
+    const on = currentPet === 'squish' && ls.getItem('gothic_squish_rainbow');
+    if (on && !rb && petBody.animate) {
+      rb = petBody.animate([{ filter: 'hue-rotate(0deg) saturate(1.3)' }, { filter: 'hue-rotate(360deg) saturate(1.3)' }], { duration: 12000, iterations: Infinity });
+    } else if (!on && rb) { rb.cancel(); rb = null; }
+  }
+  const _use = useInventoryItem;
+  useInventoryItem = function (k) {
+    const b = inventory[k] || 0;
+    _use(k);
+    if (currentPet === 'squish' && (inventory[k] || 0) < b && PAL[k]) {
+      const p = pal();
+      if (!p.includes(k)) {
+        p.push(k); ls.setItem('gothic_squish_pal', JSON.stringify(p));
+        coins += COLOR_COINS;
+        toast(`🎨 Новый цвет в палитре: ${PAL[k].n} +${COLOR_COINS} 🪙`);
+        if (p.length === PKEYS.length) {
+          coins += PALETTE_BONUS; ls.setItem('gothic_squish_rainbow', '1'); applyRainbow();
+          setTimeout(() => toast(`🌈 Палитра собрана! +${PALETTE_BONUS} 🪙 · Сквиш теперь переливается радугой`), 2600);
+          hap('success');
+        }
+        saveData(); updateStats(); renderDiary();
+      }
+    }
+  };
+
+  /* ================= СКВИШ: МИНИ-СКВИШИ ================= */
+  let nextMini = Date.now() + 40000;
+  function spawnMinis() {
+    const pc = petCenter();
+    let left = 3, got = 0;
+    for (let i = 0; i < 3; i++) setTimeout(() => {
+      const el = D.createElement('div');
+      let x = pc.x - 20, y = pc.y - 20;
+      el.style.cssText = `position:absolute;width:40px;height:40px;left:${x}px;top:${y}px;z-index:31;cursor:pointer;` +
+        `transition:left 1s ease-in-out,top 1s cubic-bezier(.3,1.5,.5,1);filter:hue-rotate(${rnd(0, 360)}deg) drop-shadow(0 6px 6px rgba(0,0,0,.5))`;
+      el.innerHTML = `<img src="${pimg().src}" style="width:100%;height:100%;object-fit:contain;pointer-events:none">`;
+      stage.appendChild(el);
+      const im = el.firstChild;
+      const hop = () => {
+        el.style.left = rnd(8, Math.max(40, W() - 56)) + 'px';
+        el.style.top = rnd(70, Math.max(100, roomH() - 50)) + 'px';
+        if (im.animate) im.animate([{ transform: 'scale(1.3,.7)' }, { transform: 'translateY(-14px) scale(.85,1.2)', offset: .45 }, { transform: 'scale(1)' }], { duration: 700 });
+      };
+      hop();
+      const t = setInterval(hop, 1200);
+      let alive = true;
+      const done = () => { alive = false; clearInterval(t); clearTimeout(life); el.remove(); };
+      const life = setTimeout(() => { if (alive) done(); }, 12000);
+      el.addEventListener('pointerdown', e => {
+        e.stopPropagation(); if (!alive) return;
+        got++; coins += MINI_COINS; mood = Math.min(100, mood + 1);
+        const r = el.getBoundingClientRect();
+        burst(r.left + 20, r.top + 20, ['🫧', '✨'], 5, 50);
+        hap('light'); blip(600 + got * 120, .12);
+        done();
+        if (got === 3) { coins += MINI_ALL_BONUS; toast(`🫧 Все мини-сквиши пойманы! +${3 * MINI_COINS + MINI_ALL_BONUS} 🪙`); }
+        saveData(); updateStats();
+      });
+    }, i * 350);
+    toast('🫧 Мини-сквиши сбежали! Лови их');
+  }
+  setInterval(() => {
+    if (currentPet !== 'squish' || runaway || D.hidden || busy() || mood < 40 || Date.now() < nextMini) return;
+    nextMini = Date.now() + rnd(100, 160) * 1000;
+    spawnMinis();
+  }, 10000);
+
+  /* ================= КОЛЛЕКЦИЯ НА ВКЛАДКЕ «ДОМ» ================= */
+  $('tab-home').insertAdjacentHTML('beforeend', '<div id="xDiary"></div>');
+  function renderDiary() {
+    const box = $('xDiary'); if (!box) return;
+    if (currentPet === 'cloud') {
+      const s = seen(), q = ls.getItem('gothic_cloud_queen');
+      box.innerHTML = `<div class="section-title" style="margin-top:12px">Дневник погоды · ${s.length}/${WKEYS.length}${q ? ' · 👑 повелитель грозы' : ''}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px">${WKEYS.map(k => {
+          const has = s.includes(k);
+          return `<div style="text-align:center;color:${has ? 'var(--accent2)' : 'var(--text-muted)'};opacity:${has ? 1 : .35}">${WX[k].i}<div style="font-size:8px;margin-top:1px">${has ? WX[k].n : '???'}</div></div>`;
+        }).join('')}</div>
+        <div class="muted" style="font-size:10px;margin-top:6px">Задержи палец на Облачке — оно призовёт погоду. Во время грозы лови молнии!</div>`;
+    } else if (currentPet === 'squish') {
+      const p = pal(), r = ls.getItem('gothic_squish_rainbow');
+      box.innerHTML = `<div class="section-title" style="margin-top:12px">Палитра · ${p.length}/${PKEYS.length}${r ? ' · 🌈 радужный' : ''}</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">${PKEYS.map(k => {
+          const has = p.includes(k);
+          return `<div style="text-align:center"><div style="width:22px;height:22px;margin:0 auto;border-radius:50%;${has ? `background:${PAL[k].c};box-shadow:0 0 10px ${PAL[k].c}` : 'background:rgba(255,255,255,.07);border:1px dashed rgba(255,255,255,.2)'}"></div>
+            <div class="muted" style="font-size:8px;margin-top:3px">${has ? PAL[k].n : '???'}</div></div>`;
+        }).join('')}</div>
+        <div class="muted" style="font-size:10px;margin-top:6px">Корми Сквиша разной едой — он каждый раз меняет цвет. Иногда его мини-копии сбегают — лови!</div>`;
+    } else box.innerHTML = '';
+  }
+
+  /* ---------- подключение ---------- */
+  const _ui = updateUI;
+  updateUI = function () { _ui(); renderDiary(); applyRainbow(); };
+  setInterval(applyRainbow, 5000);
+  renderDiary(); applyRainbow();
+})();
+</script>
+
 </body>
 </html>
