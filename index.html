@@ -4051,9 +4051,10 @@
 })();
 
 </script>
-    <script>
+<script>
 /* Gothic Pet — аддон 10: комната питомца (мебель, копилка) и ежедневные задания.
-   Вставить ПОСЛЕ скрипта «аддон 9» и ПЕРЕД </body>. */
+   Мебель нарисована векторной графикой (SVG), без эмодзи.
+   Вставить ПОСЛЕ остальных аддонов и ПЕРЕД </body>. */
 (function () {
   const D = document, ls = localStorage;
 
@@ -4064,40 +4065,147 @@
   const QUEST_BONUS = 150; // награда за все 3 задания дня
   /* =================================== */
 
+  /* ---------- рисунки ---------- */
+  const S = (w, h, vb, inner) =>
+    `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;width:${w};height:${h}">${inner}</svg>`;
+  const W1 = 'min(88vw,380px)';
+
+  const ART = {
+    lights: S(W1, 'auto', '0 0 380 44',
+      '<path d="M0 4Q95 40 190 8Q285 40 380 4" fill="none" stroke="#3a3048" stroke-width="2"/>' +
+      [[48, 18, '#e8c872'], [95, 23, '#ff7eb6'], [142, 20, '#00ffcc'], [238, 20, '#e8c872'], [285, 23, '#ff7eb6'], [332, 18, '#00ffcc']]
+        .map(([x, y, c]) => `<line x1="${x}" y1="${y}" x2="${x}" y2="${y + 5}" stroke="#3a3048" stroke-width="2"/>` +
+          `<circle cx="${x}" cy="${y + 11}" r="10" fill="${c}" opacity=".22"/><circle cx="${x}" cy="${y + 10}" r="5" fill="${c}"/>` +
+          `<circle cx="${x - 1.5}" cy="${y + 8.5}" r="1.5" fill="#fff" opacity=".7"/>`).join('')),
+    webs: S(W1, 'auto', '0 0 380 100',
+      (() => {
+        const web = '<g fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1">' +
+          '<path d="M0 0L82 0M0 0L76 34M0 0L56 64M0 0L26 86M0 0L0 92"/>' +
+          [28, 54, 80].map(r => `<path d="M${r} 0Q${r * .38} ${r * .38} 0 ${r}"/>`).join('') + '</g>';
+        const spider = '<line x1="300" y1="0" x2="300" y2="46" stroke="rgba(255,255,255,.45)"/><g stroke="#8a7aa8" stroke-width="1.4" fill="none">' +
+          '<path d="M295 50l-8-5M295 52l-9 1M295 54l-8 6M305 50l8-5M305 52l9 1M305 54l8 6"/></g>' +
+          '<ellipse cx="300" cy="53" rx="5.5" ry="6.5" fill="#2a2038"/><circle cx="298.5" cy="51.5" r="1.1" fill="#c0394a"/><circle cx="301.5" cy="51.5" r="1.1" fill="#c0394a"/>';
+        return web + `<g transform="translate(380 0) scale(-1 1)">${web}</g>` + spider;
+      })()),
+    moonwin: S('64px', 'auto', '0 0 64 86',
+      '<rect x="2" y="2" width="60" height="80" rx="9" fill="#4a3560"/><rect x="7" y="7" width="50" height="70" rx="5" fill="#10102e"/>' +
+      '<circle cx="36" cy="30" r="14" fill="#f5ecc6"/><circle cx="43" cy="26" r="12" fill="#10102e"/>' +
+      '<circle cx="16" cy="18" r="1.3" fill="#fff"/><circle cx="22" cy="52" r="1.1" fill="#fff"/><circle cx="46" cy="58" r="1.4" fill="#fff"/><circle cx="14" cy="38" r="1" fill="#fff"/>' +
+      '<path d="M32 7V77M7 42H57" stroke="#4a3560" stroke-width="3"/><rect x="0" y="78" width="64" height="7" rx="3" fill="#6b4f8a"/>'),
+    sakwin: S('64px', 'auto', '0 0 64 86',
+      '<rect x="2" y="2" width="60" height="80" rx="9" fill="#4a3560"/><rect x="7" y="7" width="50" height="70" rx="5" fill="#33162b"/>' +
+      '<path d="M7 66Q26 54 44 40T57 22" fill="none" stroke="#6a4430" stroke-width="3"/>' +
+      [[20, 54], [30, 47], [40, 38], [48, 28], [52, 20], [14, 44], [36, 58]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4.6" fill="#ff9ccc"/><circle cx="${x}" cy="${y}" r="1.4" fill="#ffd7ea"/>`).join('') +
+      '<circle cx="45" cy="16" r="1.8" fill="#ffb6d9"/><circle cx="18" cy="26" r="1.6" fill="#ffb6d9"/><circle cx="24" cy="66" r="1.6" fill="#ffb6d9"/>' +
+      '<path d="M32 7V77M7 42H57" stroke="#4a3560" stroke-width="3"/><rect x="0" y="78" width="64" height="7" rx="3" fill="#6b4f8a"/>'),
+    neonwin: S('64px', 'auto', '0 0 64 86',
+      '<rect x="2" y="2" width="60" height="80" rx="9" fill="#4a3560"/><rect x="7" y="7" width="50" height="70" rx="5" fill="#1a1040"/>' +
+      '<circle cx="42" cy="22" r="8" fill="#ff4fa3" opacity=".85"/>' +
+      '<rect x="9" y="46" width="11" height="31" fill="#0b0820"/><rect x="22" y="36" width="13" height="41" fill="#0e0a28"/><rect x="37" y="50" width="10" height="27" fill="#0b0820"/><rect x="48" y="40" width="9" height="37" fill="#0e0a28"/>' +
+      [[12, 52], [15, 62], [26, 42], [30, 54], [26, 66], [40, 58], [51, 48], [51, 62]].map(([x, y], i) => `<rect x="${x}" y="${y}" width="3" height="3.5" fill="${i % 2 ? '#00ffcc' : '#ff7eb6'}"/>`).join('') +
+      '<path d="M32 7V77M7 42H57" stroke="#4a3560" stroke-width="3"/><rect x="0" y="78" width="64" height="7" rx="3" fill="#6b4f8a"/>'),
+    poster: S('58px', 'auto', '0 0 58 74',
+      '<rect x="1" y="1" width="56" height="72" rx="3" fill="#e9e1f2"/><rect x="6" y="6" width="46" height="62" rx="2" fill="#1b1626"/>' +
+      '<path d="M29 17q-13 0-13 15v19l4.5-4 4.2 4 4.3-4 4.3 4 4.2-4 4.5 4V32q0-15-13-15z" fill="#f2eef9"/>' +
+      '<ellipse cx="24.5" cy="31" rx="2.2" ry="3" fill="#1b1626"/><ellipse cx="33.5" cy="31" rx="2.2" ry="3" fill="#1b1626"/>' +
+      '<ellipse cx="21" cy="37" rx="2.3" ry="1.4" fill="#ff9ccc" opacity=".7"/><ellipse cx="37" cy="37" rx="2.3" ry="1.4" fill="#ff9ccc" opacity=".7"/>' +
+      '<rect x="14" y="57" width="30" height="2.5" rx="1" fill="#c0394a"/><rect x="19" y="62" width="20" height="2" rx="1" fill="#6b4f8a"/>'),
+    guitar: S('56px', 'auto', '0 0 60 104',
+      '<g transform="rotate(16 30 52)"><rect x="27" y="6" width="6" height="50" fill="#6b4f8a"/><rect x="24.5" y="0" width="11" height="10" rx="2" fill="#3a2a4a"/>' +
+      '<circle cx="26" cy="3" r="1.3" fill="#e8c872"/><circle cx="34" cy="3" r="1.3" fill="#e8c872"/><circle cx="26" cy="7.5" r="1.3" fill="#e8c872"/><circle cx="34" cy="7.5" r="1.3" fill="#e8c872"/>' +
+      '<ellipse cx="30" cy="64" rx="15" ry="13" fill="#c0394a"/><ellipse cx="30" cy="84" rx="19" ry="16" fill="#c0394a"/>' +
+      '<ellipse cx="30" cy="74" rx="8" ry="6" fill="#c0394a"/><circle cx="30" cy="77" r="6.5" fill="#1b1626"/>' +
+      '<rect x="22" y="90" width="16" height="3" rx="1.5" fill="#3a2a4a"/><path d="M28.5 8V90M31.5 8V90" stroke="#ddd" stroke-width=".7" opacity=".7"/>' +
+      '<path d="M20 60q6-6 14-2" stroke="#fff" stroke-width="1.6" fill="none" opacity=".25" stroke-linecap="round"/></g>'),
+    rug: (c1, c2) => S('min(56vw,260px)', 'auto', '0 0 260 60',
+      `<ellipse cx="130" cy="31" rx="126" ry="26" fill="${c1}" opacity=".92"/><ellipse cx="130" cy="31" rx="104" ry="20" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5" stroke-dasharray="5 4"/>` +
+      `<ellipse cx="130" cy="31" rx="74" ry="13" fill="${c2}" opacity=".5"/><ellipse cx="130" cy="31" rx="38" ry="6" fill="rgba(0,0,0,.28)"/>` +
+      `<path d="M130 25l2.2 4.6 5 .6-3.7 3.4 1 5-4.5-2.5-4.5 2.5 1-5-3.7-3.4 5-.6z" fill="rgba(255,255,255,.55)" transform="translate(0 -1.5) scale(1 .8) translate(0 6)"/>`),
+    bed: S('108px', 'auto', '0 0 110 56',
+      '<ellipse cx="55" cy="42" rx="52" ry="12" fill="#2a1d3d"/><rect x="5" y="22" width="100" height="22" rx="11" fill="#6a4a86"/>' +
+      '<ellipse cx="55" cy="26" rx="48" ry="11" fill="#8c68ad"/><ellipse cx="55" cy="28" rx="38" ry="7.5" fill="#4a3366"/>' +
+      '<ellipse cx="82" cy="23" rx="13" ry="7" fill="#c0394a"/><ellipse cx="82" cy="21.5" rx="9" ry="4" fill="#d9566a"/>' +
+      '<path d="M44 29q-3-3 0-6 2 4 5 4-1 4-5 2z" fill="#e8c872"/>' +
+      '<path d="M12 36q43 8 86 0" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.2" stroke-dasharray="4 3"/>'),
+    pouf: S('68px', 'auto', '0 0 70 60',
+      '<ellipse cx="35" cy="48" rx="28" ry="8" fill="#6b1a24"/><rect x="7" y="22" width="56" height="26" fill="#a52a3a"/><ellipse cx="35" cy="22" rx="28" ry="9" fill="#c0394a"/>' +
+      '<ellipse cx="35" cy="22" rx="20" ry="5.5" fill="#d9566a" opacity=".6"/><circle cx="35" cy="22" r="2.6" fill="#7a1c24"/>' +
+      '<path d="M20 30V46M35 31V47M50 30V46" stroke="rgba(255,255,255,.2)" stroke-width="1.2" stroke-dasharray="3 3"/>'),
+    bowl: S('66px', 'auto', '0 0 70 50',
+      '<ellipse cx="35" cy="44" rx="21" ry="4.5" fill="#1b1626"/><path d="M6 22H64a29 24 0 0 1-58 0z" fill="#4a3560"/>' +
+      '<ellipse cx="35" cy="22" rx="29" ry="6.5" fill="#6b4f8a"/><ellipse cx="35" cy="22.5" rx="25" ry="4.5" fill="#1b1626"/>' +
+      '<g fill="#d9a066"><circle cx="26" cy="20" r="5"/><circle cx="38" cy="18.5" r="5.5"/><circle cx="46" cy="21" r="4.5"/></g>' +
+      '<g fill="#6b3f1c"><circle cx="25" cy="19" r="1"/><circle cx="28" cy="21" r="1"/><circle cx="37" cy="17.5" r="1.1"/><circle cx="40" cy="19.5" r="1"/><circle cx="46" cy="20" r="1"/></g>' +
+      '<g fill="#ff9ccc"><ellipse cx="35" cy="36" rx="3.6" ry="3"/><circle cx="29" cy="31.5" r="1.5"/><circle cx="33" cy="29.5" r="1.5"/><circle cx="37" cy="29.5" r="1.5"/><circle cx="41" cy="31.5" r="1.5"/></g>'),
+    plant: S('64px', 'auto', '0 0 70 100',
+      '<path d="M35 60C21 42 19 22 31 6 43 22 45 42 35 60z" fill="#2f8a62"/><path d="M35 60C15 54 5 40 7 27 23 31 34 43 35 60z" fill="#3fa876"/><path d="M35 60C55 54 65 40 63 27 47 31 36 43 35 60z" fill="#2a7a58"/>' +
+      '<path d="M35 58V14M35 56Q22 46 11 31M35 56Q48 46 59 31" fill="none" stroke="#1d5a40" stroke-width="1.3"/>' +
+      '<path d="M16 62H54L49 96H21z" fill="#4a3560"/><rect x="12" y="56" width="46" height="10" rx="4" fill="#6b4f8a"/>' +
+      '<path d="M37 74q-4-3 0-6 2 4 5 4-1 4-5 2z" fill="#e8c872" transform="translate(-4 4)"/>'),
+    tv: S('80px', 'auto', '0 0 84 80',
+      '<rect x="14" y="62" width="9" height="12" rx="2" fill="#1b1626"/><rect x="61" y="62" width="9" height="12" rx="2" fill="#1b1626"/>' +
+      '<rect x="3" y="4" width="78" height="60" rx="10" fill="#2e2340"/><rect x="9" y="10" width="52" height="46" rx="7" fill="#06161c"/>' +
+      '<rect x="9" y="10" width="52" height="46" rx="7" fill="none" stroke="#00ffcc" stroke-opacity=".5" stroke-width="1.5"/>' +
+      '<path d="M35 22q-8 0-8 9v11l3-2.6 2.6 2.6 2.4-2.6 2.6 2.6 3-2.6V31q0-9-8-9z" fill="#00ffcc" opacity=".9"/><rect x="31.5" y="29" width="3" height="4" fill="#06161c"/><rect x="38" y="29" width="3" height="4" fill="#06161c"/>' +
+      '<path d="M13 16H57M13 24H57M13 32H57M13 40H57M13 48H57" stroke="#00ffcc" stroke-opacity=".08"/>' +
+      '<circle cx="71" cy="20" r="4.5" fill="#4a3560"/><circle cx="71" cy="34" r="4.5" fill="#4a3560"/><path d="M66 46H76M66 50H76M66 54H76" stroke="#1b1626" stroke-width="1.6"/>'),
+    aqua: S('84px', 'auto', '0 0 90 86',
+      '<rect x="6" y="68" width="78" height="14" rx="4" fill="#3a2a4a"/><rect x="8" y="10" width="74" height="58" rx="6" fill="#123a4a" opacity=".9"/>' +
+      '<rect x="8" y="10" width="74" height="12" fill="#2a6a82" opacity=".5"/><path d="M8 58Q30 52 50 58T82 56V68H8z" fill="#c9a86a"/>' +
+      '<path d="M18 60Q14 46 20 38M22 60Q26 48 22 40" fill="none" stroke="#2f8a62" stroke-width="3" stroke-linecap="round"/>' +
+      '<g transform="translate(34 30)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="#ff8c5a"/><path d="M8 0l8-6v12z" fill="#ff8c5a"/><circle cx="-4.5" cy="-1" r="1.3" fill="#1b1626"/></g>' +
+      '<g transform="translate(62 44) scale(-.8 .8)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="#ff7eb6"/><path d="M8 0l8-6v12z" fill="#ff7eb6"/><circle cx="-4.5" cy="-1" r="1.3" fill="#1b1626"/></g>' +
+      '<g fill="none" stroke="#bfeaf5" stroke-width="1"><circle cx="68" cy="30" r="2.2"/><circle cx="72" cy="22" r="1.6"/><circle cx="48" cy="20" r="1.8"/></g>' +
+      '<rect x="8" y="10" width="74" height="58" rx="6" fill="none" stroke="#8fd6e8" stroke-width="2.4"/><rect x="5" y="5" width="80" height="8" rx="4" fill="#4a3560"/>'),
+    clock: () => {
+      const d = new Date(), m = d.getMinutes(), h = (d.getHours() % 12) + m / 60;
+      const ticks = Array.from({ length: 12 }, (_, i) => `<line x1="30" y1="6.5" x2="30" y2="${i % 3 ? 9 : 11}" stroke="#e8c872" stroke-width="${i % 3 ? 1 : 1.8}" transform="rotate(${i * 30} 30 30)"/>`).join('');
+      return S('60px', 'auto', '0 0 60 60',
+        '<circle cx="30" cy="30" r="28" fill="#2e2340" stroke="#e8c872" stroke-width="3"/><circle cx="30" cy="30" r="24" fill="#1b1626"/>' + ticks +
+        `<line x1="30" y1="30" x2="30" y2="17" stroke="#f0ecf8" stroke-width="2.6" stroke-linecap="round" transform="rotate(${h * 30} 30 30)"/>` +
+        `<line x1="30" y1="30" x2="30" y2="11" stroke="#f0ecf8" stroke-width="1.8" stroke-linecap="round" transform="rotate(${m * 6} 30 30)"/>` +
+        '<circle cx="30" cy="30" r="2.6" fill="#c0394a"/>');
+    }
+  };
+
   /* ---------- каталог мебели ----------
-     s — место, n — название, ic — значок в магазине, p — цена, cz — очки уюта,
-     h — как выглядит в комнате (HTML; потом можно заменить на <img src="файл.png" style="width:..">),
-     t — реакция при тапе: e — эмодзи, st — что подрастает (mood / fun / hunger) */
-  const win = (g, e) => `<div style="width:62px;height:78px;border:4px solid #6b5a8e;border-radius:10px 10px 4px 4px;background:${g};display:flex;align-items:center;justify-content:center;font-size:26px">${e}</div>`;
-  const rug = c => `<div style="width:56vw;max-width:260px;height:56px;border-radius:50%;background:radial-gradient(ellipse,${c} 0%,transparent 72%);opacity:.9"></div>`;
-  const big = e => `<div style="font-size:54px;line-height:1">${e}</div>`;
+     s — место, n — название, p — цена, cz — очки уюта,
+     h — рисунок (SVG-строка или функция; позже можно заменить на <img src="файл.png" style="width:90px">),
+     pvb — область для маленькой иконки в магазине (для широких вещей),
+     t — реакция при тапе: e — эмодзи-частицы, st — что подрастает (mood / fun / hunger) */
   const SLOTS = {
-    ceil:   { t: 'Потолок', css: 'left:50%;top:1%;transform:translateX(-50%)' },
-    winL:   { t: 'Окно',    css: 'left:4%;top:9%' },
-    wallR:  { t: 'Стена',   css: 'right:5%;top:10%' },
-    floorL: { t: 'Слева',   css: 'left:2%;bottom:24%' },
-    floorR: { t: 'Справа',  css: 'right:3%;bottom:24%' },
-    rug:    { t: 'Ковёр',   css: 'left:50%;bottom:22%;transform:translateX(-50%)' }
+    ceil:   { t: 'Потолок', css: 'left:50%;top:0;transform:translateX(-50%)' },
+    winL:   { t: 'Окно',    css: 'left:5%;top:12%' },
+    wallR:  { t: 'Стена',   css: 'right:6%;top:12%' },
+    floorL: { t: 'Слева',   css: 'left:3%;bottom:24%' },
+    floorR: { t: 'Справа',  css: 'right:4%;bottom:24%' },
+    rug:    { t: 'Ковёр',   css: 'left:50%;bottom:19%;transform:translateX(-50%)' }
   };
   const ITEMS = [
-    { id: 'lights', s: 'ceil', n: 'Гирлянда', ic: '💡', p: 300, cz: 2, h: '<div style="font-size:20px;letter-spacing:16px">💡✨💡✨💡</div>', t: { e: ['✨'] } },
-    { id: 'webs',   s: 'ceil', n: 'Паутина',  ic: '🕸️', p: 400, cz: 2, h: '<div style="font-size:30px;letter-spacing:90px">🕸️🕷️🕸️</div>', t: { e: ['🕷️'] } },
-    { id: 'moonwin', s: 'winL', n: 'Лунное окно',  ic: '🌙', p: 400, cz: 2, h: win('linear-gradient(#1a1840,#0b0a14)', '🌙'), t: { e: ['🌙', '✨'] } },
-    { id: 'sakwin',  s: 'winL', n: 'Окно в сакуру', ic: '🌸', p: 500, cz: 2, h: win('linear-gradient(#5b2a4a,#1c0f1a)', '🌸'), t: { e: ['🌸'] } },
-    { id: 'neonwin', s: 'winL', n: 'Неон-город',   ic: '🏙️', p: 600, cz: 3, h: win('linear-gradient(#3b1a6b,#0b2a4a)', '🏙️'), t: { e: ['⚡', '💜'] } },
-    { id: 'poster', s: 'wallR', n: 'Постер', ic: '🖼️', p: 250, cz: 1, h: '<div style="width:56px;height:72px;border:3px solid #ddd;border-radius:4px;background:#1b1626;display:flex;align-items:center;justify-content:center;font-size:30px">👻</div>', t: { e: ['👻'] } },
-    { id: 'guitar', s: 'wallR', n: 'Гитара', ic: '🎸', p: 500, cz: 2, h: big('🎸'), t: { e: ['🎵', '🎶'], st: 'fun', melody: true } },
-    { id: 'clock',  s: 'wallR', n: 'Часы',   ic: '🕰️', p: 350, cz: 1, h: big('🕰️'), t: { e: ['⏰'], time: true } },
-    { id: 'bed',  s: 'floorL', n: 'Лежанка', ic: '🛏️', p: 600, cz: 3, h: '<div style="width:92px;height:44px;border-radius:24px;background:linear-gradient(#6a4a86,#3d2a55);display:flex;align-items:center;justify-content:center;font-size:20px">💤</div>', t: { e: ['💤'], st: 'mood' } },
-    { id: 'pouf', s: 'floorL', n: 'Пуфик',   ic: '🔴', p: 400, cz: 2, h: '<div style="width:66px;height:46px;border-radius:50% 50% 14px 14px;background:linear-gradient(#c0394a,#7a1c24)"></div>', t: { e: ['💖'], st: 'mood' } },
-    { id: 'bowl', s: 'floorL', n: 'Миска',   ic: '🥣', p: 300, cz: 1, h: big('🥣'), t: { e: ['🍪'], st: 'hunger' } },
-    { id: 'plant', s: 'floorR', n: 'Растение',   ic: '🪴', p: 350, cz: 2, h: big('🪴'), t: { e: ['🍃'] } },
-    { id: 'tv',    s: 'floorR', n: 'Приставка',  ic: '📺', p: 700, cz: 3, h: big('📺'), t: { e: ['🎮', '✨'], st: 'fun' } },
-    { id: 'aqua',  s: 'floorR', n: 'Аквариум',   ic: '🐠', p: 800, cz: 3, h: big('🐠'), t: { e: ['🫧', '🐠'], st: 'mood' } },
-    { id: 'rug1', s: 'rug', n: 'Ковёр Луна',   ic: '🟣', p: 400, cz: 1, h: rug('#7a5ab8') },
-    { id: 'rug2', s: 'rug', n: 'Ковёр Сакура', ic: '🌺', p: 500, cz: 2, h: rug('#d94b8c') },
-    { id: 'rug3', s: 'rug', n: 'Ковёр Неон',   ic: '🟢', p: 600, cz: 2, h: rug('#00ffcc') }
+    { id: 'lights', s: 'ceil', n: 'Гирлянда', p: 300, cz: 2, h: ART.lights, pvb: '70 0 130 44', t: { e: ['✨'] } },
+    { id: 'webs',   s: 'ceil', n: 'Паутина',  p: 400, cz: 2, h: ART.webs, pvb: '0 0 100 100', t: { e: ['🕷️'] } },
+    { id: 'moonwin', s: 'winL', n: 'Лунное окно',   p: 400, cz: 2, h: ART.moonwin, t: { e: ['🌙', '✨'] } },
+    { id: 'sakwin',  s: 'winL', n: 'Окно в сакуру', p: 500, cz: 2, h: ART.sakwin, t: { e: ['🌸'] } },
+    { id: 'neonwin', s: 'winL', n: 'Неон-город',    p: 600, cz: 3, h: ART.neonwin, t: { e: ['⚡', '💜'] } },
+    { id: 'poster', s: 'wallR', n: 'Постер', p: 250, cz: 1, h: ART.poster, t: { e: ['👻'] } },
+    { id: 'guitar', s: 'wallR', n: 'Гитара', p: 500, cz: 2, h: ART.guitar, t: { e: ['🎵', '🎶'], st: 'fun', melody: true } },
+    { id: 'clock',  s: 'wallR', n: 'Часы',   p: 350, cz: 1, h: ART.clock, t: { e: ['⏰'], time: true } },
+    { id: 'bed',  s: 'floorL', n: 'Лежанка', p: 600, cz: 3, h: ART.bed,  t: { e: ['💤'], st: 'mood' } },
+    { id: 'pouf', s: 'floorL', n: 'Пуфик',   p: 400, cz: 2, h: ART.pouf, t: { e: ['💖'], st: 'mood' } },
+    { id: 'bowl', s: 'floorL', n: 'Миска',   p: 300, cz: 1, h: ART.bowl, t: { e: ['🍪'], st: 'hunger' } },
+    { id: 'plant', s: 'floorR', n: 'Растение',  p: 350, cz: 2, h: ART.plant, t: { e: ['🍃'] } },
+    { id: 'tv',    s: 'floorR', n: 'Приставка', p: 700, cz: 3, h: ART.tv,    t: { e: ['🎮', '✨'], st: 'fun' } },
+    { id: 'aqua',  s: 'floorR', n: 'Аквариум',  p: 800, cz: 3, h: ART.aqua,  t: { e: ['🫧', '🐠'], st: 'mood' } },
+    { id: 'rug1', s: 'rug', n: 'Ковёр Луна',   p: 400, cz: 1, h: ART.rug('#6a4aa8', '#9b7ad8'), pvb: '40 0 180 60' },
+    { id: 'rug2', s: 'rug', n: 'Ковёр Сакура', p: 500, cz: 2, h: ART.rug('#c0407e', '#ff9ccc'), pvb: '40 0 180 60' },
+    { id: 'rug3', s: 'rug', n: 'Ковёр Неон',   p: 600, cz: 2, h: ART.rug('#0f8f78', '#00ffcc'), pvb: '40 0 180 60' }
   ];
+  const art = i => (typeof i.h === 'function' ? i.h() : i.h);
+  const preview = i => {
+    let s = art(i).replace(/width:[^;]*;height:[^;"]*/, 'width:100%;height:100%');
+    if (i.pvb) s = s.replace(/viewBox="[^"]*"/, `viewBox="${i.pvb}"`);
+    return s;
+  };
 
   const jget = (k, d) => { try { return JSON.parse(ls.getItem(k) || 'null') || d; } catch (e) { return d; } };
   function modal(inner) {
@@ -4105,13 +4213,13 @@
     o.className = 'overlay modal'; o.innerHTML = `<div class="daily-card">${inner}</div>`;
     D.body.appendChild(o); return o;
   }
-  function confirmBuy(name, price, done) {
-    const o = modal(`<h3>${name}</h3><div class="sub">Купить за ${price} 🪙?</div>
+  function confirmBuy(it, done) {
+    const o = modal(`<div style="width:90px;height:80px;margin:0 auto 6px">${preview(it)}</div><h3>${it.n}</h3><div class="sub">Купить за ${it.p} 🪙? · уют +${it.cz}</div>
       <button class="btn" data-y>Купить</button><button class="btn ghost" data-n style="margin-top:8px">Не сейчас</button>`);
     o.querySelector('[data-n]').onclick = () => o.remove();
     o.querySelector('[data-y]').onclick = () => {
-      if (coins < price) { toast('Недостаточно монет 🪙'); hap('error'); return; }
-      coins -= price; o.remove(); done(); saveData(); updateUI(); hap('success');
+      if (coins < it.p) { toast('Недостаточно монет 🪙'); hap('error'); return; }
+      coins -= it.p; o.remove(); done(); saveData(); updateUI(); hap('success');
     };
   }
 
@@ -4120,16 +4228,21 @@
   const owned = () => jget('gothic_room_own', []);
   const cozy = () => { const r = roomState(); return ITEMS.reduce((a, i) => a + (r[i.s] === i.id ? i.cz : 0), 0); };
 
-  // слой с мебелью — за питомцем
+  // слой с комнатой — за питомцем
   $('stage').insertAdjacentHTML('afterbegin', '<div id="xRoom" style="position:absolute;top:0;left:0;right:0;bottom:170px;z-index:0;pointer-events:none"></div>');
+  const BACKDROP =
+    '<div style="position:absolute;left:0;right:0;top:0;bottom:27%;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 26px,rgba(255,255,255,0) 26px 52px)"></div>' +
+    '<div style="position:absolute;left:0;right:0;bottom:27%;height:8px;background:rgba(255,255,255,.09);border-top:1px solid rgba(255,255,255,.08)"></div>' +
+    '<div style="position:absolute;left:0;right:0;bottom:0;height:27%;background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,rgba(0,0,0,0) 1px 56px),linear-gradient(rgba(0,0,0,.2),rgba(0,0,0,.55))"></div>';
   function paintRoom() {
     const r = roomState(), box = $('xRoom'); box.innerHTML = '';
+    if (cozy() > 0) box.insertAdjacentHTML('beforeend', BACKDROP);
     ITEMS.forEach(i => {
       if (r[i.s] !== i.id) return;
       const d = D.createElement('div');
       d.dataset.i = i.id;
-      d.style.cssText = `position:absolute;${SLOTS[i.s].css};filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))`;
-      d.innerHTML = i.h; box.appendChild(d);
+      d.style.cssText = `position:absolute;${SLOTS[i.s].css};filter:drop-shadow(0 6px 8px rgba(0,0,0,.55))`;
+      d.innerHTML = art(i); box.appendChild(d);
     });
   }
   // тап по мебели
@@ -4144,7 +4257,7 @@
     const it = ITEMS.find(i => i.id === el.dataset.i), t = it.t || {};
     playBodyAnim(Math.random() < 0.5 ? 'hop' : 'wiggle'); hap('light');
     if (t.e) floatEmoji(t.e, 3);
-    if (t.time) toast('🕰️ Сейчас ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+    if (t.time) { toast('🕰️ Сейчас ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })); paintRoom(); }
     if (t.melody) [392, 494, 587, 784].forEach((f, k) => setTimeout(() => blip(f, 0.18), k * 140));
     if (t.st && Date.now() - (tapAt[it.id] || 0) > TAP_COOLDOWN * 1000) {
       tapAt[it.id] = Date.now();
@@ -4184,7 +4297,7 @@
         const has = own.includes(i.id), on = r[sk] === i.id;
         const d = D.createElement('div'); d.className = 'theme-emoji-btn';
         d.style.cssText = 'padding:8px 2px;font-size:12px' + (on ? ';border-color:var(--accent2)' : '');
-        d.innerHTML = `<div style="font-size:26px;line-height:1.1">${i.ic}</div><div style="font-size:10px;font-weight:600">${i.n}</div>
+        d.innerHTML = `<div style="width:46px;height:42px;margin:0 auto 4px;${has ? '' : 'opacity:.55'}">${preview(i)}</div><div style="font-size:10px;font-weight:600">${i.n}</div>
           <div style="font-size:9px;color:var(--text-muted);margin-top:2px">${on ? 'Стоит ✓' : has ? 'Есть' : i.p + ' 🪙'} · уют ${i.cz}</div>`;
         d.onclick = () => {
           const put = () => {
@@ -4192,7 +4305,7 @@
             ls.setItem('gothic_room', JSON.stringify(rs)); paintRoom(); renderRoomUi(); saveData(); hap('select');
           };
           if (has) put();
-          else confirmBuy(i.n, i.p, () => { ls.setItem('gothic_room_own', JSON.stringify([...owned(), i.id])); put(); });
+          else confirmBuy(i, () => { ls.setItem('gothic_room_own', JSON.stringify([...owned(), i.id])); put(); });
         };
         g.appendChild(d);
       });
@@ -4250,7 +4363,151 @@
   finishGame = function (id, res) { _fg(id, res); inc('play'); if (res.score >= 30) inc('score'); };
   card.addEventListener('pointerdown', () => inc('tap'));
   setInterval(renderRoomUi, 60000);
+  setInterval(paintRoom, 5 * 60000);   // стрелки часов
   paintRoom(); renderRoomUi(); renderQ();
+})();
+</script>
+<script>
+/* Gothic Pet — аддон 11: характер Облачка и Сквиша (без новых картинок).
+   Вставить ПОСЛЕ остальных аддонов, перед </body>. */
+(function () {
+  const D = document, ls = localStorage;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const jget = (k, d) => { try { return JSON.parse(ls.getItem(k) || 'null') || d; } catch (e) { return d; } };
+  const pimg = () => $('petImg');
+
+  /* ---------- общее: желейная анимация картинки ---------- */
+  function jelly(p) {
+    const el = pimg(); if (!el || !el.animate) return;
+    p = p || 1;
+    el.animate([
+      { transform: 'scale(1,1)' },
+      { transform: `scale(${1 + .25 * p},${1 - .25 * p})`, offset: .18 },
+      { transform: `scale(${1 - .18 * p},${1 + .2 * p})`, offset: .4 },
+      { transform: `scale(${1 + .1 * p},${1 - .1 * p})`, offset: .62 },
+      { transform: `scale(${1 - .04 * p},${1 + .05 * p})`, offset: .82 },
+      { transform: 'scale(1,1)' }
+    ], { duration: 700, easing: 'ease-out' });
+  }
+  function stagePos() {
+    const s = $('stage').getBoundingClientRect(), p = petArea.getBoundingClientRect();
+    return { s, x: p.left - s.left + p.width / 2, y: p.top - s.top + p.height / 2, w: p.width, h: p.height };
+  }
+  function fall(txt, x, y, dist, ms, size) {
+    const sp = D.createElement('span');
+    sp.textContent = txt;
+    sp.style.cssText = `position:absolute;left:${x}px;top:${y}px;font-size:${size}px;pointer-events:none;z-index:30`;
+    $('stage').appendChild(sp);
+    if (!sp.animate) { sp.remove(); return; }
+    sp.animate([{ transform: 'translateY(0)', opacity: 0 }, { opacity: 1, offset: .15 },
+      { transform: `translateY(${dist}px)`, opacity: 0 }], { duration: ms, easing: 'ease-in' }).onfinish = () => sp.remove();
+  }
+
+  /* ================= ОБЛАЧКО ================= */
+  const RAIN_CD = 20 * 60000;
+  let lp = null;
+
+  // тап — пушистое «пуф»
+  card.addEventListener('pointerdown', () => {
+    if (currentPet !== 'cloud' || runaway) return;
+    const el = pimg();
+    if (el && el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1,1.06)', offset: .35 }, { transform: 'scale(1)' }], { duration: 450, easing: 'ease-out' });
+    burstAtPet(['☁️', '✨'], 3, 70);
+    // долгое нажатие — дождик
+    clearTimeout(lp);
+    lp = setTimeout(() => { if (Math.hypot(currentDeltaX, currentDeltaY) < 12) rain(); }, 700);
+  });
+  window.addEventListener('pointerup', () => clearTimeout(lp));
+
+  function rain() {
+    if (currentPet !== 'cloud' || runaway || D.hidden) return;
+    const last = parseInt(ls.getItem('gothic_cloud_rain')) || 0, left = RAIN_CD - (Date.now() - last);
+    if (left > 0) { toast(`☁️ Облачко устало. Дождик через ${Math.ceil(left / 60000)} мин`); return; }
+    ls.setItem('gothic_cloud_rain', Date.now());
+    const p = stagePos();
+    for (let i = 0; i < 28; i++) setTimeout(() => fall('💧', p.x + rnd(-p.w * .5, p.w * .5), p.y + p.h * .1, p.h * .9, rnd(900, 1400), rnd(14, 22)), i * 90);
+    setTimeout(() => {
+      for (let i = 0; i < 5; i++) fall(['🌷', '🌱', '🌼'][i % 3], p.x + rnd(-p.w * .6, p.w * .6), p.y + p.h * .45, -30, 2200, 26);
+      mood = Math.min(100, mood + 8); coins += 15;
+      saveData(); updateStats();
+      toast('🌧️ Дождик прошёл: +15 🪙, настроение выросло'); hap('success');
+    }, 2600);
+    hap('medium'); blip(330, .3);
+  }
+
+  // погода по настроению: грустит — капает дождик, счастлив — радуга
+  setInterval(() => {
+    if (currentPet !== 'cloud' || runaway || D.hidden) return;
+    if (Math.min(hunger, mood, fun) < 35) {
+      const p = stagePos();
+      fall('💧', p.x + rnd(-p.w * .3, p.w * .3), p.y + p.h * .2, p.h * .7, 1300, 16);
+    }
+  }, 1200);
+  setInterval(() => {
+    if (currentPet !== 'cloud' || runaway || D.hidden || mood < 80 || Math.random() > .5) return;
+    const r = D.createElement('div');
+    r.style.cssText = 'position:absolute;left:10%;top:10%;width:80%;height:38%;z-index:1;pointer-events:none;opacity:0;' +
+      'background:radial-gradient(circle at 50% 100%,transparent 55%,#e0453a 56%,#ff9f43 60%,#ffe14d 64%,#5ad17a 68%,#4da3ff 72%,#a06bff 76%,transparent 77%)';
+    $('stage').appendChild(r);
+    if (r.animate) r.animate([{ opacity: 0 }, { opacity: .7, offset: .25 }, { opacity: .7, offset: .75 }, { opacity: 0 }], { duration: 7000 }).onfinish = () => r.remove();
+    else r.remove();
+  }, 40000);
+
+  /* ================= СКВИШ ================= */
+  const HUE = { cookie: 25, matcha: 95, cake: 320, sushi: 180, ramen: 10, bento: 55, elixir: 280 };
+  let taps = 0, tapT = 0;
+
+  function applyHue() {
+    const o = jget('gothic_squish_hue', null);
+    petBody.style.filter = (currentPet === 'squish' && o && Date.now() < o.t) ? `hue-rotate(${o.h}deg) saturate(1.25)` : '';
+  }
+
+  // тап — желе; 5 быстрых тапов — «Бульк!»
+  card.addEventListener('pointerdown', () => {
+    if (currentPet !== 'squish' || runaway) return;
+    jelly(1);
+    taps++; clearTimeout(tapT); tapT = setTimeout(() => { taps = 0; }, 1500);
+    if (taps >= 5) { taps = 0; boing(); }
+  });
+  function boing() {
+    const el = pimg(); if (!el || !el.animate) return;
+    el.animate([
+      { transform: 'translateY(0) scale(1.3,.7)' },
+      { transform: 'translateY(-95px) scale(.8,1.25)', offset: .4 },
+      { transform: 'translateY(0) scale(1.25,.75)', offset: .72 },
+      { transform: 'translateY(-14px) scale(.95,1.05)', offset: .88 },
+      { transform: 'translateY(0) scale(1,1)' }
+    ], { duration: 950, easing: 'ease-out' });
+    burstAtPet(['🫧', '💦', '✨'], 14, 140);
+    mood = Math.min(100, mood + 3); updateStats();
+    hap('success'); blip(520, .12); setTimeout(() => blip(780, .15), 130);
+    toast('🫧 Бульк!');
+  }
+
+  // сквиш окрашивается от еды на 10 минут
+  const _use = useInventoryItem;
+  useInventoryItem = function (k) {
+    const b = inventory[k] || 0;
+    _use(k);
+    if (currentPet === 'squish' && (inventory[k] || 0) < b && HUE[k] !== undefined) {
+      ls.setItem('gothic_squish_hue', JSON.stringify({ h: HUE[k], t: Date.now() + 10 * 60000 }));
+      applyHue(); jelly(1.3);
+      toast('🎨 Сквиш изменил цвет на 10 минут');
+    }
+  };
+  setInterval(applyHue, 15000);
+
+  // сам иногда подпрыгивает и дрожит
+  setInterval(() => {
+    if (currentPet !== 'squish' || runaway || D.hidden || isDragging) return;
+    if (Math.min(hunger, mood, fun) < 30) return;
+    jelly(Math.random() < .3 ? 1.4 : .7);
+  }, 6000);
+
+  /* ---------- подключение ---------- */
+  const _ui = updateUI;
+  updateUI = function () { _ui(); applyHue(); };
+  applyHue();
 })();
 </script>
 </body>
