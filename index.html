@@ -1682,7 +1682,7 @@
     </script>
 
     <script>
-/* Gothic Pet — аддон: имя, эволюция, аксессуары, реплики, сон, события,
+/* Gothic Pet — аддон: имя, эволюция, реплики, сон, события,
    награды за друзей, облачное сохранение, приветствие. Подключать ПОСЛЕ основного <script>. */
 (function () {
   const D = document, ls = localStorage;
@@ -1692,7 +1692,6 @@
   const st = D.createElement('style');
   st.textContent = `
   .pet-body{position:relative}
-  .acc{position:absolute;height:auto;pointer-events:none;z-index:7}
   .pet-area.evo1:not(.sad) .pet-body img{filter:drop-shadow(0 0 14px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
   .pet-area.evo2:not(.sad) .pet-body img{filter:hue-rotate(35deg) saturate(1.3) drop-shadow(0 0 22px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
   .pet-area.evo3:not(.sad) .pet-body img{filter:hue-rotate(-40deg) saturate(1.4) brightness(1.12) drop-shadow(0 0 34px var(--accent2)) drop-shadow(0 26px 30px rgba(0,0,0,.8))}
@@ -1764,52 +1763,6 @@
     ls.setItem(k, s);
   }
 
-  /* ---------- 3. аксессуары ---------- */
-  // Рисунки лежат рядом с index.html (PNG с прозрачным фоном): acc_hat.png и т.д.
-  // w — ширина в % от питомца, x — центр по горизонтали в %, y — верхний край в %
-  const ACC = [
-    { k: 'hat', img: 'acc_hat.png', n: 'Цилиндр', w: 50, x: 50, y: -6, ok: () => lvl >= 3, req: 'ур. 3' },
-    { k: 'candle', img: 'acc_candle.png', n: 'Свеча', w: 24, x: 88, y: 30, ok: () => streak >= 3, req: 'серия 3 дн.' },
-    { k: 'bat', img: 'acc_bat.png', n: 'Летучая мышь', w: 30, x: 14, y: 8, ok: () => lvl >= 8, req: 'ур. 8' },
-    { k: 'ghost', img: 'acc_ghost.png', n: 'Призрак', w: 26, x: 10, y: 40, ok: () => friends >= 3, req: '3 друга' },
-    { k: 'crown', img: 'acc_crown.png', n: 'Корона', w: 46, x: 50, y: -8, ok: () => lvl >= 15, req: 'ур. 15' },
-    { k: 'star', img: 'acc_star.png', n: 'Звезда', w: 22, x: 86, y: 2, ok: () => friends >= 10, req: '10 друзей' }
-  ];
-  function applyAcc() {
-    const b = $('petBody'); let a = b.querySelector('.acc');
-    const it = ACC.find(x => x.k === ls.getItem('gothic_acc') && x.ok());
-    if (!it) { if (a) a.remove(); return; }
-    if (!a) { a = D.createElement('img'); a.className = 'acc'; b.appendChild(a); }
-    a.onerror = () => a.remove();
-    if (a.getAttribute('src') !== it.img) a.src = it.img;
-    a.style.cssText = `left:${it.x}%;top:${it.y}%;width:${it.w}%;transform:translateX(-50%)`;
-  }
-  function renderAcc() {
-    let box = $('xAcc');
-    if (!box) {
-      const t = [...D.querySelectorAll('#selectScreen .section-title')].find(x => x.textContent.includes('Параметры'));
-      if (!t) return;
-      t.insertAdjacentHTML('beforebegin', '<div class="section-title">Аксессуары</div><div id="xAcc" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px"></div>');
-      box = $('xAcc');
-    }
-    box.innerHTML = '';
-    ACC.forEach(it => {
-      const ok = it.ok(), on = ls.getItem('gothic_acc') === it.k;
-      const d = D.createElement('div');
-      d.className = 'theme-emoji-btn';
-      d.style.cssText = `flex:0 0 calc(33.3% - 4px);padding:10px 0;${ok ? '' : 'opacity:.35;'}${on ? 'border-color:var(--accent2);' : ''}`;
-      const cap = t => `<div style="font-size:9px;color:var(--text-muted);margin-top:2px">${t}</div>`;
-      d.innerHTML = ok
-        ? `<img src="${it.img}" style="width:40px;height:40px;object-fit:contain" onerror="this.outerHTML='✨'">${cap(it.n)}`
-        : `🔒${cap(it.req)}`;
-      d.onclick = () => {
-        if (!ok) { toast('Откроется: ' + it.req); return; }
-        ls.setItem('gothic_acc', on ? '' : it.k); applyAcc(); renderAcc(); cloudSave(); hap('select');
-      };
-      box.appendChild(d);
-    });
-  }
-
   /* ---------- 4. реплики, время суток, сон ---------- */
   let sayEl = D.createElement('div'); sayEl.className = 'say'; petArea.appendChild(sayEl);
   let sayT;
@@ -1858,9 +1811,9 @@
   /* ---------- 6. друзья ---------- */
   const TIERS = [
     { n: 1, c: 200, t: '200 🪙' },
-    { n: 3, c: 300, t: '300 🪙 + 👻 аксессуар' },
+    { n: 3, c: 300, t: '300 🪙' },
     { n: 5, c: 500, items: { elixir: 1 }, t: '500 🪙 + 🍷 эликсир' },
-    { n: 10, c: 1000, t: '1000 🪙 + 🌟 аксессуар' }
+    { n: 10, c: 1000, t: '1000 🪙' }
   ];
   $('tab-friends').insertAdjacentHTML('beforeend',
     '<div class="section-title" style="margin-top:12px">Награды за друзей</div><div id="xTiers"></div><button class="btn ghost" id="xShare" style="margin-top:6px">📤 Поделиться питомцем</button>');
@@ -1952,7 +1905,7 @@
   /* ---------- подключение к существующим функциям ---------- */
   function extra() {
     if (!currentPet) return;
-    applyEvo(); applyName(); applyAcc(); renderAcc(); renderTiers();
+    applyEvo(); applyName(); renderTiers();
     petArea.classList.toggle('sleep', sleeping());
   }
   const _ui = updateUI;
@@ -1967,7 +1920,7 @@
   const _od = openDaily;
   openDaily = function () { if (currentPet && !ls.getItem(nameKey())) return; _od(); };
   const _os = openSelectScreen;
-  openSelectScreen = function () { _os(); renderAcc(); };
+  openSelectScreen = function () { _os(); };
 
   function afterInit() {
     extra();
@@ -4403,12 +4356,25 @@
   }
 
   /* ================= СКВИШ ================= */
-  const HUE = { cookie: 25, matcha: 95, cake: 320, sushi: 180, ramen: 10, bento: 55, elixir: 280 };
+  // картинки Сквиша по еде (лежат рядом с index.html)
+  const SQ_IMG = {
+    cookie: 'IMG_6838.png',   // красный (проверь имя файла!)
+    matcha: 'IMG_6828.png',   // зелёный
+    cake:   'IMG_6835.png',   // розовый
+    sushi:  'IMG_6839.png',   // синий
+    ramen:  'IMG_6840.png',   // оранжевый
+    bento:  'IMG_6837.png',   // жёлтый
+    elixir: 'IMG_6836.png'    // фиолетовый
+  };
+  Object.values(SQ_IMG).forEach(f => { const i = new Image(); i.src = f; });
   let taps = 0, tapT = 0;
 
   function applyHue() {
+    if (currentPet !== 'squish') return;
     const o = jget('gothic_squish_hue', null);
-    petBody.style.filter = (currentPet === 'squish' && o && Date.now() < o.t) ? `hue-rotate(${o.h}deg) saturate(1.25)` : '';
+    const im = pimg(); if (!im) return;
+    const f = (o && Date.now() < o.t && SQ_IMG[o.k]) ? SQ_IMG[o.k] : petsData.squish.img;
+    if (im.getAttribute('src') !== f) im.src = f;
   }
 
   // тап — желе; 5 быстрых тапов — «Бульк!»
@@ -4438,13 +4404,13 @@
   useInventoryItem = function (k) {
     const b = inventory[k] || 0;
     _use(k);
-    if (currentPet === 'squish' && (inventory[k] || 0) < b && HUE[k] !== undefined) {
-      ls.setItem('gothic_squish_hue', JSON.stringify({ h: HUE[k], t: Date.now() + 10 * 60000 }));
+    if (currentPet === 'squish' && (inventory[k] || 0) < b && SQ_IMG[k]) {
+      ls.setItem('gothic_squish_hue', JSON.stringify({ k: k, t: Date.now() + 10 * 60000 }));
       applyHue(); jelly(1.3);
       toast('🎨 Сквиш изменил цвет на 10 минут');
     }
   };
-  setInterval(applyHue, 15000);
+  setInterval(applyHue, 3000);
 
   // сам иногда подпрыгивает и дрожит
   setInterval(() => {
@@ -4651,8 +4617,8 @@
 
   /* ================= СКВИШ: ПАЛИТРА ================= */
   const PAL = {
-    cookie: { n: 'Печенье', c: '#d9a066' }, matcha: { n: 'Матча', c: '#7bbf6a' }, cake: { n: 'Пирог', c: '#ff7eb6' },
-    sushi: { n: 'Сет', c: '#4fc3d9' }, ramen: { n: 'Рамен', c: '#e8743a' }, bento: { n: 'Бенто', c: '#e8c872' }, elixir: { n: 'Эликсир', c: '#9b5de5' }
+    cookie: { n: 'Печенье', c: '#e0453a' }, matcha: { n: 'Матча', c: '#7bbf6a' }, cake: { n: 'Пирог', c: '#ff7eb6' },
+    sushi: { n: 'Сет', c: '#4d7cff' }, ramen: { n: 'Рамен', c: '#e8743a' }, bento: { n: 'Бенто', c: '#e8c872' }, elixir: { n: 'Эликсир', c: '#9b5de5' }
   };
   const PKEYS = Object.keys(PAL);
   const pal = () => jget('gothic_squish_pal', []);
