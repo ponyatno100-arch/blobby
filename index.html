@@ -2596,7 +2596,7 @@
   const PET_PRICE = 1000;            // цена открытия нового питомца (первый — бесплатно)
   const FREEZE_INACTIVE = true;      // true: пока выбран другой питомец, этот не голодает и не грустит
   const PETS = ['cloud', 'squish', 'ghostcat'];   // порядок вкладок
-  const FREE_PETS = [];    // все питомцы бесплатные
+  const FREE_PETS = ['cloud', 'squish', 'ghostcat'];    // все питомцы бесплатные
   /* =================================== */
 
   const st = D.createElement('style');
@@ -3609,7 +3609,6 @@
   const _cp = choosePet;
   choosePet = function (type) {
     if (blockAuto) return;
-    if (currentPet && type !== currentPet) { toast('Новый питомец появится, только когда этот уйдёт 🖤'); return; }
     if (!currentPet && !confirmed) {
       const o = modal(`<h3>${esc(petsData[type].name)}?</h3>
         <div class="sub">Это твой спутник. Завести другого можно будет только тогда, когда он уйдёт.</div>
@@ -4756,6 +4755,51 @@
   updateUI = function () { _ui(); renderDiary(); applyRainbow(); };
   setInterval(applyRainbow, 5000);
   renderDiary(); applyRainbow();
+})();
+</script>
+
+<script>
+/* Gothic Pet — аддон 13: быстрый выбор питомца по нажатию на имя в шапке */
+(function () {
+  const D = document, ls = localStorage;
+  const st = D.createElement('style');
+  st.textContent = '#gameTitle{cursor:pointer}#gameTitle::after{content:" ▾";font-size:12px;color:var(--text-muted)}' +
+    '.xpk{flex:1;min-width:0;padding:10px 4px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--border-color);text-align:center;cursor:pointer;transition:transform .12s}' +
+    '.xpk:active{transform:scale(.94)}.xpk.on{border-color:var(--accent2);box-shadow:0 0 14px -4px var(--glow)}' +
+    '.xpk img{width:64px;height:64px;object-fit:contain}';
+  D.head.appendChild(st);
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const thumb = p => (window.petThumb ? window.petThumb(p) : (p === 'ghostcat' ? ghostCatImages.afk : petsData[p].img));
+
+  $('gameTitle').addEventListener('click', () => {
+    if (!currentPet || runaway) return;
+    if (D.querySelector('.overlay:not(.hidden)') || !$('selectScreen').classList.contains('hidden')) return;
+    if (ls.getItem('gothic_away')) { toast('Питомец сейчас в гостях 🧳'); return; }
+
+    const o = D.createElement('div');
+    o.className = 'overlay modal'; o.style.zIndex = 330;
+    o.onclick = e => { if (e.target === o) o.remove(); };
+    o.innerHTML = '<div class="daily-card"><h3>Питомцы</h3><div class="sub">Каждый растёт отдельно</div><div style="display:flex;gap:8px"></div></div>';
+    const row = o.querySelector('div[style]');
+
+    Object.keys(petsData).forEach(p => {
+      const name = ls.getItem(`gothic_${p}_name`) || petsData[p].name;
+      const l = p === currentPet ? lvl : (parseInt(ls.getItem(`gothic_${p}_lvl`)) || 1);
+      const c = D.createElement('div');
+      c.className = 'xpk' + (p === currentPet ? ' on' : '');
+      c.innerHTML = `<img src="${thumb(p)}"><div style="font-size:11px;font-weight:600;margin-top:2px">${esc(name)}</div><div class="muted" style="font-size:10px">ур. ${l}</div>`;
+      c.onclick = () => {
+        o.remove();
+        if (p === currentPet) return;
+        saveData();
+        ls.setItem(`gothic_${p}_last_active`, Date.now());
+        choosePet(p);
+      };
+      row.appendChild(c);
+    });
+    D.body.appendChild(o);
+  });
 })();
 </script>
 
